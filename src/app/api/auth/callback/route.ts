@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     if (!error && data.user) {
       // Check if user profile exists
-      const { data: userProfile, error: profileError } = await supabase
+      const { data: userProfile } = await supabase
         .from('users')
         .select('*')
         .eq('id', data.user.id)
