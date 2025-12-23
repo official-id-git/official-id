@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { CardPreview } from '@/components/cards/CardPreview'
@@ -9,7 +9,6 @@ import type { BusinessCard } from '@/types'
 
 export default function PublicCardPage() {
   const params = useParams()
-  const router = useRouter()
   const [card, setCard] = useState<BusinessCard | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

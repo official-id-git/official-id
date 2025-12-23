@@ -71,7 +71,7 @@ export default function AdminDashboard() {
           supabase.from('business_cards').select('id'),
         ])
 
-        const users = usersRes.data || []
+        const users = (usersRes.data || []) as { id: string; role: string }[]
         const paidUsers = users.filter(u => u.role === 'PAID_USER').length
         const freeUsers = users.filter(u => u.role === 'FREE_USER').length
 
