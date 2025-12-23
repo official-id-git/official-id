@@ -1,0 +1,21 @@
+{
+  "name": "Official ID",
+  "short_name": "Official ID",
+  "description": "Ekosistem Digital untuk Profesional",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2D7C88",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    }
+  ]
+}
