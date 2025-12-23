@@ -2,19 +2,63 @@
 
 import { useState, useRef } from 'react'
 import Image from 'next/image'
-import { uploadToCloudinary } from '@/lib/cloudinary'
 
 interface ImageUploadProps {
+  // Support both prop naming conventions
   value?: string | null
-  onChange: (url: string) => void
+  currentImageUrl?: string | null
+  onChange?: (url: string) => void
+  onImageUploaded?: (url: string) => void
   label?: string
+  folder?: string
   className?: string
 }
 
-export function ImageUpload({ value, onChange, label = 'Foto', className = '' }: ImageUploadProps) {
+export function ImageUpload({ 
+  value, 
+  currentImageUrl,
+  onChange, 
+  onImageUploaded,
+  label = 'Foto', 
+  folder = 'uploads',
+  className = '' 
+}: ImageUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Support both prop conventions
+  const imageUrl = value || currentImageUrl || ''
+  const handleChange = onChange || onImageUploaded || (() => {})
+
+  const uploadToCloudinary = async (file: File): Promise<string> => {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+
+    if (!cloudName || !uploadPreset) {
+      throw new Error('Cloudinary not configured')
+    }
+
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('upload_preset', uploadPreset)
+    formData.append('folder', folder)
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error('Upload failed')
+    }
+
+    const data = await response.json()
+    return data.secure_url
+  }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -36,9 +80,10 @@ export function ImageUpload({ value, onChange, label = 'Foto', className = '' }:
     setUploading(true)
 
     try {
-      const result = await uploadToCloudinary(file)
-      onChange(result.secure_url)
+      const url = await uploadToCloudinary(file)
+      handleChange(url)
     } catch (err: any) {
+      console.error('Upload error:', err)
       setError(err.message || 'Gagal mengupload gambar')
     } finally {
       setUploading(false)
@@ -46,11 +91,14 @@ export function ImageUpload({ value, onChange, label = 'Foto', className = '' }:
   }
 
   const handleRemove = () => {
-    onChange('')
+    handleChange('')
     if (inputRef.current) {
       inputRef.current.value = ''
     }
   }
+
+  // Generate unique ID for this instance
+  const inputId = `image-upload-${Math.random().toString(36).substr(2, 9)}`
 
   return (
     <div className={className}>
@@ -63,10 +111,10 @@ export function ImageUpload({ value, onChange, label = 'Foto', className = '' }:
       <div className="flex items-start gap-4">
         {/* Preview */}
         <div className="relative w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-          {value ? (
+          {imageUrl ? (
             <>
               <Image
-                src={value}
+                src={imageUrl}
                 alt="Preview"
                 fill
                 sizes="96px"
@@ -99,10 +147,11 @@ export function ImageUpload({ value, onChange, label = 'Foto', className = '' }:
             accept="image/*"
             onChange={handleFileChange}
             className="hidden"
-            id="image-upload"
+            id={inputId}
+            disabled={uploading}
           />
           <label
-            htmlFor="image-upload"
+            htmlFor={inputId}
             className={`inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
               uploading ? 'opacity-50 cursor-not-allowed' : ''
             }`}
