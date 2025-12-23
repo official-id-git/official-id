@@ -53,25 +53,19 @@ export default function CardDetailPage() {
     setShareResult(null)
 
     try {
-      const response = await fetch('/api/email/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'share_card',
-          data: {
-            senderName: user.full_name,
-            senderEmail: user.email,
-            recipientEmail: shareEmail,
-            cardName: card.full_name,
-            cardTitle: card.job_title,
-            cardCompany: card.company,
-            cardUrl: getPublicCardUrl(card.id),
-            message: shareMessage || undefined
-          }
-        })
+      // Use EmailJS directly from client
+      const { sendShareCardEmail } = await import('@/lib/emailjs')
+      
+      const result = await sendShareCardEmail({
+        recipientEmail: shareEmail,
+        senderName: user.full_name || 'Seseorang',
+        senderEmail: user.email,
+        cardName: card.full_name,
+        cardTitle: card.job_title,
+        cardCompany: card.company,
+        cardUrl: getPublicCardUrl(card.id),
+        message: shareMessage || undefined
       })
-
-      const result = await response.json()
       
       if (result.success) {
         setShareResult({ success: true, message: 'Email berhasil dikirim!' })
@@ -84,8 +78,8 @@ export default function CardDetailPage() {
       } else {
         setShareResult({ success: false, message: result.error || 'Gagal mengirim email' })
       }
-    } catch (error) {
-      setShareResult({ success: false, message: 'Terjadi kesalahan' })
+    } catch (error: any) {
+      setShareResult({ success: false, message: error.message || 'Terjadi kesalahan' })
     } finally {
       setSending(false)
     }
@@ -379,7 +373,17 @@ export default function CardDetailPage() {
 
             {shareResult ? (
               <div className={`p-4 rounded-xl mb-4 ${shareResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                {shareResult.message}
+                <p className="font-medium">{shareResult.success ? '✓ Berhasil' : '✗ Gagal'}</p>
+                <p className="text-sm mt-1">
+                  {shareResult.message.includes('validation_error') 
+                    ? 'Email tidak dapat dikirim. Resend memerlukan domain terverifikasi untuk mengirim ke alamat email lain.'
+                    : shareResult.message}
+                </p>
+                {!shareResult.success && (
+                  <p className="text-xs mt-2 opacity-75">
+                    Tip: Gunakan WhatsApp untuk berbagi kartu, atau hubungi admin untuk konfigurasi email.
+                  </p>
+                )}
               </div>
             ) : null}
 

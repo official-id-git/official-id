@@ -560,21 +560,15 @@ export function useOrganizations() {
         throw insertError
       }
 
-      // Send invitation email
+      // Send invitation email via EmailJS
       try {
-        await fetch('/api/email/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'organization_invite',
-            data: {
-              recipientEmail: email,
-              organizationName: org?.name || 'Organisasi',
-              organizationLogo: org?.logo_url,
-              inviterName: inviter?.full_name || 'Seseorang',
-              inviterEmail: inviter?.email || ''
-            }
-          })
+        const { sendOrgInviteEmail } = await import('@/lib/emailjs')
+        await sendOrgInviteEmail({
+          recipientEmail: email,
+          organizationName: org?.name || 'Organisasi',
+          inviterName: inviter?.full_name || 'Seseorang',
+          inviterEmail: inviter?.email || '',
+          appUrl: 'https://pwa-official-id.vercel.app'
         })
       } catch (emailErr) {
         console.error('Failed to send invitation email:', emailErr)

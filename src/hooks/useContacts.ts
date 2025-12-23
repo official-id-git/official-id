@@ -215,25 +215,17 @@ export function useContacts() {
         .eq('id', user.id)
         .single()
 
-      // Send email
-      const response = await fetch('/api/email/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'contact_card_share',
-          data: {
-            senderName: userData?.full_name || 'User',
-            senderEmail: userData?.email || user.email,
-            recipientName: contact.name,
-            recipientEmail: contact.email,
-            cardName: card.full_name,
-            cardUrl: `${window.location.origin}/c/${card.id}`,
-            message
-          }
-        })
+      // Send email via EmailJS
+      const { sendContactCardEmail } = await import('@/lib/emailjs')
+      const result = await sendContactCardEmail({
+        recipientEmail: contact.email!,
+        recipientName: contact.name,
+        senderName: userData?.full_name || 'User',
+        senderEmail: userData?.email || user.email!,
+        cardName: card.full_name,
+        cardUrl: `${window.location.origin}/c/${card.id}`,
+        message
       })
-
-      const result = await response.json()
 
       if (!result.success) {
         throw new Error(result.error || 'Gagal mengirim email')
