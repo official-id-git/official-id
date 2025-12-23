@@ -3,6 +3,7 @@
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Official ID <noreply@officialid.app>'
+const APP_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://pwa-official-id.vercel.app'
 
 interface EmailOptions {
   to: string
@@ -41,6 +42,193 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
   } catch (error: any) {
     console.error('Email send error:', error)
     return { success: false, error: error.message }
+  }
+}
+
+// Organization Invitation Email Template
+export function getOrganizationInviteEmailTemplate(data: {
+  recipientEmail: string
+  organizationName: string
+  organizationLogo?: string
+  inviterName: string
+  inviterEmail: string
+  message?: string
+}): { subject: string; html: string } {
+  return {
+    subject: `${data.inviterName} mengundang Anda bergabung ke ${data.organizationName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 500px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #2D7C88 0%, #236B76 100%); padding: 40px 30px; text-align: center;">
+                    ${data.organizationLogo ? `
+                    <img src="${data.organizationLogo}" alt="${data.organizationName}" width="70" height="70" style="border-radius: 16px; margin-bottom: 16px;">
+                    ` : `
+                    <div style="width: 70px; height: 70px; margin: 0 auto 16px; background: rgba(255,255,255,0.15); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                      <span style="font-size: 32px;">🏢</span>
+                    </div>
+                    `}
+                    <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">${data.organizationName}</h1>
+                    <p style="margin: 8px 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Undangan Bergabung</p>
+                  </td>
+                </tr>
+                
+                <!-- Content -->
+                <tr>
+                  <td style="padding: 40px 30px;">
+                    <h2 style="margin: 0 0 16px; color: #1a1a1a; font-size: 20px; font-weight: 600; text-align: center;">Anda Diundang!</h2>
+                    
+                    <p style="margin: 0 0 20px; color: #666666; font-size: 15px; line-height: 1.6; text-align: center;">
+                      <strong>${data.inviterName}</strong> (${data.inviterEmail}) mengundang Anda untuk bergabung ke organisasi <strong>${data.organizationName}</strong> di Official ID.
+                    </p>
+                    
+                    ${data.message ? `
+                    <div style="background: #f0f9ff; border-radius: 12px; padding: 16px; margin: 20px 0; border-left: 4px solid #2D7C88;">
+                      <p style="margin: 0; color: #666; font-style: italic;">"${data.message}"</p>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- CTA Button -->
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td align="center" style="padding: 20px 0;">
+                          <a href="${APP_URL}/login?redirect=/dashboard/organizations" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #2D7C88 0%, #236B76 100%); color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 16px 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(45, 124, 136, 0.3);">
+                            Terima Undangan
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                    
+                    <p style="margin: 20px 0 0; color: #999999; font-size: 13px; text-align: center;">
+                      Undangan ini berlaku selama 7 hari. Jika Anda belum memiliki akun, daftar dengan email <strong>${data.recipientEmail}</strong> untuk menerima undangan ini.
+                    </p>
+                  </td>
+                </tr>
+                
+                <!-- Footer -->
+                <tr>
+                  <td style="background: #f8f8f8; padding: 25px 30px; text-align: center; border-top: 1px solid #e5e5e5;">
+                    <p style="margin: 0 0 8px; color: #999999; font-size: 12px;">
+                      © 2025 Official ID. All rights reserved.
+                    </p>
+                  </td>
+                </tr>
+                
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `
+  }
+}
+
+// Share Card via Email Template
+export function getShareCardEmailTemplate(data: {
+  senderName: string
+  senderEmail: string
+  recipientEmail: string
+  recipientName?: string
+  cardName: string
+  cardTitle?: string
+  cardCompany?: string
+  cardUrl: string
+  message?: string
+}): { subject: string; html: string } {
+  return {
+    subject: `${data.senderName} membagikan kartu bisnis digital`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 500px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%); padding: 40px 30px; text-align: center;">
+                    <div style="width: 70px; height: 70px; margin: 0 auto 16px; background: rgba(255,255,255,0.15); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                      <span style="font-size: 32px;">💼</span>
+                    </div>
+                    <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">Kartu Bisnis Digital</h1>
+                  </td>
+                </tr>
+                
+                <!-- Content -->
+                <tr>
+                  <td style="padding: 40px 30px;">
+                    <p style="margin: 0 0 20px; color: #666666; font-size: 15px; line-height: 1.6;">
+                      Halo${data.recipientName ? ` <strong>${data.recipientName}</strong>` : ''},
+                    </p>
+                    
+                    <p style="margin: 0 0 20px; color: #666666; font-size: 15px; line-height: 1.6;">
+                      <strong>${data.senderName}</strong> ingin berbagi kartu bisnis digital dengan Anda:
+                    </p>
+                    
+                    <!-- Card Preview -->
+                    <div style="background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%); border-radius: 12px; padding: 20px; margin: 20px 0; border: 1px solid #e5e5e5;">
+                      <p style="margin: 0 0 4px; color: #1a1a1a; font-size: 18px; font-weight: 600;">${data.cardName}</p>
+                      ${data.cardTitle ? `<p style="margin: 0 0 4px; color: #666; font-size: 14px;">${data.cardTitle}</p>` : ''}
+                      ${data.cardCompany ? `<p style="margin: 0; color: #888; font-size: 14px;">${data.cardCompany}</p>` : ''}
+                    </div>
+                    
+                    ${data.message ? `
+                    <div style="background: #faf5ff; border-radius: 12px; padding: 16px; margin: 20px 0; border-left: 4px solid #8B5CF6;">
+                      <p style="margin: 0; color: #666; font-style: italic;">"${data.message}"</p>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- CTA Button -->
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td align="center" style="padding: 20px 0;">
+                          <a href="${data.cardUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%); color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 16px 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
+                            Lihat Kartu Bisnis
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                    
+                    <p style="margin: 20px 0 0; color: #999999; font-size: 13px; text-align: center;">
+                      Dengan Official ID, Anda juga bisa membuat kartu bisnis digital sendiri secara gratis!
+                    </p>
+                  </td>
+                </tr>
+                
+                <!-- Footer -->
+                <tr>
+                  <td style="background: #f8f8f8; padding: 25px 30px; text-align: center; border-top: 1px solid #e5e5e5;">
+                    <p style="margin: 0 0 8px; color: #999999; font-size: 12px;">
+                      © 2025 Official ID. All rights reserved.
+                    </p>
+                  </td>
+                </tr>
+                
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `
   }
 }
 

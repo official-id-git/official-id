@@ -471,6 +471,20 @@ export function useOrganizations() {
         throw new Error('Format email tidak valid')
       }
 
+      // Get organization details for email
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('name, logo_url')
+        .eq('id', orgId)
+        .single()
+
+      // Get inviter details
+      const { data: inviter } = await supabase
+        .from('users')
+        .select('full_name, email')
+        .eq('id', user.id)
+        .single()
+
       // Check if user exists - use maybeSingle
       const { data: existingUser } = await supabase
         .from('users')
@@ -544,6 +558,27 @@ export function useOrganizations() {
           throw new Error('Undangan untuk email ini sudah ada')
         }
         throw insertError
+      }
+
+      // Send invitation email
+      try {
+        await fetch('/api/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'organization_invite',
+            data: {
+              recipientEmail: email,
+              organizationName: org?.name || 'Organisasi',
+              organizationLogo: org?.logo_url,
+              inviterName: inviter?.full_name || 'Seseorang',
+              inviterEmail: inviter?.email || ''
+            }
+          })
+        })
+      } catch (emailErr) {
+        console.error('Failed to send invitation email:', emailErr)
+        // Don't fail the invitation if email fails
       }
 
       return true

@@ -4,7 +4,9 @@ import {
   sendEmail, 
   getCardScannedEmailTemplate, 
   getPaymentVerifiedEmailTemplate,
-  getContactCardShareEmailTemplate 
+  getContactCardShareEmailTemplate,
+  getOrganizationInviteEmailTemplate,
+  getShareCardEmailTemplate
 } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
           scannerName: data.scannerName,
           scannerEmail: data.scannerEmail,
           cardName: card.full_name,
-          cardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://officialid.app'}/c/${card.id}`
+          cardUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://pwa-official-id.vercel.app'}/c/${card.id}`
         })
 
         logData.recipient_email = card.users.email
@@ -80,6 +82,51 @@ export async function POST(request: NextRequest) {
           senderEmail: data.senderEmail,
           recipientName: data.recipientName,
           cardName: data.cardName,
+          cardUrl: data.cardUrl,
+          message: data.message
+        })
+
+        logData.recipient_email = data.recipientEmail
+        logData.subject = template.subject
+
+        emailResult = await sendEmail({
+          to: data.recipientEmail,
+          subject: template.subject,
+          html: template.html
+        })
+        break
+      }
+
+      case 'organization_invite': {
+        const template = getOrganizationInviteEmailTemplate({
+          recipientEmail: data.recipientEmail,
+          organizationName: data.organizationName,
+          organizationLogo: data.organizationLogo,
+          inviterName: data.inviterName,
+          inviterEmail: data.inviterEmail,
+          message: data.message
+        })
+
+        logData.recipient_email = data.recipientEmail
+        logData.subject = template.subject
+
+        emailResult = await sendEmail({
+          to: data.recipientEmail,
+          subject: template.subject,
+          html: template.html
+        })
+        break
+      }
+
+      case 'share_card': {
+        const template = getShareCardEmailTemplate({
+          senderName: data.senderName,
+          senderEmail: data.senderEmail,
+          recipientEmail: data.recipientEmail,
+          recipientName: data.recipientName,
+          cardName: data.cardName,
+          cardTitle: data.cardTitle,
+          cardCompany: data.cardCompany,
           cardUrl: data.cardUrl,
           message: data.message
         })

@@ -19,6 +19,11 @@ export default function CardDetailPage() {
   const { fetchCard, deleteCard, regenerateQRCode, loading } = useCards()
   const [card, setCard] = useState<BusinessCard | null>(null)
   const [downloading, setDownloading] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareEmail, setShareEmail] = useState('')
+  const [shareMessage, setShareMessage] = useState('')
+  const [sending, setSending] = useState(false)
+  const [shareResult, setShareResult] = useState<{ success: boolean; message: string } | null>(null)
 
   const cardId = params.id as string
 
@@ -39,6 +44,50 @@ export default function CardDetailPage() {
     const success = await deleteCard(card.id)
     if (success) {
       router.push('/dashboard/cards')
+    }
+  }
+
+  const handleShareEmail = async () => {
+    if (!card || !shareEmail || !user) return
+    setSending(true)
+    setShareResult(null)
+
+    try {
+      const response = await fetch('/api/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'share_card',
+          data: {
+            senderName: user.full_name,
+            senderEmail: user.email,
+            recipientEmail: shareEmail,
+            cardName: card.full_name,
+            cardTitle: card.job_title,
+            cardCompany: card.company,
+            cardUrl: getPublicCardUrl(card.id),
+            message: shareMessage || undefined
+          }
+        })
+      })
+
+      const result = await response.json()
+      
+      if (result.success) {
+        setShareResult({ success: true, message: 'Email berhasil dikirim!' })
+        setShareEmail('')
+        setShareMessage('')
+        setTimeout(() => {
+          setShowShareModal(false)
+          setShareResult(null)
+        }, 2000)
+      } else {
+        setShareResult({ success: false, message: result.error || 'Gagal mengirim email' })
+      }
+    } catch (error) {
+      setShareResult({ success: false, message: 'Terjadi kesalahan' })
+    } finally {
+      setSending(false)
     }
   }
 
@@ -285,15 +334,15 @@ export default function CardDetailPage() {
         <div className="bg-white rounded-2xl shadow-sm p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Bagikan</h2>
           <div className="grid grid-cols-2 gap-3">
-            <a
-              href={`mailto:?subject=Kartu%20Bisnis%20${encodeURIComponent(card.full_name)}&body=Lihat%20kartu%20bisnis%20saya:%20${encodeURIComponent(publicUrl)}`}
+            <button
+              onClick={() => setShowShareModal(true)}
               className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
               Email
-            </a>
+            </button>
             <a
               href={`https://wa.me/?text=${encodeURIComponent(`Lihat kartu bisnis saya: ${publicUrl}`)}`}
               target="_blank"
@@ -308,6 +357,76 @@ export default function CardDetailPage() {
           </div>
         </div>
       </main>
+
+      {/* Share Email Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Kirim via Email</h3>
+              <button 
+                onClick={() => {
+                  setShowShareModal(false)
+                  setShareResult(null)
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {shareResult ? (
+              <div className={`p-4 rounded-xl mb-4 ${shareResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                {shareResult.message}
+              </div>
+            ) : null}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email Penerima *</label>
+                <input
+                  type="email"
+                  value={shareEmail}
+                  onChange={(e) => setShareEmail(e.target.value)}
+                  placeholder="email@example.com"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Pesan (Opsional)</label>
+                <textarea
+                  value={shareMessage}
+                  onChange={(e) => setShareMessage(e.target.value)}
+                  placeholder="Tulis pesan singkat..."
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                />
+              </div>
+              <button
+                onClick={handleShareEmail}
+                disabled={!shareEmail || sending}
+                className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {sending ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Mengirim...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                    Kirim Email
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Navigation */}
       <BottomNavigation variant="cards" />
