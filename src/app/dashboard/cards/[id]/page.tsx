@@ -576,4 +576,3 @@ export default function CardDetailPage() {
     </div>
   )
 }
-// Updated Thu Dec 25 12:03:52 WIB 2025
