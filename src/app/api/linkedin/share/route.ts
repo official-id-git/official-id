@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 ${cardTitle ? `💼 ${cardTitle}` : ''}
 ${cardCompany ? `🏢 ${cardCompany}` : ''}
 
-📇 Buat kartu bisnis digital Anda sendiri di Official ID!
+📇 Buat kartu bisnis digital Anda sendiri di Official ID | https://pwa-official-id.vercel.app/
 
 ${cardUrl}`
 
