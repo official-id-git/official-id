@@ -239,6 +239,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw new Error(error.message)
   }
 
+  // Sign in with LinkedIn
+  const signInWithLinkedIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'linkedin_oidc',
+      options: {
+        redirectTo: `${window.location.origin}/api/auth/callback`,
+      },
+    })
+    if (error) throw new Error(error.message)
+  }
+
   // Sign out
   const signOut = async () => {
     await supabase.auth.signOut()
@@ -262,6 +273,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signUp,
     signInWithGoogle,
+    signInWithLinkedIn,
     signOut,
     refreshUser,
   }
