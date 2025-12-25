@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
+import { createClient } from '@/lib/supabase/client' // Import tambahan untuk handle manual login LinkedIn
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -12,8 +13,9 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const { signIn, signInWithGoogle, signInWithLinkedIn } = useAuth()
+  const { signIn, signInWithGoogle } = useAuth()
   const router = useRouter()
+  const supabase = createClient() // Inisialisasi Supabase Client
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,13 +40,29 @@ export default function LoginPage() {
     }
   }
 
+  // --- PERBAIKAN UTAMA: LOGIKA MANUAL UNTUK LINKEDIN ---
   const handleLinkedInLogin = async () => {
     try {
-      await signInWithLinkedIn()
+      setIsLoading(true) // Tambahkan indikator loading
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'linkedin_oidc',
+        options: {
+          // Ganti 'window.location.origin' agar dinamis sesuai environment (Vercel/Localhost)
+          redirectTo: `${window.location.origin}/api/auth/callback`,
+          // PENTING: Memaksa scope w_member_social agar muncul popup izin posting
+          scopes: 'openid profile email w_member_social', 
+        },
+      })
+
+      if (error) throw error
+      
     } catch (err: any) {
       setError(err.message || 'Gagal masuk dengan LinkedIn')
+      setIsLoading(false)
     }
   }
+  // --- AKHIR PERBAIKAN ---
 
   return (
     <div className="min-h-screen flex overflow-hidden">
