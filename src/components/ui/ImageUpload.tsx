@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Image from 'next/image'
+import { compressToTargetSize } from '@/lib/imageCompression'
 
 interface ImageUploadProps {
   // Support both prop naming conventions
@@ -12,6 +13,7 @@ interface ImageUploadProps {
   label?: string
   folder?: string
   className?: string
+  maxSizeMB?: number
 }
 
 export function ImageUpload({ 
@@ -21,10 +23,13 @@ export function ImageUpload({
   onImageUploaded,
   label = 'Foto', 
   folder = 'uploads',
-  className = '' 
+  className = '',
+  maxSizeMB = 1
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false)
+  const [compressing, setCompressing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [progress, setProgress] = useState<string>('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Support both prop conventions
@@ -53,7 +58,8 @@ export function ImageUpload({
     )
 
     if (!response.ok) {
-      throw new Error('Upload failed')
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.error?.message || 'Upload failed')
     }
 
     const data = await response.json()
@@ -70,23 +76,42 @@ export function ImageUpload({
       return
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Ukuran file maksimal 5MB')
+    // Allow larger initial size since we'll compress
+    if (file.size > 20 * 1024 * 1024) {
+      setError('Ukuran file maksimal 20MB')
       return
     }
 
     setError(null)
-    setUploading(true)
+    setProgress('')
 
     try {
-      const url = await uploadToCloudinary(file)
+      // Step 1: Compress
+      setCompressing(true)
+      setProgress('Mengompres gambar...')
+      
+      const originalSize = (file.size / 1024 / 1024).toFixed(2)
+      const compressedFile = await compressToTargetSize(file, maxSizeMB)
+      const compressedSize = (compressedFile.size / 1024 / 1024).toFixed(2)
+      
+      console.log(`Compression: ${originalSize}MB → ${compressedSize}MB`)
+      setCompressing(false)
+
+      // Step 2: Upload
+      setUploading(true)
+      setProgress('Mengupload...')
+      
+      const url = await uploadToCloudinary(compressedFile)
       handleChange(url)
+      setProgress('')
+      
     } catch (err: any) {
       console.error('Upload error:', err)
       setError(err.message || 'Gagal mengupload gambar')
     } finally {
       setUploading(false)
+      setCompressing(false)
+      setProgress('')
     }
   }
 
@@ -99,6 +124,7 @@ export function ImageUpload({
 
   // Generate unique ID for this instance
   const inputId = `image-upload-${Math.random().toString(36).substr(2, 9)}`
+  const isProcessing = uploading || compressing
 
   return (
     <div className={className}>
@@ -123,7 +149,8 @@ export function ImageUpload({
               <button
                 type="button"
                 onClick={handleRemove}
-                className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                disabled={isProcessing}
+                className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 disabled:opacity-50"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -132,9 +159,13 @@ export function ImageUpload({
             </>
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-400">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+              {isProcessing ? (
+                <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              )}
             </div>
           )}
         </div>
@@ -148,18 +179,18 @@ export function ImageUpload({
             onChange={handleFileChange}
             className="hidden"
             id={inputId}
-            disabled={uploading}
+            disabled={isProcessing}
           />
           <label
             htmlFor={inputId}
             className={`inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
-              uploading ? 'opacity-50 cursor-not-allowed' : ''
+              isProcessing ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
-            {uploading ? (
+            {isProcessing ? (
               <>
                 <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-sm text-gray-600">Mengupload...</span>
+                <span className="text-sm text-gray-600">{progress || 'Memproses...'}</span>
               </>
             ) : (
               <>
@@ -170,7 +201,7 @@ export function ImageUpload({
               </>
             )}
           </label>
-          <p className="mt-1 text-xs text-gray-500">PNG, JPG, WEBP (Maks. 5MB)</p>
+          <p className="mt-1 text-xs text-gray-500">PNG, JPG, WEBP (Maks. 20MB, auto compress)</p>
           {error && (
             <p className="mt-1 text-xs text-red-500">{error}</p>
           )}
