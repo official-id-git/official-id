@@ -465,51 +465,108 @@ export default function CardDetailPage() {
       {/* LinkedIn Share Modal */}
       {showLinkedInModal && card && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center gap-2">
                 <svg className="w-6 h-6 text-[#0077B5]" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                 </svg>
-                <h3 className="text-lg font-semibold">Bagikan ke LinkedIn</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Bagikan ke LinkedIn</h3>
               </div>
               <button 
                 onClick={() => {
                   setShowLinkedInModal(false)
                   setLinkedInResult(null)
                 }}
-                className="p-2 hover:bg-gray-100 rounded-full"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            {/* Preview */}
-            <div className="bg-gray-50 rounded-xl p-4 mb-4">
-              <p className="text-sm text-gray-500 mb-2">Link yang akan dibagikan:</p>
-              <div className="p-3 bg-white rounded-lg border border-gray-200">
-                <p className="text-sm font-medium text-[#0077B5]">{card.full_name} - Official ID</p>
-                <p className="text-xs text-gray-500 truncate">{publicUrl}</p>
-              </div>
-              <p className="text-xs text-gray-500 mt-3">
-                Anda akan diarahkan ke LinkedIn untuk menambahkan komentar pada postingan.
-              </p>
-            </div>
+            {/* Content */}
+            <div className="p-4">
+              {/* Card Preview - Professional Style */}
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 mb-4">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Preview Konten</p>
+                
+                {/* Profile Info */}
+                <div className="flex items-start gap-3 mb-4">
+                  {card.profile_photo_url ? (
+                    <Image
+                      src={card.profile_photo_url}
+                      alt={card.full_name}
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#2D7C88] to-[#1A5A66] flex items-center justify-center text-white font-bold text-lg border-2 border-white shadow-sm">
+                      {card.full_name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-gray-900">{card.full_name}</h4>
+                    {card.job_title && (
+                      <p className="text-sm text-gray-600">{card.job_title}</p>
+                    )}
+                    {card.company && (
+                      <p className="text-sm text-gray-500">{card.company}</p>
+                    )}
+                  </div>
+                </div>
 
-            <button
-              onClick={handleShareToLinkedIn}
-              className="w-full py-3 bg-[#0077B5] text-white rounded-xl font-medium hover:bg-[#006399] flex items-center justify-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-              </svg>
-              Bagikan ke LinkedIn
-            </button>
-            <p className="text-xs text-gray-500 text-center mt-3">
-              Akan membuka jendela baru untuk membagikan ke LinkedIn
-            </p>
+                {/* Link Preview Card */}
+                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  <div className="flex">
+                    <div className="w-20 h-20 bg-gradient-to-br from-[#2D7C88] to-[#1A5A66] flex items-center justify-center flex-shrink-0">
+                      <Image
+                        src="https://res.cloudinary.com/dhr9kt7r5/image/upload/v1766548116/official-id/circles/dopjzc11o9fpqdfde63b.png"
+                        alt="Official ID"
+                        width={48}
+                        height={48}
+                        className="w-12 h-12 object-contain"
+                      />
+                    </div>
+                    <div className="p-3 flex-1 min-w-0">
+                      <p className="text-xs text-gray-500 mb-0.5">pwa-official-id.vercel.app</p>
+                      <p className="font-medium text-gray-900 text-sm line-clamp-1">{card.full_name} - Official ID</p>
+                      <p className="text-xs text-gray-500 line-clamp-1">Kartu Bisnis Digital Profesional</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CTA Message */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-sm text-gray-700">
+                    Buat kartu bisnis digital profesional Anda sendiri di{' '}
+                    <span className="text-[#2D7C88] font-medium">Official ID</span>
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    https://pwa-official-id.vercel.app
+                  </p>
+                </div>
+              </div>
+
+              {/* Info Text */}
+              <p className="text-sm text-gray-500 text-center mb-4">
+                Anda akan diarahkan ke LinkedIn untuk menambahkan komentar pada postingan
+              </p>
+
+              {/* Action Button */}
+              <button
+                onClick={handleShareToLinkedIn}
+                className="w-full py-3.5 bg-[#0077B5] text-white rounded-xl font-medium hover:bg-[#006399] transition-colors flex items-center justify-center gap-2 shadow-lg shadow-[#0077B5]/25"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                </svg>
+                Bagikan ke LinkedIn
+              </button>
+            </div>
           </div>
         </div>
       )}
