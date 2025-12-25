@@ -27,8 +27,6 @@ export default function CardDetailPage() {
   
   // LinkedIn share states
   const [showLinkedInModal, setShowLinkedInModal] = useState(false)
-  const [linkedInMessage, setLinkedInMessage] = useState('')
-  const [sharingToLinkedIn, setSharingToLinkedIn] = useState(false)
   const [linkedInResult, setLinkedInResult] = useState<{ success: boolean; message: string } | null>(null)
 
   const cardId = params.id as string
@@ -91,42 +89,21 @@ export default function CardDetailPage() {
     }
   }
 
-  const handleShareToLinkedIn = async () => {
-    if (!card || !user) return
-    setSharingToLinkedIn(true)
+  const handleShareToLinkedIn = () => {
+    if (!card) return
+    
+    const publicUrl = getPublicCardUrl(card.id)
+    const title = `${card.full_name} - Official ID`
+    const summary = `🎯 Lihat kartu bisnis digital saya!\n\n👤 ${card.full_name}${card.job_title ? `\n💼 ${card.job_title}` : ''}${card.company ? `\n🏢 ${card.company}` : ''}\n\n📇 Buat kartu bisnis digital Anda sendiri di Official ID!`
+    
+    // Use LinkedIn Share Dialog URL (no API permission needed)
+    const linkedInShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(publicUrl)}`
+    
+    // Open in new window
+    window.open(linkedInShareUrl, '_blank', 'width=600,height=600')
+    
+    setShowLinkedInModal(false)
     setLinkedInResult(null)
-
-    try {
-      const response = await fetch('/api/linkedin/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cardId: card.id,
-          cardName: card.full_name,
-          cardTitle: card.job_title,
-          cardCompany: card.company,
-          cardUrl: getPublicCardUrl(card.id),
-          message: linkedInMessage || undefined
-        })
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        setLinkedInResult({ success: true, message: result.message })
-        setLinkedInMessage('')
-        setTimeout(() => {
-          setShowLinkedInModal(false)
-          setLinkedInResult(null)
-        }, 2000)
-      } else {
-        setLinkedInResult({ success: false, message: result.error })
-      }
-    } catch (error: any) {
-      setLinkedInResult({ success: false, message: error.message || 'Terjadi kesalahan' })
-    } finally {
-      setSharingToLinkedIn(false)
-    }
   }
 
   const handleDownloadCard = async () => {
@@ -509,66 +486,30 @@ export default function CardDetailPage() {
               </button>
             </div>
 
-            {linkedInResult ? (
-              <div className={`p-4 rounded-xl mb-4 ${linkedInResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                <p className="font-medium">{linkedInResult.success ? '✓ Berhasil' : '✗ Gagal'}</p>
-                <p className="text-sm mt-1">{linkedInResult.message}</p>
-              </div>
-            ) : null}
-
             {/* Preview */}
             <div className="bg-gray-50 rounded-xl p-4 mb-4">
-              <p className="text-sm text-gray-500 mb-2">Preview:</p>
-              <div className="text-sm text-gray-700 whitespace-pre-line">
-                {linkedInMessage || `🎯 Lihat kartu bisnis digital saya!
-
-👤 ${card.full_name}
-${card.job_title ? `💼 ${card.job_title}` : ''}
-${card.company ? `🏢 ${card.company}` : ''}
-
-📇 Buat kartu bisnis digital Anda sendiri di Official ID!`}
-              </div>
-              <div className="mt-3 p-3 bg-white rounded-lg border border-gray-200">
-                <p className="text-xs text-gray-500">Link Preview</p>
+              <p className="text-sm text-gray-500 mb-2">Link yang akan dibagikan:</p>
+              <div className="p-3 bg-white rounded-lg border border-gray-200">
                 <p className="text-sm font-medium text-[#0077B5]">{card.full_name} - Official ID</p>
                 <p className="text-xs text-gray-500 truncate">{publicUrl}</p>
               </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Pesan (Opsional)</label>
-                <textarea
-                  value={linkedInMessage}
-                  onChange={(e) => setLinkedInMessage(e.target.value)}
-                  placeholder="Tulis pesan kustom atau kosongkan untuk pesan default..."
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0077B5] focus:border-transparent resize-none"
-                />
-              </div>
-              <button
-                onClick={handleShareToLinkedIn}
-                disabled={sharingToLinkedIn}
-                className="w-full py-3 bg-[#0077B5] text-white rounded-xl font-medium hover:bg-[#006399] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {sharingToLinkedIn ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Memposting...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                    </svg>
-                    Posting ke LinkedIn
-                  </>
-                )}
-              </button>
-              <p className="text-xs text-gray-500 text-center">
-                Posting akan muncul di feed LinkedIn Anda dengan link ke kartu bisnis
+              <p className="text-xs text-gray-500 mt-3">
+                Anda akan diarahkan ke LinkedIn untuk menambahkan komentar pada postingan.
               </p>
             </div>
+
+            <button
+              onClick={handleShareToLinkedIn}
+              className="w-full py-3 bg-[#0077B5] text-white rounded-xl font-medium hover:bg-[#006399] flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+              </svg>
+              Bagikan ke LinkedIn
+            </button>
+            <p className="text-xs text-gray-500 text-center mt-3">
+              Akan membuka jendela baru untuk membagikan ke LinkedIn
+            </p>
           </div>
         </div>
       )}
