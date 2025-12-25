@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
-import { createClient } from '@/lib/supabase/client' // Import tambahan untuk handle manual login LinkedIn
+import { createClient } from '@/lib/supabase/client' 
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const { signIn, signInWithGoogle } = useAuth()
   const router = useRouter()
-  const supabase = createClient() // Inisialisasi Supabase Client
+  const supabase = createClient() 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,29 +40,34 @@ export default function LoginPage() {
     }
   }
 
-  // --- PERBAIKAN UTAMA: LOGIKA MANUAL UNTUK LINKEDIN ---
+  // --- LOGIKA "HARD FORCE" SCOPE LINKEDIN ---
   const handleLinkedInLogin = async () => {
     try {
-      setIsLoading(true) // Tambahkan indikator loading
+      setIsLoading(true)
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'linkedin_oidc',
         options: {
-          // Ganti 'window.location.origin' agar dinamis sesuai environment (Vercel/Localhost)
           redirectTo: `${window.location.origin}/api/auth/callback`,
-          // PENTING: Memaksa scope w_member_social agar muncul popup izin posting
-          scopes: 'openid profile email w_member_social', 
+          // KITA PAKAI QUERYPARAMS (LEBIH KUAT DARI PADA 'SCOPES')
+          queryParams: {
+            // Paksa scope di sini. Perhatikan 'scope' (singular), bukan 'scopes'
+            scope: 'openid profile email w_member_social',
+            // Paksa dialog izin muncul lagi agar user 'Accept' scope baru
+            prompt: 'consent', 
+          },
         },
       })
 
       if (error) throw error
       
     } catch (err: any) {
+      console.error('LinkedIn Login Error:', err)
       setError(err.message || 'Gagal masuk dengan LinkedIn')
       setIsLoading(false)
     }
   }
-  // --- AKHIR PERBAIKAN ---
+  // --- AKHIR LOGIKA ---
 
   return (
     <div className="min-h-screen flex overflow-hidden">
@@ -73,13 +78,11 @@ export default function LoginPage() {
           background: 'linear-gradient(135deg, #2D7C88 0%, #236B76 50%, #1A5A66 100%)'
         }}
       >
-        {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-72 h-72 bg-white rounded-full blur-3xl"></div>
           <div className="absolute bottom-20 right-20 w-96 h-96 bg-white rounded-full blur-3xl"></div>
         </div>
 
-        {/* Decorative shapes */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-32 right-32 w-24 h-16 bg-[#E8BC66] rounded-lg rotate-45"></div>
           <div className="absolute bottom-40 left-20 w-24 h-16 bg-[#7A9B6E] rounded-lg rotate-12"></div>
@@ -87,7 +90,6 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
-          {/* Logo & Brand */}
           <div className="flex items-center gap-4 mb-6">
             <Image 
               src="/logo.png" 
@@ -102,7 +104,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Features */}
           <div className="space-y-6">
             <div className="flex items-start gap-4 group cursor-pointer">
               <div 
@@ -140,7 +141,7 @@ export default function LoginPage() {
                 style={{ backgroundColor: 'rgba(209, 116, 107, 0.2)' }}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138z" />
                 </svg>
               </div>
               <div>
@@ -150,7 +151,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             <div 
               className="backdrop-blur-sm rounded-xl p-4 text-center cursor-pointer hover:scale-105 transition-transform"
@@ -177,10 +177,8 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right Side - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md">
-          {/* Mobile Logo */}
           <div className="lg:hidden flex justify-center mb-8">
             <Image 
               src="/logo.png" 
@@ -195,7 +193,6 @@ export default function LoginPage() {
             <p className="text-gray-500">Masuk ke akun Official ID Anda</p>
           </div>
 
-          {/* Error Message */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
               {error}
@@ -203,7 +200,6 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email Input */}
             <div>
               <label htmlFor="email" className="block mb-2 text-gray-700 font-medium">
                 Email
@@ -226,7 +222,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Password Input */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label htmlFor="password" className="text-gray-700 font-medium">
@@ -270,7 +265,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}
@@ -294,14 +288,12 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Divider */}
           <div className="flex items-center my-6">
             <div className="flex-1 border-t border-gray-300"></div>
             <span className="px-4 text-gray-500 text-sm">Atau lanjutkan dengan</span>
             <div className="flex-1 border-t border-gray-300"></div>
           </div>
 
-          {/* Google Login */}
           <button
             onClick={handleGoogleLogin}
             className="w-full flex items-center justify-center gap-3 py-3.5 border-2 border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 group"
@@ -315,7 +307,6 @@ export default function LoginPage() {
             <span className="group-hover:text-gray-900 transition font-medium">Lanjutkan dengan Google</span>
           </button>
 
-          {/* LinkedIn Login */}
           <button
             onClick={handleLinkedInLogin}
             className="w-full flex items-center justify-center gap-3 py-3.5 border-2 border-gray-200 rounded-xl hover:bg-[#0077B5] hover:border-[#0077B5] hover:text-white transition-all duration-200 group mt-3"
@@ -326,7 +317,6 @@ export default function LoginPage() {
             <span className="transition font-medium group-hover:text-white">Lanjutkan dengan LinkedIn</span>
           </button>
 
-          {/* Sign Up Link */}
           <p className="text-center mt-8 text-gray-600">
             Belum punya akun?{' '}
             <Link href="/register" className="text-[#2D7C88] hover:underline font-medium">
