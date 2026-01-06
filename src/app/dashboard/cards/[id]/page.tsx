@@ -189,14 +189,16 @@ export default function CardDetailPage() {
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Card Preview Section */}
-        <div className="bg-white rounded-2xl shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between p-6 border-b border-gray-100">
             <h2 className="text-lg font-semibold text-gray-900">Preview Kartu</h2>
             <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full capitalize">
               {template}
             </span>
           </div>
-          <CardPreview card={card} template={template as 'professional' | 'modern' | 'minimal'} />
+          <div className="p-0 sm:p-6 bg-gray-50/50">
+            <CardPreview card={card} template={template as 'professional' | 'modern' | 'minimal'} />
+          </div>
         </div>
 
         {/* Public Link - Moved under preview */}
