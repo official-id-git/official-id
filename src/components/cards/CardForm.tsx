@@ -21,7 +21,7 @@ const SOCIAL_PLATFORMS = [
   { key: 'tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@username' },
 ]
 
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+
 import { CardPreview } from '@/components/cards/CardPreview'
 
 const TEMPLATES = [
@@ -356,23 +356,14 @@ export function CardForm({ card, mode }: CardFormProps) {
 
         <div className="flex flex-col items-center">
           {/* Carousel Controls */}
-          <div className="flex items-center gap-4 w-full max-w-xl">
-            <button
-              type="button"
-              onClick={handlePrevTemplate}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-            >
-              <ChevronLeft className="w-6 h-6 text-gray-600" />
-            </button>
-
-            <div className="flex-1 overflow-hidden relative min-h-[300px] flex items-center justify-center bg-gray-50 rounded-xl border border-gray-100 p-4">
+          <div className="w-full">
+            <div className="overflow-hidden relative min-h-[400px] flex items-center justify-center bg-gray-50 rounded-xl border border-gray-100 p-8">
               {/* Live Preview */}
-              <div className="w-full max-w-sm transform scale-90 sm:scale-100 transition-transform">
+              <div className="w-full max-w-sm transform scale-100 transition-transform">
                 <CardPreview
                   card={{
                     id: 'preview',
                     user_id: 'preview',
-
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
                     qr_code_url: '',
@@ -384,14 +375,6 @@ export function CardForm({ card, mode }: CardFormProps) {
                 />
               </div>
             </div>
-
-            <button
-              type="button"
-              onClick={handleNextTemplate}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-            >
-              <ChevronRight className="w-6 h-6 text-gray-600" />
-            </button>
           </div>
 
           {/* Template Info */}
@@ -403,11 +386,17 @@ export function CardForm({ card, mode }: CardFormProps) {
               {TEMPLATES[currentTemplateIndex].description}
             </p>
             <div className="flex gap-2 justify-center mt-4">
-              {TEMPLATES.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`w-2 h-2 rounded-full transition-all ${idx === currentTemplateIndex ? 'bg-blue-600 w-4' : 'bg-gray-300'
+              {TEMPLATES.map((t, idx) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    setCurrentTemplateIndex(idx)
+                    setFormData(prev => ({ ...prev, template: TEMPLATES[idx].id }))
+                  }}
+                  className={`w-2 h-2 rounded-full transition-all focus:outline-none ${idx === currentTemplateIndex ? 'bg-blue-600 w-4' : 'bg-gray-300 hover:bg-gray-400'
                     }`}
+                  aria-label={`Select template ${t.name}`}
                 />
               ))}
             </div>
