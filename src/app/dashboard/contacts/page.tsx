@@ -309,18 +309,21 @@ export default function ContactsPage() {
                 </div>
 
                 <div className="mt-3 pt-3 border-t flex gap-2">
-                  {contact.email && !contact.email_sent && cards.length > 0 && (
+                  {contact.email && cards.length > 0 && (
                     <button
                       onClick={() => {
                         setSelectedContact(contact)
                         setShowSendModal(true)
                       }}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                      className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-xl font-medium transition-colors ${contact.email_sent
+                          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                       </svg>
-                      Kirim Kartu
+                      {contact.email_sent ? 'Kirim Ulang' : 'Kirim Kartu'}
                     </button>
                   )}
                   <button

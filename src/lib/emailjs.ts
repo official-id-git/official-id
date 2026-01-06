@@ -2,7 +2,8 @@
 // Docs: https://www.emailjs.com/docs/
 
 const EMAILJS_SERVICE_ID = 'service_ou3njzd'
-const EMAILJS_TEMPLATE_ID = 'template_mqaswhb'
+const EMAILJS_TEMPLATE_ID = 'template_mqaswhb' // Default template
+const EMAILJS_CONTACT_TEMPLATE_ID = 'template_72j381y' // Professional Contact Template
 const EMAILJS_PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || ''
 
 interface EmailJSParams {
@@ -14,12 +15,25 @@ interface EmailJSParams {
   message: string
   card_url?: string
   org_name?: string
+  // New template params
+  user_name?: string
+  reply_to?: string
 }
 
-export async function sendEmailJS(params: EmailJSParams): Promise<{ success: boolean; error?: string }> {
+export async function sendEmailJS(
+  params: EmailJSParams,
+  templateId: string = EMAILJS_TEMPLATE_ID
+): Promise<{ success: boolean; error?: string }> {
   if (!EMAILJS_PUBLIC_KEY) {
     console.error('EMAILJS_PUBLIC_KEY not configured')
     return { success: false, error: 'Email service not configured. Please set NEXT_PUBLIC_EMAILJS_PUBLIC_KEY.' }
+  }
+
+  // Map params to match the new template requirements if using the new template
+  const finalParams = {
+    ...params,
+    user_name: params.from_name, // Map for new template
+    reply_to: params.from_email, // Map for new template
   }
 
   try {
@@ -30,9 +44,9 @@ export async function sendEmailJS(params: EmailJSParams): Promise<{ success: boo
       },
       body: JSON.stringify({
         service_id: EMAILJS_SERVICE_ID,
-        template_id: EMAILJS_TEMPLATE_ID,
+        template_id: templateId,
         user_id: EMAILJS_PUBLIC_KEY,
-        template_params: params,
+        template_params: finalParams,
       }),
     })
 
@@ -49,7 +63,7 @@ export async function sendEmailJS(params: EmailJSParams): Promise<{ success: boo
   }
 }
 
-// Helper functions for different email types
+// ... unchanged helpers ...
 
 export async function sendShareCardEmail(data: {
   recipientEmail: string
@@ -124,26 +138,16 @@ export async function sendContactCardEmail(data: {
   cardUrl: string
   message?: string
 }): Promise<{ success: boolean; error?: string }> {
-  const emailMessage = `
-Halo ${data.recipientName},
-
-${data.senderName} mengirimkan kartu bisnis digital kepada Anda.
-
-${data.message ? `💬 Pesan: "${data.message}"` : ''}
-
-🔗 Lihat Kartu: ${data.cardUrl}
-
----
-Dengan Official ID, Anda juga bisa membuat kartu bisnis digital sendiri secara gratis!
-  `.trim()
+  // NOTE: For the new professional template (template_72j381y), 
+  // we pass the raw message because the template handles the structure.
 
   return sendEmailJS({
     to_email: data.recipientEmail,
     to_name: data.recipientName,
     from_name: data.senderName,
     from_email: data.senderEmail,
-    subject: `Kartu bisnis dari ${data.senderName}`,
-    message: emailMessage,
+    subject: `Undangan Koneksi dari ${data.senderName}`,
+    message: data.message || '', // Pass raw message
     card_url: data.cardUrl,
-  })
+  }, EMAILJS_CONTACT_TEMPLATE_ID) // Use the new professional template
 }
