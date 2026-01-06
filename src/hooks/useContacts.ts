@@ -189,31 +189,37 @@ export function useContacts() {
       if (!user) throw new Error('Tidak terautentikasi')
 
       // Get contact info
-      const { data: contact } = await supabase
+      const { data: contactData } = await supabase
         .from('contacts')
         .select('*')
         .eq('id', contactId)
         .single()
+
+      const contact = contactData as unknown as Contact
 
       if (!contact?.email) {
         throw new Error('Kontak tidak memiliki email')
       }
 
       // Get card info
-      const { data: card } = await supabase
+      const { data: cardData } = await supabase
         .from('business_cards')
         .select('*')
         .eq('id', cardId)
         .single()
 
+      const card = cardData as any
+
       if (!card) throw new Error('Kartu tidak ditemukan')
 
       // Get user info
-      const { data: userData } = await supabase
+      const { data: userDataResponse } = await supabase
         .from('users')
         .select('full_name, email')
         .eq('id', user.id)
         .single()
+
+      const userData = userDataResponse as any
 
       // Send email via EmailJS
       const { sendContactCardEmail } = await import('@/lib/emailjs')
@@ -224,7 +230,11 @@ export function useContacts() {
         senderEmail: userData?.email || user.email!,
         cardName: card.full_name,
         cardUrl: `${window.location.origin}/c/${card.id}`,
-        message
+        message,
+        // Pass rich data
+        cardPhotoUrl: card.photo_url,
+        cardJobTitle: card.job_title,
+        cardCompany: card.company
       })
 
       if (!result.success) {
@@ -237,7 +247,7 @@ export function useContacts() {
         .update({
           email_sent: true,
           email_sent_at: new Date().toISOString()
-        })
+        } as any)
         .eq('id', contactId)
 
       return true
