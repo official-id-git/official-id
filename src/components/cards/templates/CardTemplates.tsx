@@ -50,7 +50,7 @@ export const ModernDarkCard = ({ card, visibleFields, socialLinks, onGenerateVCa
                     </div>
                 )}
 
-                <h1 className="text-3xl text-white mt-4 font-bold text-center break-words">{card.full_name}</h1>
+                <h1 className="text-xl sm:text-2xl md:text-3xl text-white mt-4 font-bold text-center break-words">{card.full_name}</h1>
                 {card.job_title && <p className="text-emerald-400 mt-2 text-lg font-medium text-center">{card.job_title}</p>}
                 {card.company && <p className="text-gray-400 text-center">{card.company}</p>}
             </div>
@@ -223,7 +223,7 @@ export const MinimalWhiteCard = ({ card, visibleFields, socialLinks, onGenerateV
                     </div>
                 )}
 
-                <h1 className="text-2xl text-gray-900 mt-4 font-semibold break-words">
+                <h1 className="text-lg sm:text-xl md:text-2xl text-gray-900 mt-4 font-semibold break-words">
                     {card.full_name}
                 </h1>
                 {card.job_title && (
@@ -312,7 +312,7 @@ export const ElegantCard = ({ card, visibleFields, socialLinks, onGenerateVCard,
             )}
 
             <div className="text-center mt-6">
-                <h1 className="text-3xl text-amber-900 font-bold break-words">
+                <h1 className="text-2xl sm:text-3xl text-amber-900 font-bold break-words">
                     {card.full_name}
                 </h1>
                 {card.job_title && (
@@ -404,7 +404,7 @@ export const CorporateCard = ({ card, visibleFields, socialLinks, onGenerateVCar
                 )}
 
                 <div>
-                    <h1 className="text-2xl text-white font-bold break-words">
+                    <h1 className="text-lg sm:text-xl md:text-2xl text-white font-bold break-words">
                         {card.full_name}
                     </h1>
                     {card.job_title && (
@@ -507,7 +507,7 @@ export const TechCard = ({ card, visibleFields, socialLinks, onGenerateVCard, re
                     )}
 
                     <div>
-                        <h1 className="text-2xl text-white uppercase tracking-wider font-bold break-words">
+                        <h1 className="text-lg sm:text-xl md:text-2xl text-white uppercase tracking-wider font-bold break-words">
                             {card.full_name}
                         </h1>
                         {card.job_title && (
@@ -619,7 +619,7 @@ export const ArtisticCard = ({ card, visibleFields, socialLinks, onGenerateVCard
                     </div>
                 )}
 
-                <h1 className="text-4xl text-gray-900 mt-6 text-center font-bold break-words">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl text-gray-900 mt-6 text-center font-bold break-words">
                     {card.full_name}
                 </h1>
                 {card.job_title && (
@@ -718,7 +718,7 @@ export const LuxuryCard = ({ card, visibleFields, socialLinks, onGenerateVCard, 
                         </div>
                     )}
 
-                    <h1 className="text-3xl text-yellow-500 mt-4 text-center uppercase tracking-wider font-bold break-words">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl text-yellow-500 mt-4 text-center uppercase tracking-wider font-bold break-words">
                         {card.full_name}
                     </h1>
                     {card.job_title && (
@@ -822,7 +822,7 @@ export const VibrantCard = ({ card, visibleFields, socialLinks, onGenerateVCard,
                     </div>
                 )}
 
-                <h1 className="text-3xl bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mt-6 text-center font-bold break-words">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-pink-600 to-purple-600 mb-2 break-words">
                     {card.full_name}
                 </h1>
                 {card.job_title && (
