@@ -190,7 +190,7 @@ export function CardPreview({ card, template = 'professional', readonly = false 
                   </div>
                 </div>
               )}
-              <h1 className="text-2xl font-bold text-white mt-4">{card.full_name}</h1>
+              <h1 className="text-2xl font-bold text-white mt-4 break-words">{card.full_name}</h1>
               {card.job_title && (
                 <p className="text-blue-100 mt-1">{card.job_title}</p>
               )}
@@ -291,7 +291,7 @@ export function CardPreview({ card, template = 'professional', readonly = false 
                 </div>
               )}
               <div>
-                <h1 className="text-2xl font-bold">{card.full_name}</h1>
+                <h1 className="text-2xl font-bold break-words">{card.full_name}</h1>
                 {card.job_title && (
                   <p className="text-purple-400">{card.job_title}</p>
                 )}
@@ -379,7 +379,7 @@ export function CardPreview({ card, template = 'professional', readonly = false 
                 </span>
               </div>
             )}
-            <h1 className="text-xl font-light text-gray-900 mt-4">{card.full_name}</h1>
+            <h1 className="text-xl font-light text-gray-900 mt-4 break-words">{card.full_name}</h1>
             {card.job_title && (
               <p className="text-gray-500 text-sm">{card.job_title}</p>
             )}
