@@ -11,12 +11,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: card } = await supabase
+  // Check if id is UUID or Username
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+
+  let query = supabase
     .from('business_cards')
     .select('*')
-    .eq('id', id)
     .eq('is_public', true)
-    .single()
+
+  if (isUuid) {
+    query = query.eq('id', id)
+  } else {
+    query = query.eq('username', id)
+  }
+
+  const { data: card } = await query.single()
 
   if (!card) {
     return {

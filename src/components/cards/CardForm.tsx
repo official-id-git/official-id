@@ -95,6 +95,7 @@ export function CardForm({ card, mode }: CardFormProps) {
     website: card?.website || '',
     profile_photo_url: card?.profile_photo_url || '',
     template: (card as any)?.template || 'professional',
+    username: card?.username || '',
     social_links: (card?.social_links as Record<string, string>) || {},
     is_public: card?.is_public ?? true,
     visible_fields: (card?.visible_fields as Record<string, boolean>) || {
@@ -215,47 +216,77 @@ export function CardForm({ card, mode }: CardFormProps) {
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Dasar</h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Full Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Nama Lengkap <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              name="full_name"
-              value={formData.full_name}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="John Doe"
               required
+              value={formData.full_name}
+              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              placeholder="Contoh: Budi Santoso"
             />
           </div>
 
+          {/* Username */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Jabatan
+              Username / Link Kartu <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">
+                official.id/c/
+              </div>
+              <input
+                type="text"
+                required
+                value={formData.username || ''}
+                onChange={async (e) => {
+                  const val = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '');
+                  setFormData({ ...formData, username: val });
+
+                  // Simple validation feedback logic could be added here or onBlur
+                  // For now just updating state. Uniqueness check happens on submit or we could add a check button.
+                }}
+                className="w-full pl-24 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-mono text-sm"
+                placeholder="username"
+                minLength={3}
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Kombinasi huruf dan angka, tanpa spasi/simbol. Minimal 3 karakter.
+            </p>
+          </div>
+
+          {/* Job Title */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Jabatan / Posisi
             </label>
             <input
               type="text"
-              name="job_title"
               value={formData.job_title}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Software Engineer"
+              onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              placeholder="Contoh: CEO & Founder"
             />
           </div>
 
-          <div className="md:col-span-2">
+          {/* Company */}
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Perusahaan
+              Nama Perusahaan / Bisnis
             </label>
             <input
               type="text"
-              name="company"
               value={formData.company}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="PT. Contoh Indonesia"
+              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              placeholder="Contoh: PT Teknologi Maju"
             />
           </div>
         </div>

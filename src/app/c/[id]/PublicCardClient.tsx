@@ -24,12 +24,21 @@ export default function PublicCardClient({ cardId }: Props) {
         const supabase = createClient()
 
         // Fetch public card
-        const { data, error: fetchError } = await supabase
+        // Check if cardId is UUID or Username
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cardId)
+
+        let query = supabase
           .from('business_cards')
           .select('*')
-          .eq('id', cardId)
           .eq('is_public', true)
-          .single()
+
+        if (isUuid) {
+          query = query.eq('id', cardId)
+        } else {
+          query = query.eq('username', cardId)
+        }
+
+        const { data, error: fetchError } = await query.single()
 
         if (fetchError) {
           if (fetchError.code === 'PGRST116') {
