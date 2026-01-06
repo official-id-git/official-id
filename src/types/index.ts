@@ -6,7 +6,9 @@ export type UserInsert = Database['public']['Tables']['users']['Insert']
 export type UserUpdate = Database['public']['Tables']['users']['Update']
 
 // Business card type
-export type BusinessCard = Database['public']['Tables']['business_cards']['Row']
+export type BusinessCard = Database['public']['Tables']['business_cards']['Row'] & {
+  template?: string
+}
 export type BusinessCardInsert = Database['public']['Tables']['business_cards']['Insert']
 export type BusinessCardUpdate = Database['public']['Tables']['business_cards']['Update']
 
