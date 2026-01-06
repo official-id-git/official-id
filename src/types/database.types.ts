@@ -234,6 +234,41 @@ export type Database = {
           updated_at?: string
         }
       }
+      seo_settings: {
+        Row: {
+          id: number
+          site_title: string
+          site_description: string
+          keywords: string[] | null
+          og_image_google: string | null
+          og_image_twitter: string | null
+          og_image_facebook: string | null
+          og_image_linkedin: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          site_title?: string
+          site_description?: string
+          keywords?: string[] | null
+          og_image_google?: string | null
+          og_image_twitter?: string | null
+          og_image_facebook?: string | null
+          og_image_linkedin?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          site_title?: string
+          site_description?: string
+          keywords?: string[] | null
+          og_image_google?: string | null
+          og_image_twitter?: string | null
+          og_image_facebook?: string | null
+          og_image_linkedin?: string | null
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
