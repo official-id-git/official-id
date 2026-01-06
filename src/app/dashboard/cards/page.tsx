@@ -126,8 +126,8 @@ export default function CardsPage() {
               >
                 <div className="flex items-center gap-4">
                   {card.profile_photo_url ? (
-                    <img 
-                      src={card.profile_photo_url} 
+                    <img
+                      src={card.profile_photo_url}
                       alt={card.full_name}
                       className="w-14 h-14 rounded-xl object-cover"
                     />
@@ -140,11 +140,16 @@ export default function CardsPage() {
                     <h3 className="font-semibold text-gray-900 truncate">{card.full_name}</h3>
                     <p className="text-gray-500 text-sm truncate">{card.job_title}</p>
                     <p className="text-gray-400 text-xs truncate">{card.company}</p>
+                    <div className="mt-2 flex items-center gap-1 text-blue-600">
+                      <span className="text-xs font-medium">Lihat Detail</span>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${
-                      card.is_public ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                    }`}>
+                  <div className="text-right self-start">
+                    <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${card.is_public ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                      }`}>
                       {card.is_public ? 'Publik' : 'Privat'}
                     </span>
                     <p className="text-gray-400 text-xs mt-1">{card.scan_count} scan</p>
