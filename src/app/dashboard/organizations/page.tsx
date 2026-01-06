@@ -148,7 +148,7 @@ export default function OrganizationsPage() {
   const allMyOrgs = [...myOrgs, ...joinedOrgs]
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-[100dvh] bg-gray-50 pb-32">
       {/* Header */}
       <div className="bg-white border-b px-4 py-6">
         <div className="max-w-4xl mx-auto">
