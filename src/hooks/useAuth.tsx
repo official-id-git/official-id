@@ -13,13 +13,13 @@ function authUserToUser(supabaseUser: SupabaseUser): User {
   return {
     id: supabaseUser.id,
     email: supabaseUser.email || '',
-    full_name: supabaseUser.user_metadata?.full_name || 
-               supabaseUser.user_metadata?.name || 
-               supabaseUser.email?.split('@')[0] || 
-               'User',
-    avatar_url: supabaseUser.user_metadata?.avatar_url || 
-                supabaseUser.user_metadata?.picture || 
-                null,
+    full_name: supabaseUser.user_metadata?.full_name ||
+      supabaseUser.user_metadata?.name ||
+      supabaseUser.email?.split('@')[0] ||
+      'User',
+    avatar_url: supabaseUser.user_metadata?.avatar_url ||
+      supabaseUser.user_metadata?.picture ||
+      null,
     role: 'FREE_USER',
     created_at: supabaseUser.created_at || new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -30,16 +30,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  
+
   const supabase = useMemo(() => createClient(), [])
-  
+
   // Track fetch state
   const fetchPromiseRef = useRef<Promise<User> | null>(null)
 
   // Ensure user profile exists and sync avatar from Google
   const ensureUserProfile = useCallback(async (supabaseUser: SupabaseUser): Promise<boolean> => {
     const fallbackUser = authUserToUser(supabaseUser)
-    
+
     try {
       // First check if profile exists
       const { data: existingProfile } = await supabase
@@ -50,13 +50,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (existingProfile) {
         // Profile exists - update avatar if we have one from Google and DB doesn't
-        const googleAvatar = supabaseUser.user_metadata?.avatar_url || 
-                            supabaseUser.user_metadata?.picture
-        
+        const googleAvatar = supabaseUser.user_metadata?.avatar_url ||
+          supabaseUser.user_metadata?.picture
+
         if (googleAvatar && !existingProfile.avatar_url) {
           await supabase
             .from('users')
-            .update({ 
+            .update({
               avatar_url: googleAvatar,
               updated_at: new Date().toISOString()
             })
@@ -75,12 +75,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           avatar_url: fallbackUser.avatar_url,
           role: 'FREE_USER',
         })
-      
+
       if (error && !error.message.includes('duplicate')) {
         console.warn('useAuth: Could not create profile:', error.message)
         return false
       }
-      
+
       return true
     } catch (err) {
       console.warn('useAuth: Profile ensure error:', err)
@@ -90,37 +90,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch user profile - with deduplication
   const fetchUserProfile = useCallback(async (supabaseUser: SupabaseUser): Promise<User> => {
-    console.log('useAuth: Fetching profile for user:', supabaseUser.id)
-    
+    // console.log('useAuth: Fetching profile for user:', supabaseUser.id)
+
     // Create fallback user from auth data
     const fallbackUser = authUserToUser(supabaseUser)
-    
+
     try {
       // First, ensure the profile exists and sync avatar
       await ensureUserProfile(supabaseUser)
-      
+
       // Then fetch it
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', supabaseUser.id)
         .maybeSingle()
-      
+
       if (error) {
         console.warn('useAuth: Database error, using fallback:', error.message)
         return fallbackUser
       }
-      
+
       if (data) {
-        console.log('useAuth: Profile fetched:', data)
+        // console.log('useAuth: Profile fetched:', data)
         // Merge avatar_url from Google if not in DB
         if (!data.avatar_url && fallbackUser.avatar_url) {
           data.avatar_url = fallbackUser.avatar_url
         }
         return data as User
       }
-      
-      console.log('useAuth: No profile in DB, using fallback')
+
+      // console.log('useAuth: No profile in DB, using fallback')
       return fallbackUser
     } catch (err) {
       console.warn('useAuth: Fetch error, using fallback:', err)
@@ -131,31 +131,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initialize auth state
   useEffect(() => {
     let mounted = true
-    
+
     const initAuth = async () => {
-      console.log('useAuth: Initializing auth...')
-      
+      // console.log('useAuth: Initializing auth...')
+
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        console.log('useAuth: Session:', session ? 'exists' : 'none')
-        
+        // console.log('useAuth: Session:', session ? 'exists' : 'none')
+
         if (session?.user && mounted) {
           if (!fetchPromiseRef.current) {
             fetchPromiseRef.current = fetchUserProfile(session.user)
           }
           const userProfile = await fetchPromiseRef.current
           fetchPromiseRef.current = null
-          
+
           if (mounted) {
             setUser(userProfile)
-            console.log('useAuth: User set:', userProfile)
+            // console.log('useAuth: User set:', userProfile)
           }
         }
       } catch (error) {
         console.error('useAuth: Init error:', error)
       } finally {
         if (mounted) {
-          console.log('useAuth: Setting loading=false')
+          // console.log('useAuth: Setting loading=false')
           setLoading(false)
         }
       }
@@ -163,19 +163,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('useAuth: Auth changed:', event)
-        
+        // console.log('useAuth: Auth changed:', event)
+
         if (!mounted) return
-        
+
         if (event === 'SIGNED_OUT') {
           setUser(null)
           setLoading(false)
           fetchPromiseRef.current = null
           return
         }
-        
+
         if (event === 'TOKEN_REFRESHED') {
-          console.log('useAuth: Token refreshed')
+          // console.log('useAuth: Token refreshed')
           return
         }
       }
@@ -215,7 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
     if (error) throw new Error(error.message)
     if (!data.user) throw new Error('Gagal membuat akun')
-    
+
     try {
       await supabase.from('users').insert({
         id: data.user.id,
