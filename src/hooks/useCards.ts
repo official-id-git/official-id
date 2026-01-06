@@ -324,7 +324,7 @@ export function useCards() {
 
           // Generate QR code
           if (retryCard) {
-            const publicUrl = getPublicCardUrl(retryCard.username || retryCard.id) // Use username if available
+            const publicUrl = getPublicCardUrl(retryCard.id, retryCard.username) // Use username if available
             const qrCodeUrl = await generateQRCode(publicUrl)
 
             const { data: updatedCard } = await supabase
@@ -342,7 +342,7 @@ export function useCards() {
       }
 
       // Generate QR code
-      const publicUrl = getPublicCardUrl(newCard.username || newCard.id)
+      const publicUrl = getPublicCardUrl(newCard.id, newCard.username)
       const qrCodeUrl = await generateQRCode(publicUrl)
 
       // Update card with QR code
@@ -429,7 +429,7 @@ export function useCards() {
 
       if (cardData.username && data) {
         // regenerate QR
-        const publicUrl = getPublicCardUrl(cardData.username)
+        const publicUrl = getPublicCardUrl(id, cardData.username)
         const qrCodeUrl = await generateQRCode(publicUrl)
 
         await supabase
@@ -492,7 +492,7 @@ export function useCards() {
 
       if (!card) throw new Error('Card not found')
 
-      const publicUrl = getPublicCardUrl(card.username || card.id)
+      const publicUrl = getPublicCardUrl(card.id, card.username)
       const qrCodeUrl = await generateQRCode(publicUrl)
 
       const { error: updateError } = await supabase

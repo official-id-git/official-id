@@ -66,9 +66,12 @@ export async function downloadQRCode(url: string, filename: string): Promise<voi
 /**
  * Get public card URL
  */
-export function getPublicCardUrl(cardId: string): string {
+export function getPublicCardUrl(cardId: string, username?: string | null): string {
   const baseUrl = typeof window !== 'undefined'
     ? window.location.origin
     : process.env.NEXT_PUBLIC_APP_URL || 'https://official.id'
-  return `${baseUrl}/c/${cardId}`
+
+  // Prefer username if available, otherwise use ID
+  const slug = username || cardId
+  return `${baseUrl}/c/${slug}`
 }

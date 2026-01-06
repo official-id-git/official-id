@@ -67,7 +67,7 @@ export default function CardDetailPage() {
         cardName: card.full_name,
         cardTitle: card.job_title,
         cardCompany: card.company,
-        cardUrl: getPublicCardUrl(card.id),
+        cardUrl: getPublicCardUrl(card.id, card.username),
         message: shareMessage || undefined
       })
 
@@ -92,7 +92,7 @@ export default function CardDetailPage() {
   const handleShareToLinkedIn = () => {
     if (!card) return
 
-    const publicUrl = getPublicCardUrl(card.id)
+    const publicUrl = getPublicCardUrl(card.id, card.username)
     const title = `${card.full_name} - Official ID`
     const summary = `🎯 Lihat kartu bisnis digital saya!\n\n👤 ${card.full_name}${card.job_title ? `\n💼 ${card.job_title}` : ''}${card.company ? `\n🏢 ${card.company}` : ''}\n\n📇 Buat kartu bisnis digital Anda sendiri di Official ID!`
 
@@ -129,7 +129,7 @@ export default function CardDetailPage() {
 
   const copyLink = async () => {
     if (!card) return
-    const url = getPublicCardUrl(card.id)
+    const url = getPublicCardUrl(card.id, card.username)
     await navigator.clipboard.writeText(url)
     alert('Link berhasil disalin!')
   }
@@ -145,7 +145,7 @@ export default function CardDetailPage() {
     )
   }
 
-  const publicUrl = getPublicCardUrl(card.id)
+  const publicUrl = getPublicCardUrl(card.id, card.username)
   const socialLinks = (card.social_links as Record<string, string>) || {}
   const template = card.template || 'professional'
 

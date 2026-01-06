@@ -20,7 +20,7 @@ export function CardList({ cards, onDelete }: CardListProps) {
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Yakin ingin menghapus kartu "${name}"?`)) return
-    
+
     setDeletingId(id)
     const success = await deleteCard(id)
     if (success && onDelete) {
@@ -39,8 +39,8 @@ export function CardList({ cards, onDelete }: CardListProps) {
     setDownloadingId(null)
   }
 
-  const copyLink = async (cardId: string) => {
-    const url = getPublicCardUrl(cardId)
+  const copyLink = async (cardId: string, username?: string) => {
+    const url = getPublicCardUrl(cardId, username)
     await navigator.clipboard.writeText(url)
     alert('Link berhasil disalin!')
   }
@@ -144,7 +144,7 @@ export function CardList({ cards, onDelete }: CardListProps) {
               Edit
             </Link>
             <button
-              onClick={() => copyLink(card.id)}
+              onClick={() => copyLink(card.id, card.username)}
               className="px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
               title="Salin Link"
             >
