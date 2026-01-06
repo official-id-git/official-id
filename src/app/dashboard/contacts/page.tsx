@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { useContacts, Contact, ContactInsert } from '@/hooks/useContacts'
+import { Scan, UserPlus, Send, Mail, Info } from 'lucide-react'
 import { useCards } from '@/hooks/useCards'
 import { ImageUpload } from '@/components/ui/ImageUpload'
 import BottomNavigation from '@/components/layout/BottomNavigation'
@@ -61,9 +62,9 @@ export default function ContactsPage() {
   const handleScan = async () => {
     if (!scanImageUrl) return
     setScanning(true)
-    
+
     const result = await scanBusinessCard(scanImageUrl)
-    
+
     if (result.success && result.contact) {
       setScanResult(result.contact)
       setScanRawText(result.rawText || '')
@@ -103,7 +104,7 @@ export default function ContactsPage() {
 
   const handleDelete = async (contact: Contact) => {
     if (!confirm(`Hapus kontak ${contact.name}?`)) return
-    
+
     const success = await deleteContact(contact.id)
     if (success) {
       setMessage({ type: 'success', text: 'Kontak berhasil dihapus' })
@@ -185,6 +186,36 @@ export default function ContactsPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
+        {/* New Info Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-5">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-blue-100 rounded-xl text-blue-600">
+                <Scan className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">Tambah Kontak Mudah</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Gunakan tombol <span className="font-medium text-purple-700"><Scan className="w-3 h-3 inline mx-1" /> Scan</span> di atas untuk memindai kartu nama fisik secara otomatis, atau <span className="font-medium text-blue-700"><UserPlus className="w-3 h-3 inline mx-1" /> Tambah Manual</span> untuk input data langsung.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-100 rounded-2xl p-5">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-purple-100 rounded-xl text-purple-600">
+                <Send className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">Kirim Kartu Digital</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Kirim kartu nama digital Anda ke kontak yang tersimpan menggunakan email profesional. Anda juga dapat menyertakan <span className="font-medium text-gray-900">pesan personal</span> saat mengirim.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
         {/* Message */}
         {message && (
           <div className={`mb-4 p-4 rounded-xl ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
@@ -227,12 +258,10 @@ export default function ContactsPage() {
               <div key={contact.id} className="bg-white rounded-2xl shadow-sm p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      contact.source === 'scan' ? 'bg-purple-100' : 'bg-blue-100'
-                    }`}>
-                      <span className={`text-lg font-semibold ${
-                        contact.source === 'scan' ? 'text-purple-600' : 'text-blue-600'
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${contact.source === 'scan' ? 'bg-purple-100' : 'bg-blue-100'
                       }`}>
+                      <span className={`text-lg font-semibold ${contact.source === 'scan' ? 'text-purple-600' : 'text-blue-600'
+                        }`}>
                         {contact.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
@@ -342,41 +371,41 @@ export default function ContactsPage() {
             ) : (
               <>
                 <p className="text-green-600 mb-4">✓ Data berhasil di-extract. Periksa dan simpan:</p>
-                
+
                 <div className="space-y-3">
                   <input
                     type="text"
                     placeholder="Nama *"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
                   />
                   <input
                     type="email"
                     placeholder="Email"
                     value={formData.email || ''}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
                   />
                   <input
                     type="tel"
                     placeholder="Telepon"
                     value={formData.phone || ''}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
                   />
                   <input
                     type="text"
                     placeholder="Perusahaan"
                     value={formData.company || ''}
-                    onChange={(e) => setFormData({...formData, company: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
                   />
                   <input
                     type="text"
                     placeholder="Jabatan"
                     value={formData.job_title || ''}
-                    onChange={(e) => setFormData({...formData, job_title: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -427,35 +456,35 @@ export default function ContactsPage() {
                 type="text"
                 placeholder="Nama *"
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
               />
               <input
                 type="email"
                 placeholder="Email"
                 value={formData.email || ''}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
               />
               <input
                 type="tel"
                 placeholder="Telepon"
                 value={formData.phone || ''}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
               />
               <input
                 type="text"
                 placeholder="Perusahaan"
                 value={formData.company || ''}
-                onChange={(e) => setFormData({...formData, company: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
               />
               <input
                 type="text"
                 placeholder="Jabatan"
                 value={formData.job_title || ''}
-                onChange={(e) => setFormData({...formData, job_title: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -488,13 +517,13 @@ export default function ContactsPage() {
 }
 
 // Send Card Modal Component
-function SendCardModal({ 
-  contact, 
-  cards, 
-  onSend, 
+function SendCardModal({
+  contact,
+  cards,
+  onSend,
   onClose,
-  loading 
-}: { 
+  loading
+}: {
   contact: Contact
   cards: BusinessCard[]
   onSend: (cardId: string, message?: string) => void
