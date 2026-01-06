@@ -17,9 +17,11 @@ function OrgAvatar({ org, colorClass }: { org: Organization, colorClass: string 
   const textColor = textColorMatch ? textColorMatch[0] : 'text-gray-600'
   const bgClass = colorClass.replace(/text-\w+-\d+/, '').trim()
 
+  const sizeClass = "w-12 h-12 sm:w-14 sm:h-14"
+
   if (org.logo_url && !imgError) {
     return (
-      <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
+      <div className={`${sizeClass} rounded-xl overflow-hidden flex-shrink-0`}>
         <img
           src={org.logo_url}
           alt={org.name}
@@ -31,8 +33,8 @@ function OrgAvatar({ org, colorClass }: { org: Organization, colorClass: string 
   }
 
   return (
-    <div className={`w-14 h-14 bg-gradient-to-br ${bgClass} rounded-xl flex items-center justify-center flex-shrink-0`}>
-      <span className={`text-xl font-semibold ${textColor}`}>{org.name.charAt(0)}</span>
+    <div className={`${sizeClass} bg-gradient-to-br ${bgClass} rounded-xl flex items-center justify-center flex-shrink-0`}>
+      <span className={`text-lg sm:text-xl font-semibold ${textColor}`}>{org.name.charAt(0)}</span>
     </div>
   )
 }
@@ -153,10 +155,10 @@ export default function OrganizationsPage() {
       <div className="bg-white border-b px-4 py-6">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Circle</h1>
-              <p className="text-gray-500 text-sm mt-1">
-                {isPaidUser ? 'Kelola dan jelajahi Circle' : 'Jelajahi dan bergabung dengan Circle'}
+            <div className="flex-1 min-w-0 mr-4">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">Circle</h1>
+              <p className="text-gray-500 text-sm mt-1 truncate">
+                {isPaidUser ? 'Kelola dan jelajahi Circle' : 'Jelajahi Circle'}
               </p>
             </div>
             {isPaidUser && (
@@ -237,19 +239,26 @@ export default function OrganizationsPage() {
                   <h3 className="font-semibold text-gray-700 mb-3">Circle yang Saya Kelola</h3>
                   <div className="grid gap-4">
                     {myOrgs.map((org) => (
-                      <Link key={org.id} href={`/dashboard/organizations/${org.id}`} className="bg-white rounded-2xl p-5 shadow-sm border hover:shadow-md transition-shadow">
-                        <div className="flex items-center gap-4">
+                      <Link key={org.id} href={`/dashboard/organizations/${org.id}`} className="block bg-white rounded-2xl p-4 sm:p-5 shadow-sm border hover:shadow-md transition-shadow relative overflow-hidden group">
+                        <div className="flex items-center gap-3 sm:gap-4">
                           <OrgAvatar org={org} colorClass="from-purple-100 to-purple-200 text-purple-600" />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-gray-900 truncate">{org.name}</h3>
-                              <span className={`px-2 py-0.5 text-xs rounded-full ${org.is_public ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-semibold text-gray-900 truncate max-w-full">{org.name}</h3>
+                              <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${org.is_public ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
                                 {org.is_public ? 'Publik' : 'Privat'}
                               </span>
                             </div>
                             <p className="text-gray-500 text-sm truncate mt-1">{org.description}</p>
                           </div>
-                          <span className="px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">Owner</span>
+
+                          {/* Desktop: Owner Badge, Mobile: Chevron */}
+                          <div className="flex-shrink-0 flex items-center">
+                            <span className="hidden sm:inline-block px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">Owner</span>
+                            <svg className="w-5 h-5 text-gray-400 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
                         </div>
                       </Link>
                     ))}
@@ -261,14 +270,21 @@ export default function OrganizationsPage() {
                   <h3 className="font-semibold text-gray-700 mb-3">Circle yang Diikuti</h3>
                   <div className="grid gap-4">
                     {joinedOrgs.map((org) => (
-                      <Link key={org.id} href={`/dashboard/organizations/${org.id}`} className="bg-white rounded-2xl p-5 shadow-sm border hover:shadow-md transition-shadow">
-                        <div className="flex items-center gap-4">
+                      <Link key={org.id} href={`/dashboard/organizations/${org.id}`} className="block bg-white rounded-2xl p-4 sm:p-5 shadow-sm border hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-3 sm:gap-4">
                           <OrgAvatar org={org} colorClass="from-green-100 to-green-200 text-green-600" />
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-gray-900 truncate">{org.name}</h3>
                             <p className="text-gray-500 text-sm truncate mt-1">{org.description}</p>
                           </div>
-                          <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">Member</span>
+
+                          {/* Desktop: Member Badge, Mobile: Chevron */}
+                          <div className="flex-shrink-0 flex items-center">
+                            <span className="hidden sm:inline-block px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">Member</span>
+                            <svg className="w-5 h-5 text-gray-400 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
                         </div>
                       </Link>
                     ))}
@@ -290,20 +306,24 @@ export default function OrganizationsPage() {
                 <p className="text-sm text-purple-800">Anda diundang untuk bergabung dengan Circle privat berikut.</p>
               </div>
               {invitedOrgs.map((org) => (
-                <div key={org.id} className="bg-white rounded-2xl p-5 shadow-sm border border-purple-200">
-                  <div className="flex items-center gap-4">
-                    <OrgAvatar org={org} colorClass="from-purple-100 to-purple-200 text-purple-600" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-gray-900 truncate">{org.name}</h3>
-                        <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">Privat</span>
+                <div key={org.id} className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-purple-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-center sm:text-left">
+
+                    <div className="flex items-center gap-3 sm:gap-4 w-full">
+                      <OrgAvatar org={org} colorClass="from-purple-100 to-purple-200 text-purple-600" />
+                      <div className="flex-1 min-w-0 text-left">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-gray-900 truncate">{org.name}</h3>
+                          <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full flex-shrink-0">Privat</span>
+                        </div>
+                        <p className="text-gray-500 text-sm truncate mt-1">{org.description}</p>
                       </div>
-                      <p className="text-gray-500 text-sm truncate mt-1">{org.description}</p>
                     </div>
+
                     <button
                       onClick={() => handleJoinOrganization(org.id, true)}
                       disabled={joiningOrgId === org.id}
-                      className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50"
+                      className="w-full sm:w-auto px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50 whitespace-nowrap"
                     >
                       {joiningOrgId === org.id ? 'Memproses...' : 'Terima Undangan'}
                     </button>
@@ -326,31 +346,38 @@ export default function OrganizationsPage() {
                 const isPending = status === 'PENDING'
 
                 return (
-                  <div key={org.id} className="bg-white rounded-2xl p-5 shadow-sm border">
-                    <div className="flex items-center gap-4">
-                      <OrgAvatar org={org} colorClass="from-blue-100 to-blue-200 text-blue-600" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-gray-900 truncate">{org.name}</h3>
-                          <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Publik</span>
+                  <div key={org.id} className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-center sm:text-left">
+
+                      <div className="flex items-center gap-3 sm:gap-4 w-full">
+                        <OrgAvatar org={org} colorClass="from-blue-100 to-blue-200 text-blue-600" />
+                        <div className="flex-1 min-w-0 text-left">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-gray-900 truncate">{org.name}</h3>
+                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full flex-shrink-0">Publik</span>
+                          </div>
+                          <p className="text-gray-500 text-sm truncate mt-1">{org.description}</p>
                         </div>
-                        <p className="text-gray-500 text-sm truncate mt-1">{org.description}</p>
                       </div>
-                      {status === 'OWNER' ? (
-                        <Link href={`/dashboard/organizations/${org.id}`} className="px-4 py-2 bg-blue-100 text-blue-700 text-sm font-medium rounded-xl">Kelola</Link>
-                      ) : isJoined ? (
-                        <Link href={`/dashboard/organizations/${org.id}`} className="px-4 py-2 bg-green-100 text-green-700 text-sm font-medium rounded-xl">Lihat</Link>
-                      ) : isPending ? (
-                        <span className="px-4 py-2 bg-yellow-100 text-yellow-700 text-sm font-medium rounded-xl">Menunggu</span>
-                      ) : (
-                        <button
-                          onClick={() => handleJoinOrganization(org.id)}
-                          disabled={joiningOrgId === org.id}
-                          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50"
-                        >
-                          {joiningOrgId === org.id ? 'Memproses...' : 'Gabung'}
-                        </button>
-                      )}
+
+                      <div className="w-full sm:w-auto flex flex-shrink-0 justify-end">
+                        {status === 'OWNER' ? (
+                          <Link href={`/dashboard/organizations/${org.id}`} className="block w-full sm:w-auto text-center px-4 py-2 bg-blue-100 text-blue-700 text-sm font-medium rounded-xl">Kelola</Link>
+                        ) : isJoined ? (
+                          <Link href={`/dashboard/organizations/${org.id}`} className="block w-full sm:w-auto text-center px-4 py-2 bg-green-100 text-green-700 text-sm font-medium rounded-xl">Lihat</Link>
+                        ) : isPending ? (
+                          <span className="block w-full sm:w-auto text-center px-4 py-2 bg-yellow-100 text-yellow-700 text-sm font-medium rounded-xl">Menunggu</span>
+                        ) : (
+                          <button
+                            onClick={() => handleJoinOrganization(org.id)}
+                            disabled={joiningOrgId === org.id}
+                            className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap"
+                          >
+                            {joiningOrgId === org.id ? 'Memproses...' : 'Gabung'}
+                          </button>
+                        )}
+                      </div>
+
                     </div>
                   </div>
                 )
