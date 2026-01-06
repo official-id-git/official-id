@@ -342,7 +342,7 @@ export function CardForm({ card, mode }: CardFormProps) {
         <div className="flex flex-col items-center">
           {/* Carousel Controls */}
           <div className="w-full">
-            <div className="overflow-hidden relative flex items-center justify-center bg-gray-50 rounded-xl border border-gray-100 py-12 px-4">
+            <div className="overflow-hidden relative flex items-center justify-center py-4">
               {/* Live Preview */}
               <div className="w-full max-w-sm transform scale-100 transition-transform">
                 <CardPreview
