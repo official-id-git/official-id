@@ -30,9 +30,9 @@ export default function SettingsPage() {
       <div className="bg-gradient-to-br from-blue-600 to-blue-700 px-4 pt-12 pb-8">
         <div className="max-w-md mx-auto flex items-center gap-4">
           {user.avatar_url ? (
-            <img 
-              src={user.avatar_url} 
-              alt={user.full_name} 
+            <img
+              src={user.avatar_url}
+              alt={user.full_name}
               className="w-16 h-16 rounded-full object-cover border-2 border-white"
             />
           ) : (
@@ -100,8 +100,52 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Legal Section */}
+        <div>
+          <h3 className="font-semibold text-gray-900 mb-3 px-1">Tentang</h3>
+          <div className="space-y-2">
+            {/* Privacy Policy */}
+            <Link
+              href="/privacy-policy"
+              className="flex items-center gap-3 p-4 bg-white rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="font-medium text-gray-900">Kebijakan Privasi</p>
+                <p className="text-sm text-gray-500">Baca kebijakan privasi kami</p>
+              </div>
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+
+            {/* Terms & Conditions */}
+            <Link
+              href="/terms"
+              className="flex items-center gap-3 p-4 bg-white rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="font-medium text-gray-900">Syarat & Ketentuan</p>
+                <p className="text-sm text-gray-500">Baca syarat dan ketentuan kami</p>
+              </div>
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+
         {/* Logout Button */}
-        <button 
+        <button
           onClick={signOut}
           className="w-full flex items-center justify-center gap-2 p-4 bg-red-50 text-red-600 rounded-xl font-medium hover:bg-red-100 transition-colors"
         >
