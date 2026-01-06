@@ -152,24 +152,36 @@ export default function CardDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header - Simplified */}
+      {/* Header - Simplified */}
       <header className="bg-white shadow sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-xl font-bold text-gray-900">{card.full_name}</h1>
+          {/* Navigation Row */}
+          <div className="flex justify-between items-center mb-4">
+            <Link
+              href="/dashboard/cards"
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              ← Kembali ke Daftar Kartu
+            </Link>
             <div className="flex gap-2">
               <Link
                 href={`/dashboard/cards/${card.id}/edit`}
-                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Edit
               </Link>
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 border border-red-300 text-red-600 text-sm rounded-lg hover:bg-red-50"
+                className="px-4 py-2 border border-red-300 text-red-600 text-sm rounded-lg hover:bg-red-50 transition-colors"
               >
                 Hapus
               </button>
             </div>
+          </div>
+
+          {/* Title Row */}
+          <div>
+            <h1 className="text-xl font-bold text-gray-900 break-words">{card.full_name}</h1>
           </div>
         </div>
       </header>

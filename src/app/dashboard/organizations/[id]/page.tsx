@@ -149,43 +149,11 @@ export default function OrganizationDetailPage() {
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <Link href="/dashboard/organizations" className="text-sm text-blue-600 hover:text-blue-700">
-                ← Kembali ke Daftar Circle
-              </Link>
-              <div className="flex items-center gap-4 mt-3">
-                {org.logo_url ? (
-                  <Image
-                    src={org.logo_url}
-                    alt={org.name}
-                    width={64}
-                    height={64}
-                    className="w-16 h-16 rounded-xl object-cover"
-                  />
-                ) : (
-                  <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl flex items-center justify-center">
-                    <span className="text-2xl font-bold text-purple-600">
-                      {org.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{org.name}</h1>
-                  <div className="flex items-center gap-2 mt-1">
-                    {org.category && (
-                      <span className="text-sm text-gray-500">{org.category}</span>
-                    )}
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${org.is_public
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-purple-100 text-purple-700'
-                      }`}>
-                      {org.is_public ? 'Publik' : 'Privat'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* Navigation Row */}
+          <div className="flex justify-between items-center mb-6">
+            <Link href="/dashboard/organizations" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+              ← Kembali ke Daftar Circle
+            </Link>
             <div className="flex gap-2">
               {membership.isOwner && (
                 <>
@@ -211,6 +179,39 @@ export default function OrganizationDetailPage() {
                   Keluar
                 </button>
               )}
+            </div>
+          </div>
+
+          {/* Org Info Row */}
+          <div className="flex items-start gap-4">
+            {org.logo_url ? (
+              <Image
+                src={org.logo_url}
+                alt={org.name}
+                width={64}
+                height={64}
+                className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-2xl font-bold text-purple-600">
+                  {org.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl font-bold text-gray-900 break-words">{org.name}</h1>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {org.category && (
+                  <span className="text-sm text-gray-500">{org.category}</span>
+                )}
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${org.is_public
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-purple-100 text-purple-700'
+                  }`}>
+                  {org.is_public ? 'Publik' : 'Privat'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
