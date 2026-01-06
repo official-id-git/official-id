@@ -83,7 +83,7 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
   }
 
   const handleRemove = async (memberId: string) => {
-    if (!confirm('Yakin ingin menghapus anggota ini dari organisasi?')) return
+    if (!confirm('Yakin ingin menghapus anggota ini dari Circle?')) return
     setProcessingId(memberId)
     const success = await removeMember(memberId)
     if (success && onUpdate) {
@@ -137,15 +137,15 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
     const textColor = template === 'minimal' ? 'text-gray-900' : 'text-white'
 
     return (
-      <Link 
+      <Link
         href={`/c/${card.id}`}
         className="block group"
       >
         <div className={`bg-gradient-to-br ${bgColor} rounded-xl p-3 shadow-sm hover:shadow-md transition-all group-hover:scale-[1.02]`}>
           <div className="flex items-center gap-3">
             {card.profile_photo_url ? (
-              <img 
-                src={card.profile_photo_url} 
+              <img
+                src={card.profile_photo_url}
                 alt={card.full_name}
                 className="w-10 h-10 rounded-full object-cover border-2 border-white/30"
                 onError={(e) => {
@@ -202,7 +202,7 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
                     <Avatar user={m.users} />
                     <div>
                       <p className="font-medium text-gray-900">{m.users?.full_name || 'Unknown'}</p>
-                      <a 
+                      <a
                         href={`mailto:${m.users?.email}`}
                         className="text-sm text-blue-600 hover:underline"
                       >
@@ -253,8 +253,8 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
             {approvedMembers.map(member => {
               const m = member as MemberWithUser
               return (
-                <div 
-                  key={m.id} 
+                <div
+                  key={m.id}
                   className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors"
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -268,7 +268,7 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
                           </span>
                         )}
                       </p>
-                      <a 
+                      <a
                         href={`mailto:${m.users?.email}`}
                         className="text-sm text-blue-600 hover:underline truncate block"
                       >
@@ -332,7 +332,7 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b">
               <h3 className="text-lg font-semibold text-gray-900">Detail Anggota</h3>
-              <button 
+              <button
                 onClick={() => setSelectedMember(null)}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -354,7 +354,7 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
                 </h4>
                 {selectedMember.is_admin && (
                   <span className="inline-block mt-2 px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-full">
-                    Admin Organisasi
+                    Admin Circle
                   </span>
                 )}
               </div>
@@ -367,7 +367,7 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
                   </svg>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-gray-500">Email</p>
-                    <a 
+                    <a
                       href={`mailto:${selectedMember.users?.email}`}
                       className="text-blue-600 hover:underline truncate block"
                     >
@@ -383,12 +383,12 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
                   <div>
                     <p className="text-xs text-gray-500">Bergabung</p>
                     <p className="text-gray-900">
-                      {selectedMember.joined_at 
+                      {selectedMember.joined_at
                         ? new Date(selectedMember.joined_at).toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric'
-                          })
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })
                         : '-'}
                     </p>
                   </div>

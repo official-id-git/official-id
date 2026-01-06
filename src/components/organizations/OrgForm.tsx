@@ -27,7 +27,7 @@ const CATEGORIES = [
 export function OrgForm({ organization, mode }: OrgFormProps) {
   const router = useRouter()
   const { createOrganization, updateOrganization, loading, error } = useOrganizations()
-  
+
   const [formData, setFormData] = useState({
     name: organization?.name || '',
     description: organization?.description || '',
@@ -41,7 +41,7 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
-    
+
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked
       setFormData(prev => ({ ...prev, [name]: checked }))
@@ -51,8 +51,8 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
   }
 
   const handleVisibilityChange = (isPublic: boolean) => {
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       is_public: isPublic,
       // Private org always requires approval (via invitation)
       require_approval: isPublic ? prev.require_approval : true
@@ -68,7 +68,7 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
     setFormError(null)
 
     if (!formData.name.trim()) {
-      setFormError('Nama organisasi wajib diisi')
+      setFormError('Nama Circle wajib diisi')
       return
     }
 
@@ -100,22 +100,22 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
 
       {/* Logo Upload */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Logo Organisasi</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Logo Circle</h3>
         <ImageUpload
           value={formData.logo_url}
           onChange={handleLogoChange}
-          label="Upload logo organisasi"
+          label="Upload logo Circle"
         />
       </div>
 
       {/* Basic Information */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Organisasi</h3>
-        
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Circle</h3>
+
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nama Organisasi <span className="text-red-500">*</span>
+              Nama Circle <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -138,7 +138,7 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
               onChange={handleChange}
               rows={4}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Deskripsi singkat tentang organisasi..."
+              placeholder="Deskripsi singkat tentang Circle..."
             />
           </div>
 
@@ -163,23 +163,21 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
 
       {/* Visibility Settings */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Visibilitas Organisasi</h3>
-        
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Visibilitas Circle</h3>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Public Option */}
           <button
             type="button"
             onClick={() => handleVisibilityChange(true)}
-            className={`p-4 rounded-xl border-2 text-left transition-all ${
-              formData.is_public 
-                ? 'border-blue-600 bg-blue-50' 
+            className={`p-4 rounded-xl border-2 text-left transition-all ${formData.is_public
+                ? 'border-blue-600 bg-blue-50'
                 : 'border-gray-200 hover:border-gray-300'
-            }`}
+              }`}
           >
             <div className="flex items-start gap-3">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                formData.is_public ? 'bg-blue-100' : 'bg-gray-100'
-              }`}>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${formData.is_public ? 'bg-blue-100' : 'bg-gray-100'
+                }`}>
                 <svg className={`w-5 h-5 ${formData.is_public ? 'text-blue-600' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -189,7 +187,7 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
                   Publik
                 </p>
                 <p className={`text-sm mt-0.5 ${formData.is_public ? 'text-blue-700' : 'text-gray-500'}`}>
-                  Siapa saja dapat melihat dan bergabung dengan organisasi ini
+                  Siapa saja dapat melihat dan bergabung dengan Circle ini
                 </p>
               </div>
             </div>
@@ -199,16 +197,14 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
           <button
             type="button"
             onClick={() => handleVisibilityChange(false)}
-            className={`p-4 rounded-xl border-2 text-left transition-all ${
-              !formData.is_public 
-                ? 'border-purple-600 bg-purple-50' 
+            className={`p-4 rounded-xl border-2 text-left transition-all ${!formData.is_public
+                ? 'border-purple-600 bg-purple-50'
                 : 'border-gray-200 hover:border-gray-300'
-            }`}
+              }`}
           >
             <div className="flex items-start gap-3">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                !formData.is_public ? 'bg-purple-100' : 'bg-gray-100'
-              }`}>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${!formData.is_public ? 'bg-purple-100' : 'bg-gray-100'
+                }`}>
                 <svg className={`w-5 h-5 ${!formData.is_public ? 'text-purple-600' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
@@ -233,11 +229,11 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div className="text-sm text-purple-800">
-                <p className="font-medium mb-1">Organisasi Privat</p>
+                <p className="font-medium mb-1">Circle Privat</p>
                 <ul className="list-disc list-inside space-y-1 text-purple-700">
                   <li>Tidak muncul di direktori publik</li>
                   <li>Anggota harus diundang via email</li>
-                  <li>Hanya anggota yang dapat melihat detail organisasi</li>
+                  <li>Hanya anggota yang dapat melihat detail Circle</li>
                 </ul>
               </div>
             </div>
@@ -258,7 +254,7 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
               <div>
                 <span className="font-medium text-gray-900">Perlu Persetujuan Admin</span>
                 <p className="text-sm text-gray-500 mt-0.5">
-                  {formData.require_approval 
+                  {formData.require_approval
                     ? 'Anggota baru harus disetujui oleh admin sebelum bergabung'
                     : 'Siapa saja dapat langsung bergabung tanpa persetujuan'}
                 </p>
@@ -282,7 +278,7 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
           disabled={loading}
           className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {loading ? 'Menyimpan...' : mode === 'create' ? 'Buat Organisasi' : 'Simpan Perubahan'}
+          {loading ? 'Menyimpan...' : mode === 'create' ? 'Buat Circle' : 'Simpan Perubahan'}
         </button>
       </div>
     </form>

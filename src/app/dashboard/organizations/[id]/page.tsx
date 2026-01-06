@@ -22,18 +22,18 @@ export default function OrganizationDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
-  const { 
-    fetchOrganization, 
-    fetchMembers, 
+  const {
+    fetchOrganization,
+    fetchMembers,
     checkMembership,
     deleteOrganization,
     leaveOrganization,
     inviteMember,
     fetchInvitations,
     cancelInvitation,
-    loading 
+    loading
   } = useOrganizations()
-  
+
   const [org, setOrg] = useState<Organization | null>(null)
   const [members, setMembers] = useState<OrganizationMember[]>([])
   const [invitations, setInvitations] = useState<Invitation[]>([])
@@ -78,8 +78,8 @@ export default function OrganizationDetailPage() {
 
   const handleDelete = async () => {
     if (!org) return
-    if (!confirm(`Yakin ingin menghapus organisasi "${org.name}"? Semua anggota akan dihapus.`)) return
-    
+    if (!confirm(`Yakin ingin menghapus Circle "${org.name}"? Semua anggota akan dihapus.`)) return
+
     const success = await deleteOrganization(org.id)
     if (success) {
       router.push('/dashboard/organizations')
@@ -88,8 +88,8 @@ export default function OrganizationDetailPage() {
 
   const handleLeave = async () => {
     if (!org) return
-    if (!confirm(`Yakin ingin keluar dari organisasi "${org.name}"?`)) return
-    
+    if (!confirm(`Yakin ingin keluar dari Circle "${org.name}"?`)) return
+
     const success = await leaveOrganization(org.id)
     if (success) {
       router.push('/dashboard/organizations')
@@ -123,7 +123,7 @@ export default function OrganizationDetailPage() {
 
   const handleCancelInvitation = async (invitationId: string) => {
     if (!confirm('Batalkan undangan ini?')) return
-    
+
     const success = await cancelInvitation(invitationId)
     if (success) {
       setInvitations(prev => prev.filter(i => i.id !== invitationId))
@@ -152,7 +152,7 @@ export default function OrganizationDetailPage() {
           <div className="flex justify-between items-start">
             <div>
               <Link href="/dashboard/organizations" className="text-sm text-blue-600 hover:text-blue-700">
-                ← Kembali ke Daftar Organisasi
+                ← Kembali ke Daftar Circle
               </Link>
               <div className="flex items-center gap-4 mt-3">
                 {org.logo_url ? (
@@ -176,11 +176,10 @@ export default function OrganizationDetailPage() {
                     {org.category && (
                       <span className="text-sm text-gray-500">{org.category}</span>
                     )}
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      org.is_public 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-purple-100 text-purple-700'
-                    }`}>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${org.is_public
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-purple-100 text-purple-700'
+                      }`}>
                       {org.is_public ? 'Publik' : 'Privat'}
                     </span>
                   </div>
@@ -266,7 +265,7 @@ export default function OrganizationDetailPage() {
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${org.is_public ? 'bg-green-500' : 'bg-purple-500'}`}></span>
                   <span className="text-gray-600">
-                    {org.is_public ? 'Organisasi publik' : 'Organisasi privat (undangan saja)'}
+                    {org.is_public ? 'Circle publik' : 'Circle privat (undangan saja)'}
                   </span>
                 </div>
                 {org.is_public && (
@@ -304,7 +303,7 @@ export default function OrganizationDetailPage() {
                 </h2>
                 <div className="space-y-3">
                   {invitations.map((inv) => (
-                    <div 
+                    <div
                       key={inv.id}
                       className="flex items-center justify-between p-3 bg-purple-50 rounded-xl border border-purple-100"
                     >
@@ -317,7 +316,7 @@ export default function OrganizationDetailPage() {
                         <div>
                           <p className="font-medium text-gray-900">{inv.email}</p>
                           <p className="text-xs text-gray-500">
-                            Diundang {new Date(inv.created_at).toLocaleDateString('id-ID')} • 
+                            Diundang {new Date(inv.created_at).toLocaleDateString('id-ID')} •
                             Expires {new Date(inv.expires_at).toLocaleDateString('id-ID')}
                           </p>
                         </div>
@@ -335,8 +334,8 @@ export default function OrganizationDetailPage() {
             )}
 
             {/* Members List */}
-            <MemberList 
-              members={members} 
+            <MemberList
+              members={members}
               isAdmin={membership.isAdmin}
               onUpdate={loadData}
             />
@@ -350,7 +349,7 @@ export default function OrganizationDetailPage() {
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Undang Anggota</h3>
-              <button 
+              <button
                 onClick={() => {
                   setShowInviteModal(false)
                   setInviteEmail('')
@@ -366,9 +365,9 @@ export default function OrganizationDetailPage() {
             </div>
 
             <p className="text-gray-600 text-sm mb-4">
-              {org.is_public 
-                ? 'Undang seseorang untuk bergabung dengan organisasi ini via email.'
-                : 'Organisasi privat hanya dapat diakses melalui undangan email.'}
+              {org.is_public
+                ? 'Undang seseorang untuk bergabung dengan Circle ini via email.'
+                : 'Circle privat hanya dapat diakses melalui undangan email.'}
             </p>
 
             {inviteError && (
@@ -397,7 +396,7 @@ export default function OrganizationDetailPage() {
                   required
                 />
                 <p className="text-xs text-gray-500 mt-2">
-                  Jika email sudah terdaftar, akan langsung ditambahkan sebagai anggota. 
+                  Jika email sudah terdaftar, akan langsung ditambahkan sebagai anggota.
                   Jika belum, undangan akan aktif saat mereka mendaftar.
                 </p>
               </div>

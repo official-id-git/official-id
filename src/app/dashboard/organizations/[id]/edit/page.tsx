@@ -43,10 +43,10 @@ export default function EditOrganizationPage() {
       <header className="bg-white shadow">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Link href={`/dashboard/organizations/${org.id}`} className="text-sm text-blue-600 hover:text-blue-700">
-            ← Kembali ke Detail Organisasi
+            ← Kembali ke Detail Circle
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900 mt-1">Edit Organisasi</h1>
-          <p className="text-gray-500 mt-1">Perbarui informasi organisasi Anda</p>
+          <h1 className="text-2xl font-bold text-gray-900 mt-1">Edit Circle</h1>
+          <p className="text-gray-500 mt-1">Perbarui informasi Circle Anda</p>
         </div>
       </header>
 
