@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { 
-  sendEmail, 
-  getCardScannedEmailTemplate, 
+import {
+  sendEmail,
+  getCardScannedEmailTemplate,
   getPaymentVerifiedEmailTemplate,
   getContactCardShareEmailTemplate,
   getOrganizationInviteEmailTemplate,
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
           scannerName: data.scannerName,
           scannerEmail: data.scannerEmail,
           cardName: card.full_name,
-          cardUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://pwa-official-id.vercel.app'}/c/${card.id}`
+          cardUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'}/c/${card.id}`
         })
 
         logData.recipient_email = card.users.email
@@ -153,9 +153,9 @@ export async function POST(request: NextRequest) {
 
     await supabase.from('email_logs').insert(logData)
 
-    return NextResponse.json({ 
-      success: emailResult.success, 
-      error: emailResult.error 
+    return NextResponse.json({
+      success: emailResult.success,
+      error: emailResult.error
     })
 
   } catch (error: any) {

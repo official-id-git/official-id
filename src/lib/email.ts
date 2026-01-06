@@ -3,7 +3,7 @@
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Official ID <noreply@officialid.app>'
-const APP_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://pwa-official-id.vercel.app'
+const APP_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'
 
 interface EmailOptions {
   to: string
@@ -302,7 +302,7 @@ export function getPaymentVerifiedEmailTemplate(data: {
   }).format(data.amount)
 
   return {
-    subject: isApproved 
+    subject: isApproved
       ? `✅ Pembayaran Anda telah disetujui - Selamat menjadi Pro!`
       : `❌ Pembayaran Anda ditolak`,
     html: `

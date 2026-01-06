@@ -1,0 +1,101 @@
+table_name,column_name,data_type,is_nullable,column_default
+business_cards,id,uuid,NO,uuid_generate_v4()
+business_cards,user_id,uuid,NO,null
+business_cards,full_name,text,NO,null
+business_cards,job_title,text,YES,null
+business_cards,company,text,YES,null
+business_cards,email,text,NO,null
+business_cards,phone,text,NO,null
+business_cards,website,text,YES,null
+business_cards,profile_photo_url,text,YES,null
+business_cards,social_links,jsonb,YES,'{}'::jsonb
+business_cards,is_public,boolean,NO,true
+business_cards,visible_fields,jsonb,YES,"'{""email"": true, ""phone"": true, ""website"": true, ""social_links"": true}'::jsonb"
+business_cards,qr_code_url,text,YES,null
+business_cards,scan_count,integer,NO,0
+business_cards,created_at,timestamp with time zone,NO,now()
+business_cards,updated_at,timestamp with time zone,NO,now()
+business_cards,template,character varying,YES,'professional'::character varying
+business_cards,address,text,YES,null
+business_cards,color_theme,text,YES,'ocean'::text
+contacts,id,uuid,NO,gen_random_uuid()
+contacts,user_id,uuid,NO,null
+contacts,name,character varying,NO,null
+contacts,email,character varying,YES,null
+contacts,phone,character varying,YES,null
+contacts,company,character varying,YES,null
+contacts,job_title,character varying,YES,null
+contacts,source,character varying,YES,'manual'::character varying
+contacts,scanned_image_url,text,YES,null
+contacts,notes,text,YES,null
+contacts,email_sent,boolean,YES,false
+contacts,email_sent_at,timestamp with time zone,YES,null
+contacts,created_at,timestamp with time zone,YES,now()
+contacts,updated_at,timestamp with time zone,YES,now()
+email_logs,id,uuid,NO,gen_random_uuid()
+email_logs,user_id,uuid,YES,null
+email_logs,recipient_email,character varying,NO,null
+email_logs,email_type,character varying,NO,null
+email_logs,subject,character varying,YES,null
+email_logs,status,character varying,YES,'pending'::character varying
+email_logs,metadata,jsonb,YES,null
+email_logs,error_message,text,YES,null
+email_logs,sent_at,timestamp with time zone,YES,null
+email_logs,created_at,timestamp with time zone,YES,now()
+organization_invitations,id,uuid,NO,uuid_generate_v4()
+organization_invitations,organization_id,uuid,NO,null
+organization_invitations,email,text,NO,null
+organization_invitations,invited_by,uuid,NO,null
+organization_invitations,status,USER-DEFINED,NO,'PENDING'::invitation_status
+organization_invitations,token,uuid,YES,uuid_generate_v4()
+organization_invitations,expires_at,timestamp with time zone,NO,(now() + '7 days'::interval)
+organization_invitations,accepted_at,timestamp with time zone,YES,null
+organization_invitations,created_at,timestamp with time zone,NO,now()
+organization_members,id,uuid,NO,uuid_generate_v4()
+organization_members,organization_id,uuid,NO,null
+organization_members,user_id,uuid,NO,null
+organization_members,status,USER-DEFINED,NO,'PENDING'::membership_status
+organization_members,is_admin,boolean,NO,false
+organization_members,joined_at,timestamp with time zone,YES,null
+organization_members,requested_at,timestamp with time zone,NO,now()
+organization_members,approved_by,uuid,YES,null
+organization_members,approved_at,timestamp with time zone,YES,null
+organization_members,role,character varying,YES,'MEMBER'::character varying
+organizations,id,uuid,NO,uuid_generate_v4()
+organizations,name,text,NO,null
+organizations,description,text,YES,null
+organizations,logo_url,text,YES,null
+organizations,category,text,YES,null
+organizations,owner_id,uuid,NO,null
+organizations,is_public,boolean,NO,true
+organizations,require_approval,boolean,NO,true
+organizations,created_at,timestamp with time zone,NO,now()
+organizations,updated_at,timestamp with time zone,NO,now()
+payment_transactions,id,uuid,NO,uuid_generate_v4()
+payment_transactions,user_id,uuid,NO,null
+payment_transactions,amount,integer,NO,25000
+payment_transactions,proof_url,text,NO,null
+payment_transactions,status,USER-DEFINED,NO,'PENDING'::payment_status
+payment_transactions,reviewed_by,uuid,YES,null
+payment_transactions,reviewed_at,timestamp with time zone,YES,null
+payment_transactions,rejection_reason,text,YES,null
+payment_transactions,created_at,timestamp with time zone,NO,now()
+payment_transactions,updated_at,timestamp with time zone,NO,now()
+payment_transactions,verified_by,uuid,YES,null
+payment_transactions,verified_at,timestamp with time zone,YES,null
+payment_transactions,notes,text,YES,null
+promotions,id,uuid,NO,uuid_generate_v4()
+promotions,user_id,uuid,NO,null
+promotions,title,character varying,NO,null
+promotions,description,text,YES,null
+promotions,image_url,text,NO,null
+promotions,cta_link,text,YES,null
+promotions,status,character varying,YES,'ACTIVE'::character varying
+promotions,created_at,timestamp with time zone,YES,now()
+promotions,expires_at,timestamp with time zone,YES,(now() + '30 days'::interval)
+user_relationships,id,uuid,NO,uuid_generate_v4()
+user_relationships,provider_id,uuid,NO,null
+user_relationships,client_id,uuid,NO,null
+user_relationships,business_card_id,uuid,NO,null
+user_relationships,scanned_at,timestamp with time zone,NO,now()
+user_relationships,notes,text,YES,null

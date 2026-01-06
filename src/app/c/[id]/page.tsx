@@ -10,7 +10,7 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params
   const supabase = await createClient()
-  
+
   const { data: card } = await supabase
     .from('business_cards')
     .select('*')
@@ -26,11 +26,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const title = `${card.full_name} - Official ID`
-  const description = card.job_title && card.company 
+  const description = card.job_title && card.company
     ? `${card.job_title} di ${card.company} | Kartu Bisnis Digital Profesional`
-    : card.job_title 
-    ? `${card.job_title} | Kartu Bisnis Digital Profesional`
-    : 'Kartu Bisnis Digital Profesional'
+    : card.job_title
+      ? `${card.job_title} | Kartu Bisnis Digital Profesional`
+      : 'Kartu Bisnis Digital Profesional'
 
   // Use profile photo or Official ID logo as OG image
   const ogImage = card.profile_photo_url || 'https://res.cloudinary.com/dhr9kt7r5/image/upload/v1766548116/official-id/circles/dopjzc11o9fpqdfde63b.png'
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title,
       description,
       type: 'profile',
-      url: `https://pwa-official-id.vercel.app/c/${id}`,
+      url: `https://official.id/c/${id}`,
       siteName: 'Official ID',
       images: [
         {

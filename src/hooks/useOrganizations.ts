@@ -38,7 +38,7 @@ export function useOrganizations() {
   const fetchPublicOrganizations = useCallback(async (): Promise<Organization[]> => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const { data, error: fetchError } = await supabase
         .from('organizations')
@@ -60,7 +60,7 @@ export function useOrganizations() {
   const fetchMyOrganizations = useCallback(async (): Promise<Organization[]> => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Tidak terautentikasi')
@@ -85,7 +85,7 @@ export function useOrganizations() {
   const fetchJoinedOrganizations = useCallback(async (): Promise<Organization[]> => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Tidak terautentikasi')
@@ -111,7 +111,7 @@ export function useOrganizations() {
   const fetchOrganization = useCallback(async (id: string): Promise<Organization | null> => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const { data, error: fetchError } = await supabase
         .from('organizations')
@@ -133,7 +133,7 @@ export function useOrganizations() {
   const createOrganization = useCallback(async (orgData: CreateOrgData): Promise<Organization | null> => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Tidak terautentikasi')
@@ -190,7 +190,7 @@ export function useOrganizations() {
   const updateOrganization = useCallback(async (orgData: UpdateOrgData): Promise<Organization | null> => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const { id, ...updateData } = orgData
 
@@ -218,7 +218,7 @@ export function useOrganizations() {
   const deleteOrganization = useCallback(async (id: string): Promise<boolean> => {
     setLoading(true)
     setError(null)
-    
+
     try {
       // Delete invitations first (ignore errors if table doesn't exist)
       await supabase
@@ -251,7 +251,7 @@ export function useOrganizations() {
   const fetchMembers = useCallback(async (orgId: string): Promise<OrganizationMember[]> => {
     setLoading(true)
     setError(null)
-    
+
     try {
       // Use explicit FK hint: users!organization_members_user_id_fkey
       // This disambiguates between user_id and approved_by foreign keys
@@ -278,7 +278,7 @@ export function useOrganizations() {
   const joinOrganization = useCallback(async (orgId: string): Promise<boolean> => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Tidak terautentikasi')
@@ -346,7 +346,7 @@ export function useOrganizations() {
   const leaveOrganization = useCallback(async (orgId: string): Promise<boolean> => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Tidak terautentikasi')
@@ -379,12 +379,12 @@ export function useOrganizations() {
 
   // Approve/Reject member
   const updateMemberStatus = useCallback(async (
-    memberId: string, 
+    memberId: string,
     status: 'APPROVED' | 'REJECTED'
   ): Promise<boolean> => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Tidak terautentikasi')
@@ -461,7 +461,7 @@ export function useOrganizations() {
   const inviteMember = useCallback(async (orgId: string, email: string): Promise<boolean> => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Tidak terautentikasi')
@@ -568,7 +568,7 @@ export function useOrganizations() {
           organizationName: org?.name || 'Organisasi',
           inviterName: inviter?.full_name || 'Seseorang',
           inviterEmail: inviter?.email || '',
-          appUrl: 'https://pwa-official-id.vercel.app'
+          appUrl: 'https://official.id'
         })
       } catch (emailErr) {
         console.error('Failed to send invitation email:', emailErr)
@@ -604,7 +604,7 @@ export function useOrganizations() {
   const cancelInvitation = useCallback(async (invitationId: string): Promise<boolean> => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const { error: updateError } = await supabase
         .from('organization_invitations')
@@ -624,7 +624,7 @@ export function useOrganizations() {
   const acceptInvitation = useCallback(async (orgId: string): Promise<boolean> => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Tidak terautentikasi')
@@ -709,7 +709,7 @@ export function useOrganizations() {
   const removeMember = useCallback(async (memberId: string): Promise<boolean> => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const { error: deleteError } = await supabase
         .from('organization_members')

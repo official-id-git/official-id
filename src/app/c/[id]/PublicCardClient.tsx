@@ -19,10 +19,10 @@ export default function PublicCardClient({ cardId }: Props) {
     const loadCard = async () => {
       setLoading(true)
       setError(null)
-      
+
       try {
         const supabase = createClient()
-        
+
         // Fetch public card
         const { data, error: fetchError } = await supabase
           .from('business_cards')
@@ -47,8 +47,8 @@ export default function PublicCardClient({ cardId }: Props) {
           .from('business_cards')
           .update({ scan_count: (data.scan_count || 0) + 1 })
           .eq('id', cardId)
-          .then(() => {})
-          .catch(() => {})
+          .then(() => { })
+          .catch(() => { })
 
       } catch (err) {
         setError('Terjadi kesalahan')
@@ -140,7 +140,7 @@ export default function PublicCardClient({ cardId }: Props) {
       <div className="mt-8 text-center">
         <p className="text-sm text-gray-400">
           Powered by{' '}
-          <a href="https://pwa-official-id.vercel.app" className="text-blue-600 hover:text-blue-700">
+          <a href="https://official.id" className="text-blue-600 hover:text-blue-700">
             Official ID
           </a>
         </p>

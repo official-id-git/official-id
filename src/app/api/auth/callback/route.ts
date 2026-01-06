@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   const next = searchParams.get('next') ?? '/dashboard'
 
   // Use environment variable or fallback to production URL
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pwa-official-id.vercel.app'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'
 
   if (code) {
     const supabase = await createClient()
@@ -26,10 +26,10 @@ export async function GET(request: NextRequest) {
 
       // Create user profile if doesn't exist (first time Google login)
       if (!userProfile) {
-        const fullName = data.user.user_metadata?.full_name || 
-                        data.user.user_metadata?.name || 
-                        data.user.email?.split('@')[0] || 
-                        'User'
+        const fullName = data.user.user_metadata?.full_name ||
+          data.user.user_metadata?.name ||
+          data.user.email?.split('@')[0] ||
+          'User'
 
         await supabase.from('users').insert({
           id: data.user.id,

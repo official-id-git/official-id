@@ -50,7 +50,7 @@ export async function generateQRCodeCanvas(
 export async function downloadQRCode(url: string, filename: string): Promise<void> {
   try {
     const dataUrl = await generateQRCode(url)
-    
+
     const link = document.createElement('a')
     link.download = `${filename}.png`
     link.href = dataUrl
@@ -67,8 +67,8 @@ export async function downloadQRCode(url: string, filename: string): Promise<voi
  * Get public card URL
  */
 export function getPublicCardUrl(cardId: string): string {
-  const baseUrl = typeof window !== 'undefined' 
-    ? window.location.origin 
-    : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const baseUrl = typeof window !== 'undefined'
+    ? window.location.origin
+    : process.env.NEXT_PUBLIC_APP_URL || 'https://official.id'
   return `${baseUrl}/c/${cardId}`
 }

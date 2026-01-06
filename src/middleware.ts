@@ -11,6 +11,16 @@ const authRoutes = ['/login', '/register']
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // Redirect pwa-official-id.vercel.app to official.id
+  const hostname = request.headers.get('host')
+  if (hostname && (hostname.includes('pwa-official-id.vercel.app') || hostname === 'pwa-official-id.vercel.app')) {
+    const url = request.nextUrl.clone()
+    url.hostname = 'official.id'
+    url.protocol = 'https'
+    url.port = ''
+    return NextResponse.redirect(url)
+  }
+
   // Update session and get user
   const { supabaseResponse, user } = await updateSession(request)
 

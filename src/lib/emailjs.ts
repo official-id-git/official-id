@@ -100,7 +100,7 @@ ${data.inviterName} mengundang Anda untuk bergabung ke organisasi "${data.organi
 👤 Diundang oleh: ${data.inviterName} (${data.inviterEmail})
 
 Untuk menerima undangan, silakan daftar atau login dengan email ${data.recipientEmail} di:
-${data.appUrl || 'https://pwa-official-id.vercel.app'}
+${data.appUrl || 'https://official.id'}
 
 ⏰ Undangan ini berlaku selama 7 hari.
   `.trim()
