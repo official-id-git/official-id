@@ -21,176 +21,64 @@ const SOCIAL_PLATFORMS = [
   { key: 'tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@username' },
 ]
 
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { CardPreview } from '@/components/cards/CardPreview'
+
 const TEMPLATES = [
   {
     id: 'professional',
     name: 'Professional',
     description: 'Tampilan profesional dengan gradient biru dan animasi fluid',
-    preview: (
-      <div className="relative bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg p-4 text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 left-0 w-16 h-16 bg-blue-400 rounded-full filter blur-xl animate-pulse" />
-          <div className="absolute bottom-0 right-0 w-20 h-20 bg-blue-300 rounded-full filter blur-xl animate-pulse" style={{ animationDelay: '1s' }} />
-        </div>
-        <div className="relative text-center">
-          <div className="w-10 h-10 bg-white/30 rounded-full mx-auto mb-2 border-2 border-white/50" />
-          <div className="h-2 bg-white/70 rounded w-16 mx-auto mb-1" />
-          <div className="h-1.5 bg-white/50 rounded w-12 mx-auto" />
-        </div>
-      </div>
-    ),
   },
   {
     id: 'modern',
     name: 'Modern',
     description: 'Desain modern dengan header gradient ungu-pink',
-    preview: (
-      <div className="bg-white rounded-lg overflow-hidden border border-gray-200">
-        <div className="h-8 bg-gradient-to-r from-purple-500 to-pink-500" />
-        <div className="p-3 text-center -mt-4">
-          <div className="w-8 h-8 bg-gray-200 rounded-xl mx-auto border-2 border-white shadow" />
-          <div className="h-2 bg-gray-300 rounded w-14 mx-auto mt-2" />
-          <div className="h-1.5 bg-gray-200 rounded w-10 mx-auto mt-1" />
-        </div>
-      </div>
-    ),
   },
   {
     id: 'modern_dark',
     name: 'Modern Dark',
     description: 'Desain gelap modern dengan aksen emerald',
-    preview: (
-      <div className="bg-slate-900 rounded-lg overflow-hidden border border-slate-800">
-        <div className="h-8 bg-gradient-to-r from-emerald-400 to-cyan-500" />
-        <div className="p-3 text-center -mt-4">
-          <div className="w-8 h-8 bg-slate-900 rounded-xl mx-auto border-2 border-slate-800 shadow" />
-          <div className="h-2 bg-white/20 rounded w-14 mx-auto mt-2" />
-          <div className="h-1.5 bg-white/10 rounded w-10 mx-auto mt-1" />
-        </div>
-      </div>
-    ),
   },
   {
     id: 'creative',
     name: 'Creative',
     description: 'Tampilan kreatif dengan elemen colorful',
-    preview: (
-      <div className="bg-white rounded-lg overflow-hidden border border-gray-100 relative">
-        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full filter blur-xl opacity-30" />
-        <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-yellow-400 to-orange-600 rounded-full filter blur-xl opacity-30" />
-        <div className="p-4 relative text-center">
-          <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-indigo-600 rounded-lg mx-auto mb-2" />
-          <div className="h-2 bg-gray-200 rounded w-14 mx-auto mb-1" />
-          <div className="h-1.5 bg-gray-100 rounded w-10 mx-auto" />
-        </div>
-      </div>
-    ),
   },
   {
     id: 'minimal_white',
     name: 'Clean White',
     description: 'Sangat bersih dan minimalis',
-    preview: (
-      <div className="bg-white rounded-lg p-4 border border-gray-200">
-        <div className="text-center">
-          <div className="w-8 h-8 bg-gray-900 rounded-full mx-auto mb-2" />
-          <div className="h-2 bg-gray-900 rounded w-14 mx-auto mb-1" />
-          <div className="h-1.5 bg-gray-400 rounded w-10 mx-auto" />
-        </div>
-      </div>
-    ),
   },
   {
     id: 'elegant',
     name: 'Elegant',
     description: 'Elegan dengan nuansa amber dan gold',
-    preview: (
-      <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg overflow-hidden border border-amber-100">
-        <div className="h-8 bg-gradient-to-r from-amber-700 to-orange-800 opacity-80" />
-        <div className="p-3 text-center -mt-4">
-          <div className="w-8 h-8 bg-amber-600 rounded-full mx-auto border-2 border-white shadow" />
-          <div className="h-2 bg-amber-800/20 rounded w-14 mx-auto mt-2" />
-          <div className="h-1.5 bg-amber-800/10 rounded w-10 mx-auto mt-1" />
-        </div>
-      </div>
-    ),
   },
   {
     id: 'corporate',
     name: 'Corporate',
     description: 'Tampilan korporat yang tegas',
-    preview: (
-      <div className="bg-white rounded-lg overflow-hidden border-t-4 border-gray-900 shadow-sm">
-        <div className="p-3 bg-gray-50 border-b">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-gray-800 rounded-sm" />
-            <div className="w-12 h-2 bg-gray-300 rounded" />
-          </div>
-        </div>
-        <div className="p-3 space-y-1">
-          <div className="w-full h-1.5 bg-gray-100 rounded" />
-          <div className="w-full h-1.5 bg-gray-100 rounded" />
-        </div>
-      </div>
-    ),
   },
   {
     id: 'tech',
     name: 'Tech',
     description: 'Futuristik dengan aksen neon',
-    preview: (
-      <div className="bg-gray-950 rounded-lg overflow-hidden border border-cyan-500/30">
-        <div className="h-1 w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600" />
-        <div className="p-3 text-center">
-          <div className="w-8 h-8 bg-gray-900 rounded-lg mx-auto border border-cyan-500/50 text-cyan-500 flex items-center justify-center text-xs ml-auto mr-auto">
-            ID
-          </div>
-          <div className="h-2 bg-cyan-900/30 rounded w-14 mx-auto mt-2" />
-        </div>
-      </div>
-    ),
   },
   {
     id: 'artistic',
     name: 'Artistic',
     description: 'Artistik dengan background lembut',
-    preview: (
-      <div className="bg-gradient-to-br from-rose-100 via-purple-100 to-indigo-100 rounded-lg p-4 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-400 to-indigo-400" />
-        <div className="text-center relative z-10">
-          <div className="w-8 h-8 bg-white/50 backdrop-blur rounded-full mx-auto mb-2" />
-          <div className="h-2 bg-purple-900/10 rounded w-14 mx-auto mb-1" />
-        </div>
-      </div>
-    ),
   },
   {
     id: 'luxury',
     name: 'Luxury',
     description: 'Mewah dengan warna hitam dan emas',
-    preview: (
-      <div className="bg-gray-900 rounded-lg p-4 border border-yellow-600/30">
-        <div className="text-center">
-          <div className="w-8 h-8 rounded-full border border-yellow-500 mx-auto mb-2" />
-          <div className="h-2 bg-yellow-600 rounded w-14 mx-auto mb-1" />
-          <div className="h-1.5 bg-gray-700 rounded w-10 mx-auto" />
-        </div>
-      </div>
-    ),
   },
   {
     id: 'vibrant',
     name: 'Vibrant',
     description: 'Penuh warna dan berenergi',
-    preview: (
-      <div className="bg-white rounded-lg p-4 border border-pink-100 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 opacity-50" />
-        <div className="relative text-center">
-          <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-blue-500 rounded-xl mx-auto mb-2" />
-          <div className="h-2 bg-gray-800/10 rounded w-14 mx-auto" />
-        </div>
-      </div>
-    ),
   },
 ]
 
@@ -218,6 +106,32 @@ export function CardForm({ card, mode }: CardFormProps) {
   })
 
   const [formError, setFormError] = useState<string | null>(null)
+
+  // Carousel State
+  const [currentTemplateIndex, setCurrentTemplateIndex] = useState(0)
+
+  // Initialize current index based on selected template
+  useState(() => {
+    const index = TEMPLATES.findIndex(t => t.id === formData.template)
+    if (index >= 0) setCurrentTemplateIndex(index)
+  })
+
+  const handleNextTemplate = () => {
+    setCurrentTemplateIndex(prev => {
+      const next = (prev + 1) % TEMPLATES.length
+      setFormData(f => ({ ...f, template: TEMPLATES[next].id }))
+      return next
+    })
+  }
+
+  const handlePrevTemplate = () => {
+    setCurrentTemplateIndex(prev => {
+      const next = (prev - 1 + TEMPLATES.length) % TEMPLATES.length
+      setFormData(f => ({ ...f, template: TEMPLATES[next].id }))
+      return next
+    })
+  }
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
@@ -435,50 +349,69 @@ export function CardForm({ card, mode }: CardFormProps) {
         </div>
       </div>
 
-      {/* Template Selection */}
+      {/* Template Selection Carousel */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Pilih Template Kartu</h3>
-        <p className="text-sm text-gray-500 mb-4">Pilih satu template untuk kartu bisnis Anda</p>
+        <p className="text-sm text-gray-500 mb-6">Pilih template yang sesuai dengan gaya Anda</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {TEMPLATES.map(template => (
-            <label
-              key={template.id}
-              className={`relative cursor-pointer rounded-xl border-2 p-4 transition-all ${formData.template === template.id
-                ? 'border-blue-600 bg-blue-50 ring-2 ring-blue-600 ring-offset-2'
-                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                }`}
+        <div className="flex flex-col items-center">
+          {/* Carousel Controls */}
+          <div className="flex items-center gap-4 w-full max-w-xl">
+            <button
+              type="button"
+              onClick={handlePrevTemplate}
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
             >
-              <input
-                type="radio"
-                name="template"
-                value={template.id}
-                checked={formData.template === template.id}
-                onChange={() => handleTemplateChange(template.id)}
-                className="sr-only"
-              />
+              <ChevronLeft className="w-6 h-6 text-gray-600" />
+            </button>
 
-              {/* Checkmark */}
-              {formData.template === template.id && (
-                <div className="absolute top-2 right-2 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              )}
+            <div className="flex-1 overflow-hidden relative min-h-[300px] flex items-center justify-center bg-gray-50 rounded-xl border border-gray-100 p-4">
+              {/* Live Preview */}
+              <div className="w-full max-w-sm transform scale-90 sm:scale-100 transition-transform">
+                <CardPreview
+                  card={{
+                    id: 'preview',
+                    user_id: 'preview',
 
-              {/* Preview */}
-              <div className="mb-3">
-                {template.preview}
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    qr_code_url: '',
+                    scan_count: 0,
+                    ...formData,
+                    social_links: formData.social_links // Ensure social links are passed correctly
+                  }}
+                  readonly={true}
+                />
               </div>
+            </div>
 
-              {/* Info */}
-              <h4 className={`font-semibold ${formData.template === template.id ? 'text-blue-700' : 'text-gray-900'}`}>
-                {template.name}
-              </h4>
-              <p className="text-xs text-gray-500 mt-1">{template.description}</p>
-            </label>
-          ))}
+            <button
+              type="button"
+              onClick={handleNextTemplate}
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <ChevronRight className="w-6 h-6 text-gray-600" />
+            </button>
+          </div>
+
+          {/* Template Info */}
+          <div className="text-center mt-6">
+            <h4 className="text-xl font-bold text-gray-900">
+              {TEMPLATES[currentTemplateIndex].name}
+            </h4>
+            <p className="text-gray-500 mt-1">
+              {TEMPLATES[currentTemplateIndex].description}
+            </p>
+            <div className="flex gap-2 justify-center mt-4">
+              {TEMPLATES.map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`w-2 h-2 rounded-full transition-all ${idx === currentTemplateIndex ? 'bg-blue-600 w-4' : 'bg-gray-300'
+                    }`}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
