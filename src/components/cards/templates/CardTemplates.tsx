@@ -8,6 +8,7 @@ interface TemplateProps {
     visibleFields: Record<string, boolean>
     socialLinks: Record<string, string>
     onGenerateVCard: () => void
+    readonly?: boolean
 }
 
 const getSocialIcon = (platform: string) => {
@@ -23,7 +24,7 @@ const getSocialIcon = (platform: string) => {
     return iconMap[platform] || <Globe className="w-5 h-5" />
 }
 
-export const ModernDarkCard = ({ card, visibleFields, socialLinks, onGenerateVCard }: TemplateProps) => (
+export const ModernDarkCard = ({ card, visibleFields, socialLinks, onGenerateVCard, readonly }: TemplateProps) => (
     <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl shadow-2xl overflow-hidden font-sans">
         <div className="relative h-32 bg-gradient-to-r from-emerald-400 to-cyan-500 overflow-hidden">
             <div className="absolute inset-0">
@@ -96,17 +97,19 @@ export const ModernDarkCard = ({ card, visibleFields, socialLinks, onGenerateVCa
                 </div>
             )}
 
-            <button
-                onClick={onGenerateVCard}
-                className="w-full mt-6 py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-lg font-medium hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-emerald-500/50"
-            >
-                Simpan Kontak
-            </button>
+            {!readonly && (
+                <button
+                    onClick={onGenerateVCard}
+                    className="w-full mt-6 py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-lg font-medium hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-emerald-500/50"
+                >
+                    Simpan Kontak
+                </button>
+            )}
         </div>
     </div>
 )
 
-export const CreativeCard = ({ card, visibleFields, socialLinks, onGenerateVCard }: TemplateProps) => (
+export const CreativeCard = ({ card, visibleFields, socialLinks, onGenerateVCard, readonly }: TemplateProps) => (
     <div className="bg-white rounded-3xl shadow-2xl overflow-hidden relative font-sans">
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full filter blur-3xl opacity-30 animate-pulse" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-yellow-400 to-orange-600 rounded-full filter blur-3xl opacity-30 animate-pulse animation-delay-2000" />
@@ -190,17 +193,19 @@ export const CreativeCard = ({ card, visibleFields, socialLinks, onGenerateVCard
                 </div>
             )}
 
-            <button
-                onClick={onGenerateVCard}
-                className="w-full mt-8 py-4 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-2xl font-medium hover:from-pink-700 hover:to-purple-700 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105"
-            >
-                Simpan Kontak
-            </button>
+            {!readonly && (
+                <button
+                    onClick={onGenerateVCard}
+                    className="w-full mt-8 py-4 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-2xl font-medium hover:from-pink-700 hover:to-purple-700 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105"
+                >
+                    Simpan Kontak
+                </button>
+            )}
         </div>
     </div>
 )
 
-export const MinimalWhiteCard = ({ card, visibleFields, socialLinks, onGenerateVCard }: TemplateProps) => (
+export const MinimalWhiteCard = ({ card, visibleFields, socialLinks, onGenerateVCard, readonly }: TemplateProps) => (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden font-sans">
         <div className="p-8">
             <div className="flex flex-col items-center text-center">
@@ -273,17 +278,19 @@ export const MinimalWhiteCard = ({ card, visibleFields, socialLinks, onGenerateV
                 </div>
             )}
 
-            <button
-                onClick={onGenerateVCard}
-                className="w-full mt-6 py-3 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-            >
-                Simpan Kontak
-            </button>
+            {!readonly && (
+                <button
+                    onClick={onGenerateVCard}
+                    className="w-full mt-6 py-3 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                >
+                    Simpan Kontak
+                </button>
+            )}
         </div>
     </div>
 )
 
-export const ElegantCard = ({ card, visibleFields, socialLinks, onGenerateVCard }: TemplateProps) => (
+export const ElegantCard = ({ card, visibleFields, socialLinks, onGenerateVCard, readonly }: TemplateProps) => (
     <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-xl overflow-hidden font-serif">
         <div className="relative h-40 bg-gradient-to-r from-amber-700 to-orange-800 overflow-hidden">
             <div className="absolute inset-0 opacity-30" />
@@ -366,17 +373,19 @@ export const ElegantCard = ({ card, visibleFields, socialLinks, onGenerateVCard 
                 </div>
             )}
 
-            <button
-                onClick={onGenerateVCard}
-                className="w-full mt-8 py-4 bg-gradient-to-r from-amber-700 to-orange-800 text-white rounded-xl font-medium hover:from-amber-800 hover:to-orange-900 transition-all shadow-lg"
-            >
-                Simpan Kontak
-            </button>
+            {!readonly && (
+                <button
+                    onClick={onGenerateVCard}
+                    className="w-full mt-8 py-4 bg-gradient-to-r from-amber-700 to-orange-800 text-white rounded-xl font-medium hover:from-amber-800 hover:to-orange-900 transition-all shadow-lg"
+                >
+                    Simpan Kontak
+                </button>
+            )}
         </div>
     </div>
 )
 
-export const CorporateCard = ({ card, visibleFields, socialLinks, onGenerateVCard }: TemplateProps) => (
+export const CorporateCard = ({ card, visibleFields, socialLinks, onGenerateVCard, readonly }: TemplateProps) => (
     <div className="bg-white rounded-none shadow-2xl overflow-hidden border-t-4 border-gray-900 font-sans">
         <div className="bg-gray-900 px-8 py-6">
             <div className="flex items-center gap-6">
@@ -459,17 +468,19 @@ export const CorporateCard = ({ card, visibleFields, socialLinks, onGenerateVCar
                 </div>
             )}
 
-            <button
-                onClick={onGenerateVCard}
-                className="w-full mt-6 py-3 bg-gray-900 text-white rounded-sm text-sm font-medium hover:bg-gray-800 transition-colors uppercase tracking-wider"
-            >
-                Simpan Kontak
-            </button>
+            {!readonly && (
+                <button
+                    onClick={onGenerateVCard}
+                    className="w-full mt-6 py-3 bg-gray-900 text-white rounded-sm text-sm font-medium hover:bg-gray-800 transition-colors uppercase tracking-wider"
+                >
+                    Simpan Kontak
+                </button>
+            )}
         </div>
     </div>
 )
 
-export const TechCard = ({ card, visibleFields, socialLinks, onGenerateVCard }: TemplateProps) => (
+export const TechCard = ({ card, visibleFields, socialLinks, onGenerateVCard, readonly }: TemplateProps) => (
     <div className="bg-gray-950 rounded-2xl shadow-2xl overflow-hidden border border-cyan-500/20 font-sans">
         <div className="relative bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 p-[2px]">
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 animate-pulse opacity-75 blur" />
@@ -563,18 +574,20 @@ export const TechCard = ({ card, visibleFields, socialLinks, onGenerateVCard }: 
         )}
 
         <div className="px-6 pb-6">
-            <button
-                onClick={onGenerateVCard}
-                className="w-full py-3 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 text-white rounded-lg uppercase tracking-wider text-sm font-medium hover:from-cyan-600 hover:via-blue-600 hover:to-purple-700 transition-all relative overflow-hidden group"
-            >
-                <span className="relative z-10">Simpan Kontak</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </button>
+            {!readonly && (
+                <button
+                    onClick={onGenerateVCard}
+                    className="w-full py-3 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 text-white rounded-lg uppercase tracking-wider text-sm font-medium hover:from-cyan-600 hover:via-blue-600 hover:to-purple-700 transition-all relative overflow-hidden group"
+                >
+                    <span className="relative z-10">Simpan Kontak</span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+            )}
         </div>
     </div>
 )
 
-export const ArtisticCard = ({ card, visibleFields, socialLinks, onGenerateVCard }: TemplateProps) => (
+export const ArtisticCard = ({ card, visibleFields, socialLinks, onGenerateVCard, readonly }: TemplateProps) => (
     <div className="bg-gradient-to-br from-rose-100 via-purple-100 to-indigo-100 rounded-3xl shadow-2xl overflow-hidden relative font-serif">
         <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 left-0 w-full h-full">
@@ -667,17 +680,19 @@ export const ArtisticCard = ({ card, visibleFields, socialLinks, onGenerateVCard
                 </div>
             )}
 
-            <button
-                onClick={onGenerateVCard}
-                className="w-full mt-8 py-4 bg-gradient-to-r from-rose-500 via-purple-500 to-indigo-600 text-white rounded-2xl font-medium hover:from-rose-600 hover:via-purple-600 hover:to-indigo-700 transition-all shadow-xl text-lg"
-            >
-                Simpan Kontak
-            </button>
+            {!readonly && (
+                <button
+                    onClick={onGenerateVCard}
+                    className="w-full mt-8 py-4 bg-gradient-to-r from-rose-500 via-purple-500 to-indigo-600 text-white rounded-2xl font-medium hover:from-rose-600 hover:via-purple-600 hover:to-indigo-700 transition-all shadow-xl text-lg"
+                >
+                    Simpan Kontak
+                </button>
+            )}
         </div>
     </div>
 )
 
-export const LuxuryCard = ({ card, visibleFields, socialLinks, onGenerateVCard }: TemplateProps) => (
+export const LuxuryCard = ({ card, visibleFields, socialLinks, onGenerateVCard, readonly }: TemplateProps) => (
     <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-xl shadow-2xl overflow-hidden border border-yellow-600/30 font-sans">
         <div className="relative bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600 p-[1px]">
             <div className="absolute inset-0 bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600 animate-pulse opacity-50" />
@@ -769,17 +784,19 @@ export const LuxuryCard = ({ card, visibleFields, socialLinks, onGenerateVCard }
         )}
 
         <div className="px-8 pb-6">
-            <button
-                onClick={onGenerateVCard}
-                className="w-full py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 text-gray-900 rounded-lg uppercase tracking-widest text-sm font-bold hover:from-yellow-500 hover:to-yellow-600 transition-all shadow-lg hover:shadow-yellow-600/50"
-            >
-                Simpan Kontak
-            </button>
+            {!readonly && (
+                <button
+                    onClick={onGenerateVCard}
+                    className="w-full py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 text-gray-900 rounded-lg uppercase tracking-widest text-sm font-bold hover:from-yellow-500 hover:to-yellow-600 transition-all shadow-lg hover:shadow-yellow-600/50"
+                >
+                    Simpan Kontak
+                </button>
+            )}
         </div>
     </div>
 )
 
-export const VibrantCard = ({ card, visibleFields, socialLinks, onGenerateVCard }: TemplateProps) => (
+export const VibrantCard = ({ card, visibleFields, socialLinks, onGenerateVCard, readonly }: TemplateProps) => (
     <div className="bg-white rounded-3xl shadow-2xl overflow-hidden relative font-sans">
         <div className="absolute inset-0 bg-gradient-to-br from-pink-200 via-purple-200 to-blue-200 opacity-50" />
 
@@ -868,12 +885,14 @@ export const VibrantCard = ({ card, visibleFields, socialLinks, onGenerateVCard 
                 </div>
             )}
 
-            <button
-                onClick={onGenerateVCard}
-                className="w-full mt-8 py-4 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white rounded-2xl font-medium hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 transition-all shadow-2xl text-lg"
-            >
-                🎉 Simpan Kontak
-            </button>
+            {!readonly && (
+                <button
+                    onClick={onGenerateVCard}
+                    className="w-full mt-8 py-4 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white rounded-2xl font-medium hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 transition-all shadow-2xl text-lg"
+                >
+                    🎉 Simpan Kontak
+                </button>
+            )}
         </div>
     </div>
 )
