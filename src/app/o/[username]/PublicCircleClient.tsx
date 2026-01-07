@@ -49,10 +49,9 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
 
             setOrg(orgData)
 
-            // Fetch approved members with user data
+            // Fetch approved members with business cards
             const membersData = await fetchMembers(orgData.id)
             const approvedMembers = membersData.filter(m => m.status === 'APPROVED')
-            console.log('Members data:', approvedMembers) // Debug log
             setMembers(approvedMembers)
 
             // Check user membership if logged in
@@ -99,8 +98,6 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
             setJoining(false)
         }
     }
-
-
 
     if (pageLoading) {
         return (
@@ -255,14 +252,18 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                 const userData = member.users || {}
                                 const userName = userData.full_name || 'Anonymous'
                                 const userAvatar = userData.avatar_url
-                                const userId = userData.id
 
-                                return (
-                                    <Link
-                                        key={member.id}
-                                        href={userId ? `/dashboard/contacts?user=${userId}` : '#'}
-                                        className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-blue-50 hover:shadow-md transition-all border border-transparent hover:border-blue-200"
-                                    >
+                                // Get first public business card
+                                const businessCards = member.business_cards || []
+                                const publicCard = businessCards.find((card: any) => card.is_public)
+
+                                // Link to public card if available
+                                const cardLink = publicCard
+                                    ? `/c/${publicCard.username || publicCard.id}`
+                                    : null
+
+                                const CardContent = () => (
+                                    <>
                                         {userAvatar ? (
                                             <Image
                                                 src={userAvatar}
@@ -285,11 +286,33 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                             {member.is_admin && (
                                                 <span className="text-xs text-blue-600 font-medium">Admin</span>
                                             )}
+                                            {!publicCard && (
+                                                <span className="text-xs text-gray-400">Kartu tidak tersedia</span>
+                                            )}
                                         </div>
-                                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                        </svg>
+                                        {cardLink && (
+                                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        )}
+                                    </>
+                                )
+
+                                return cardLink ? (
+                                    <Link
+                                        key={member.id}
+                                        href={cardLink}
+                                        className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-blue-50 hover:shadow-md transition-all border border-transparent hover:border-blue-200"
+                                    >
+                                        <CardContent />
                                     </Link>
+                                ) : (
+                                    <div
+                                        key={member.id}
+                                        className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl opacity-60 cursor-not-allowed"
+                                    >
+                                        <CardContent />
+                                    </div>
                                 )
                             })}
                         </div>

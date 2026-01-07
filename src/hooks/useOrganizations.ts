@@ -328,11 +328,24 @@ export function useOrganizations() {
     setError(null)
 
     try {
-      // Use explicit FK hint: users!organization_members_user_id_fkey
-      // This disambiguates between user_id and approved_by foreign keys
+      // Fetch members with user info AND their public business cards
+      // This allows public circle pages to link to member's business cards
       const { data, error: fetchError } = await supabase
         .from('organization_members')
-        .select('*, users!organization_members_user_id_fkey(id, full_name, email, avatar_url)')
+        .select(`
+          *,
+          users!organization_members_user_id_fkey(
+            id, 
+            full_name, 
+            email, 
+            avatar_url
+          ),
+          business_cards:business_cards!user_id(
+            id,
+            username,
+            is_public
+          )
+        `)
         .eq('organization_id', orgId)
         .order('joined_at', { ascending: false })
 
