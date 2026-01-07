@@ -32,10 +32,12 @@ export default function PublicCardClient({ cardId }: Props) {
           const selectFields = 'id, user_id, full_name, job_title, company, email, phone, website, profile_photo_url, social_links, is_public, visible_fields, scan_count, created_at, updated_at, template, address, color_theme, username'
 
           // 1. Try fetching by ID or Username as usual
+          // Use limit(1) instead of single()/maybeSingle() to strictly avoid 406 errors on 0 rows
           let query = supabase
             .from('business_cards')
             .select(selectFields)
             .eq('is_public', true)
+            .limit(1)
 
           if (isUuid) {
             query = query.eq('id', cardId)
@@ -43,21 +45,32 @@ export default function PublicCardClient({ cardId }: Props) {
             query = query.eq('username', cardId)
           }
 
-          const { data, error } = await query.maybeSingle()
+          const { data: idData, error: idError } = await query
 
-          if (data) return { data, error: null }
-          if (error && error.code !== 'PGRST116') return { data: null, error }
+          if (idData && idData.length > 0) {
+            return { data: idData[0], error: null }
+          }
+
+          // Log error but continue to fallback
+          if (idError) {
+            console.error('Error fetching by ID:', idError)
+          }
 
           // 2. If no data found AND input is UUID, try fetching by user_id
           // This supports the circle link format: /c/[userId]
-          if (isUuid && !data) {
-            const userQuery = supabase
+          if (isUuid) {
+            const { data: userData, error: userError } = await supabase
               .from('business_cards')
               .select(selectFields)
               .eq('is_public', true)
               .eq('user_id', cardId)
+              .limit(1)
 
-            return await userQuery.maybeSingle()
+            if (userData && userData.length > 0) {
+              return { data: userData[0], error: null }
+            }
+
+            if (userError) return { data: null, error: userError }
           }
 
           return { data: null, error: null }
@@ -158,6 +171,8 @@ export default function PublicCardClient({ cardId }: Props) {
       <CardPreview card={card} template={template as 'professional' | 'modern' | 'minimal'} />
 
       {/* QR Code */}
+      {/* Exclude QR code initially due to 406 error with large base64 */}
+      {/* 
       {card.qr_code_url && (
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500 mb-2">Scan QR code untuk menyimpan kontak</p>
@@ -170,6 +185,7 @@ export default function PublicCardClient({ cardId }: Props) {
           />
         </div>
       )}
+      */}
 
       {/* Powered By */}
       <div className="mt-8 text-center">
