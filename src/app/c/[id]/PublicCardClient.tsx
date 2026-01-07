@@ -27,25 +27,51 @@ export default function PublicCardClient({ cardId }: Props) {
         // Check if cardId is UUID or Username
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cardId)
 
-        let query = supabase
-          .from('business_cards')
-          .select('id, user_id, full_name, job_title, company, email, phone, website, profile_photo_url, social_links, is_public, visible_fields, scan_count, created_at, updated_at, template, address, color_theme, username')
-          .eq('is_public', true)
+        // Initialize query builder function for cleaner logic
+        const fetchCard = async () => {
+          const selectFields = 'id, user_id, full_name, job_title, company, email, phone, website, profile_photo_url, social_links, is_public, visible_fields, scan_count, created_at, updated_at, template, address, color_theme, username'
 
-        if (isUuid) {
-          query = query.eq('id', cardId)
-        } else {
-          query = query.eq('username', cardId)
+          // 1. Try fetching by ID or Username as usual
+          let query = supabase
+            .from('business_cards')
+            .select(selectFields)
+            .eq('is_public', true)
+
+          if (isUuid) {
+            query = query.eq('id', cardId)
+          } else {
+            query = query.eq('username', cardId)
+          }
+
+          const { data, error } = await query.maybeSingle()
+
+          if (data) return { data, error: null }
+          if (error && error.code !== 'PGRST116') return { data: null, error }
+
+          // 2. If no data found AND input is UUID, try fetching by user_id
+          // This supports the circle link format: /c/[userId]
+          if (isUuid && !data) {
+            const userQuery = supabase
+              .from('business_cards')
+              .select(selectFields)
+              .eq('is_public', true)
+              .eq('user_id', cardId)
+
+            return await userQuery.maybeSingle()
+          }
+
+          return { data: null, error: null }
         }
 
-        const { data, error: fetchError } = await query.single()
+        const { data, error: fetchError } = await fetchCard()
 
         if (fetchError) {
-          if (fetchError.code === 'PGRST116') {
-            setError('Kartu tidak ditemukan atau tidak tersedia untuk publik')
-          } else {
-            setError('Gagal memuat kartu')
-          }
+          setError('Gagal memuat kartu')
+          return
+        }
+
+        if (!data) {
+          setError('Kartu tidak ditemukan atau tidak tersedia untuk publik')
           return
         }
 
