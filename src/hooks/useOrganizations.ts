@@ -328,24 +328,10 @@ export function useOrganizations() {
     setError(null)
 
     try {
-      // Fetch members with user info AND their public business cards
-      // This allows public circle pages to link to member's business cards
+      // Fetch members with user info
       const { data, error: fetchError } = await supabase
         .from('organization_members')
-        .select(`
-          *,
-          users!organization_members_user_id_fkey(
-            id, 
-            full_name, 
-            email, 
-            avatar_url
-          ),
-          business_cards!user_id(
-            id,
-            username,
-            is_public
-          )
-        `)
+        .select('*, users!organization_members_user_id_fkey(id, full_name, email, avatar_url)')
         .eq('organization_id', orgId)
         .order('joined_at', { ascending: false })
 
