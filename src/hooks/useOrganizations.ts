@@ -340,7 +340,7 @@ export function useOrganizations() {
             email, 
             avatar_url
           ),
-          business_cards:business_cards!user_id(
+          business_cards!user_id(
             id,
             username,
             is_public
