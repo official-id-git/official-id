@@ -11,6 +11,7 @@ interface CreateOrgData {
   category?: string
   is_public?: boolean
   require_approval?: boolean
+  username?: string
 }
 
 interface UpdateOrgData extends Partial<CreateOrgData> {
@@ -33,6 +34,36 @@ export function useOrganizations() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
+
+  // Helper to generate random 7-char username
+  const generateRandomUsername = useCallback((): string => {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
+    let result = ''
+    for (let i = 0; i < 7; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    return result
+  }, [])
+
+  // Check if username is available
+  const checkUsernameAvailability = useCallback(async (username: string, excludeOrgId?: string): Promise<boolean> => {
+    try {
+      let query = supabase
+        .from('organizations')
+        .select('id')
+        .eq('username', username)
+
+      if (excludeOrgId) {
+        query = query.neq('id', excludeOrgId)
+      }
+
+      const { data } = await query.maybeSingle()
+      return !data
+    } catch (err) {
+      console.error('Error checking username:', err)
+      return false
+    }
+  }, [supabase])
 
   // Fetch all public organizations
   const fetchPublicOrganizations = useCallback(async (): Promise<Organization[]> => {
@@ -107,17 +138,26 @@ export function useOrganizations() {
     }
   }, [supabase])
 
-  // Fetch single organization by ID
-  const fetchOrganization = useCallback(async (id: string): Promise<Organization | null> => {
+  // Fetch single organization by ID or username
+  const fetchOrganization = useCallback(async (idOrUsername: string): Promise<Organization | null> => {
     setLoading(true)
     setError(null)
 
     try {
-      const { data, error: fetchError } = await supabase
+      // Check if it's a UUID
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrUsername)
+
+      let query = supabase
         .from('organizations')
         .select('*')
-        .eq('id', id)
-        .maybeSingle()
+
+      if (isUuid) {
+        query = query.eq('id', idOrUsername)
+      } else {
+        query = query.eq('username', idOrUsername)
+      }
+
+      const { data, error: fetchError } = await query.maybeSingle()
 
       if (fetchError) throw fetchError
       return data
@@ -138,6 +178,15 @@ export function useOrganizations() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Tidak terautentikasi')
 
+      // Generate random username if not provided
+      const username = orgData.username || generateRandomUsername()
+
+      // Check username availability
+      const isAvailable = await checkUsernameAvailability(username)
+      if (!isAvailable) {
+        throw new Error('Username sudah digunakan. Silakan pilih username lain.')
+      }
+
       const { data, error: insertError } = await supabase
         .from('organizations')
         .insert({
@@ -148,11 +197,23 @@ export function useOrganizations() {
           category: orgData.category || null,
           is_public: orgData.is_public ?? true,
           require_approval: orgData.require_approval ?? true,
+          username: username,
         })
         .select()
         .single()
 
       if (insertError) {
+        // Handle username collision (retry with new random username if user didn't provide custom one)
+        if (insertError.message.includes('username') || insertError.message.includes('organizations_username_key')) {
+          if (!orgData.username) {
+            // Retry with new random username
+            const newUsername = generateRandomUsername()
+            const retryData = { ...orgData, username: newUsername }
+            return createOrganization(retryData)
+          }
+          throw new Error('Username sudah digunakan. Silakan pilih username lain.')
+        }
+
         if (insertError.message.includes('pengguna berbayar')) {
           throw new Error('Hanya pengguna berbayar yang dapat membuat organisasi. Silakan upgrade akun Anda.')
         }
@@ -184,7 +245,7 @@ export function useOrganizations() {
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  }, [supabase, generateRandomUsername, checkUsernameAvailability])
 
   // Update organization
   const updateOrganization = useCallback(async (orgData: UpdateOrgData): Promise<Organization | null> => {
@@ -193,6 +254,14 @@ export function useOrganizations() {
 
     try {
       const { id, ...updateData } = orgData
+
+      // If username is being updated, check availability
+      if (updateData.username) {
+        const isAvailable = await checkUsernameAvailability(updateData.username, id)
+        if (!isAvailable) {
+          throw new Error('Username sudah digunakan. Silakan pilih username lain.')
+        }
+      }
 
       const { data, error: updateError } = await supabase
         .from('organizations')
@@ -204,7 +273,13 @@ export function useOrganizations() {
         .select()
         .single()
 
-      if (updateError) throw updateError
+      if (updateError) {
+        // Handle username unique constraint
+        if (updateError.message.includes('username') || updateError.message.includes('organizations_username_key')) {
+          throw new Error('Username sudah digunakan. Silakan pilih username lain.')
+        }
+        throw updateError
+      }
       return data
     } catch (err: any) {
       setError(err.message)
@@ -212,7 +287,7 @@ export function useOrganizations() {
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  }, [supabase, checkUsernameAvailability])
 
   // Delete organization
   const deleteOrganization = useCallback(async (id: string): Promise<boolean> => {
@@ -729,6 +804,8 @@ export function useOrganizations() {
   return {
     loading,
     error,
+    generateRandomUsername,
+    checkUsernameAvailability,
     fetchPublicOrganizations,
     fetchMyOrganizations,
     fetchJoinedOrganizations,

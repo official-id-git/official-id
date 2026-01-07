@@ -26,18 +26,21 @@ const CATEGORIES = [
 
 export function OrgForm({ organization, mode }: OrgFormProps) {
   const router = useRouter()
-  const { createOrganization, updateOrganization, loading, error } = useOrganizations()
+  const { createOrganization, updateOrganization, loading, error, generateRandomUsername, checkUsernameAvailability } = useOrganizations()
 
   const [formData, setFormData] = useState({
     name: organization?.name || '',
     description: organization?.description || '',
     logo_url: organization?.logo_url || '',
     category: organization?.category || '',
+    username: organization?.username || '',
     is_public: organization?.is_public ?? true,
     require_approval: organization?.require_approval ?? true,
   })
 
   const [formError, setFormError] = useState<string | null>(null)
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
+  const [checkingUsername, setCheckingUsername] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
@@ -63,12 +66,43 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
     setFormData(prev => ({ ...prev, logo_url: url }))
   }
 
+  const handleUsernameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '')
+    setFormData(prev => ({ ...prev, username: value }))
+
+    if (value.length === 7) {
+      setCheckingUsername(true)
+      const isAvailable = await checkUsernameAvailability(value, organization?.id)
+      setUsernameAvailable(isAvailable)
+      setCheckingUsername(false)
+    } else {
+      setUsernameAvailable(null)
+    }
+  }
+
+  const generateUsername = async () => {
+    const newUsername = generateRandomUsername()
+    setFormData(prev => ({ ...prev, username: newUsername }))
+    const isAvailable = await checkUsernameAvailability(newUsername, organization?.id)
+    setUsernameAvailable(isAvailable)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError(null)
 
     if (!formData.name.trim()) {
       setFormError('Nama Circle wajib diisi')
+      return
+    }
+
+    if (!formData.username || formData.username.length !== 7) {
+      setFormError('Username harus 7 karakter')
+      return
+    }
+
+    if (usernameAvailable === false) {
+      setFormError('Username sudah digunakan')
       return
     }
 
@@ -158,6 +192,50 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
               ))}
             </select>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Username Circle <span className="text-red-500">*</span>
+            </label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleUsernameChange}
+                  maxLength={7}
+                  pattern="[a-z0-9]{7}"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="7 karakter"
+                  required
+                />
+                {formData.username && (
+                  <div className="mt-1 text-sm">
+                    {checkingUsername ? (
+                      <span className="text-gray-500">Memeriksa...</span>
+                    ) : usernameAvailable === true ? (
+                      <span className="text-green-600">✓ Username tersedia</span>
+                    ) : usernameAvailable === false ? (
+                      <span className="text-red-600">✗ Username sudah digunakan</span>
+                    ) : formData.username.length < 7 ? (
+                      <span className="text-gray-500">{formData.username.length}/7 karakter</span>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={generateUsername}
+                className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors whitespace-nowrap"
+              >
+                Generate
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-gray-500">
+              Link publik: <span className="font-mono text-blue-600">official.id/o/{formData.username || '...'}</span>
+            </p>
+          </div>
         </div>
       </div>
 
@@ -171,8 +249,8 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
             type="button"
             onClick={() => handleVisibilityChange(true)}
             className={`p-4 rounded-xl border-2 text-left transition-all ${formData.is_public
-                ? 'border-blue-600 bg-blue-50'
-                : 'border-gray-200 hover:border-gray-300'
+              ? 'border-blue-600 bg-blue-50'
+              : 'border-gray-200 hover:border-gray-300'
               }`}
           >
             <div className="flex items-start gap-3">
@@ -198,8 +276,8 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
             type="button"
             onClick={() => handleVisibilityChange(false)}
             className={`p-4 rounded-xl border-2 text-left transition-all ${!formData.is_public
-                ? 'border-purple-600 bg-purple-50'
-                : 'border-gray-200 hover:border-gray-300'
+              ? 'border-purple-600 bg-purple-50'
+              : 'border-gray-200 hover:border-gray-300'
               }`}
           >
             <div className="flex items-start gap-3">

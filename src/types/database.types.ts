@@ -107,6 +107,7 @@ export type Database = {
           owner_id: string
           is_public: boolean
           require_approval: boolean
+          username: string
           created_at: string
           updated_at: string
         }
@@ -119,6 +120,7 @@ export type Database = {
           owner_id: string
           is_public?: boolean
           require_approval?: boolean
+          username?: string
           created_at?: string
           updated_at?: string
         }
@@ -131,6 +133,7 @@ export type Database = {
           owner_id?: string
           is_public?: boolean
           require_approval?: boolean
+          username?: string
           created_at?: string
           updated_at?: string
         }
