@@ -67,10 +67,12 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
   }
 
   const handleUsernameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Only allow lowercase alphanumeric, auto-remove invalid chars
     const value = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '')
     setFormData(prev => ({ ...prev, username: value }))
 
-    if (value.length === 7) {
+    // Check availability if length is valid (3-20 characters)
+    if (value.length >= 3 && value.length <= 20) {
       setCheckingUsername(true)
       const isAvailable = await checkUsernameAvailability(value, organization?.id)
       setUsernameAvailable(isAvailable)
@@ -96,8 +98,14 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
       return
     }
 
-    if (!formData.username || formData.username.length !== 7) {
-      setFormError('Username harus 7 karakter')
+    if (!formData.username || formData.username.length < 3 || formData.username.length > 20) {
+      setFormError('Username harus 3-20 karakter')
+      return
+    }
+
+    // Validate alphanumeric only
+    if (!/^[a-z0-9]+$/.test(formData.username)) {
+      setFormError('Username hanya boleh huruf kecil dan angka (a-z, 0-9)')
       return
     }
 
@@ -204,10 +212,11 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
                   name="username"
                   value={formData.username}
                   onChange={handleUsernameChange}
-                  maxLength={7}
-                  pattern="[a-z0-9]{7}"
+                  minLength={3}
+                  maxLength={20}
+                  pattern="[a-z0-9]+"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="7 karakter"
+                  placeholder="contoh: kabayangroup"
                   required
                 />
                 {formData.username && (
@@ -218,9 +227,13 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
                       <span className="text-green-600">✓ Username tersedia</span>
                     ) : usernameAvailable === false ? (
                       <span className="text-red-600">✗ Username sudah digunakan</span>
-                    ) : formData.username.length < 7 ? (
-                      <span className="text-gray-500">{formData.username.length}/7 karakter</span>
-                    ) : null}
+                    ) : formData.username.length < 3 ? (
+                      <span className="text-orange-600">Minimal 3 karakter</span>
+                    ) : formData.username.length > 20 ? (
+                      <span className="text-orange-600">Maksimal 20 karakter</span>
+                    ) : (
+                      <span className="text-gray-500">{formData.username.length} karakter</span>
+                    )}
                   </div>
                 )}
               </div>
@@ -228,12 +241,16 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
                 type="button"
                 onClick={generateUsername}
                 className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors whitespace-nowrap"
+                title="Generate username acak 7 karakter"
               >
                 Generate
               </button>
             </div>
             <p className="mt-2 text-sm text-gray-500">
               Link publik: <span className="font-mono text-blue-600">official.id/o/{formData.username || '...'}</span>
+            </p>
+            <p className="mt-1 text-xs text-gray-400">
+              3-20 karakter, hanya huruf kecil dan angka (a-z, 0-9)
             </p>
           </div>
         </div>
