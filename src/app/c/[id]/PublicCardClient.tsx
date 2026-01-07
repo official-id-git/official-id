@@ -29,7 +29,7 @@ export default function PublicCardClient({ cardId }: Props) {
 
         let query = supabase
           .from('business_cards')
-          .select('*')
+          .select('id, user_id, full_name, job_title, company, email, phone, website, profile_photo_url, social_links, is_public, visible_fields, scan_count, created_at, updated_at, template, address, color_theme, username')
           .eq('is_public', true)
 
         if (isUuid) {
