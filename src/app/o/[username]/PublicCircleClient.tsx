@@ -252,15 +252,10 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                 const userData = member.users || {}
                                 const userName = userData.full_name || 'Anonymous'
                                 const userAvatar = userData.avatar_url
+                                const userId = userData.id
 
-                                // Get first public business card
-                                const businessCards = member.business_cards || []
-                                const publicCard = businessCards.find((card: any) => card.is_public)
-
-                                // Link to public card if available
-                                const cardLink = publicCard
-                                    ? `/c/${publicCard.username || publicCard.id}`
-                                    : null
+                                // Link directly to business card using user_id
+                                const cardLink = userId ? `/c/${userId}` : null
 
                                 const CardContent = () => (
                                     <>
@@ -285,9 +280,6 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                             </p>
                                             {member.is_admin && (
                                                 <span className="text-xs text-blue-600 font-medium">Admin</span>
-                                            )}
-                                            {!publicCard && (
-                                                <span className="text-xs text-gray-400">Kartu tidak tersedia</span>
                                             )}
                                         </div>
                                         {cardLink && (
