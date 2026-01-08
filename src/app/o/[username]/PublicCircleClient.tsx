@@ -476,7 +476,7 @@ function MemberToCardCarousel({ cards, userId }: { cards: any[], userId: string 
     if (cards.length === 0) return null
 
     return (
-        <div className="relative pb-6 bg-gray-50">
+        <div className="relative pb-10 bg-gray-50">
             {/* Scroll Container */}
             <div
                 className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
@@ -514,7 +514,7 @@ function MemberToCardCarousel({ cards, userId }: { cards: any[], userId: string 
 
             {/* Dots */}
             {cards.length > 1 && (
-                <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
+                <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5">
                     {cards.map((_, idx) => (
                         <div
                             key={idx}
@@ -527,7 +527,7 @@ function MemberToCardCarousel({ cards, userId }: { cards: any[], userId: string 
 
             {/* Swipe Hint */}
             {cards.length > 1 && (
-                <div className="absolute bottom-0 left-0 right-0 text-center">
+                <div className="absolute bottom-1 left-0 right-0 text-center">
                     <span className="text-[10px] text-gray-400 font-medium">Swipe untuk lihat kartu lain</span>
                 </div>
             )}

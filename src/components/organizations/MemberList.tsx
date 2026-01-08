@@ -33,6 +33,7 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
   const [memberCards, setMemberCards] = useState<BusinessCard[]>([])
   const [loadingCards, setLoadingCards] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const supabase = createClient()
 
   // Message modal state
@@ -127,6 +128,17 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
     )
 
     return nameMatch || emailMatch || cardMatch
+  }).sort((a, b) => {
+    const m1 = a as MemberWithUser
+    const m2 = b as MemberWithUser
+    const nameA = m1.users?.full_name?.toLowerCase() || ''
+    const nameB = m2.users?.full_name?.toLowerCase() || ''
+
+    if (sortOrder === 'asc') {
+      return nameA.localeCompare(nameB)
+    } else {
+      return nameB.localeCompare(nameA)
+    }
   })
 
   // Derived lists from filtered members
@@ -225,21 +237,34 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
     <div className="space-y-6">
       {/* Search Input */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-        <div className="relative">
-          <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Cari anggota berdasarkan nama, email, perusahaan, kota, atau deskripsi..."
-            value={searchQuery}
-            onChange={async (e) => {
-              const val = e.target.value
-              const isValid = await validateInput(val)
-              if (isValid) setSearchQuery(val)
-            }}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Search Input */}
+          <div className="relative flex-1">
+            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Cari anggota berdasarkan nama, email, perusahaan, kota, atau deskripsi..."
+              value={searchQuery}
+              onChange={async (e) => {
+                const val = e.target.value
+                const isValid = await validateInput(val)
+                if (isValid) setSearchQuery(val)
+              }}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Sort Dropdown */}
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+            className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white w-full sm:w-auto"
+          >
+            <option value="asc">Nama: A - Z</option>
+            <option value="desc">Nama: Z - A</option>
+          </select>
         </div>
       </div>
 
