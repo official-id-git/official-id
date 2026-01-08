@@ -12,6 +12,8 @@ interface CreateCardData {
   email: string
   phone: string
   website?: string
+  address?: string
+  city?: string
   profile_photo_url?: string
   template?: string
   username?: string
@@ -237,6 +239,8 @@ export function useCards() {
         email: cardData.email,
         phone: cardData.phone,
         website: cardData.website || null,
+        address: cardData.address || 'belum diisi',
+        city: cardData.city || 'belum diisi',
         profile_photo_url: cardData.profile_photo_url || null,
         username: username, // Add username
         social_links: cardData.social_links || {},
@@ -246,6 +250,8 @@ export function useCards() {
           phone: true,
           website: true,
           social_links: true,
+          address: true,
+          city: true,
         },
       }
 

@@ -77,6 +77,8 @@ export function CardPreview({ card, template = 'professional', readonly = false 
     phone: true,
     website: true,
     social_links: true,
+    address: true,
+    city: true,
   }
   const socialLinks = (card.social_links as Record<string, string>) || {}
 
@@ -234,6 +236,29 @@ export function CardPreview({ card, template = 'professional', readonly = false 
                 <span className="break-all">{card.website}</span>
               </a>
             )}
+
+            {/* Address and City Display */}
+            {(visibleFields.address || visibleFields.city) && (
+              ((card as any).address && (card as any).address !== 'belum diisi') ||
+              ((card as any).city && (card as any).city !== 'belum diisi')
+            ) && (
+                <div className="flex items-center gap-3 text-gray-700">
+                  <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                    <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex flex-col">
+                    {visibleFields.address && (card as any).address && (card as any).address !== 'belum diisi' && (
+                      <span className="break-words">{(card as any).address}</span>
+                    )}
+                    {visibleFields.city && (card as any).city && (card as any).city !== 'belum diisi' && (
+                      <span className="text-gray-500 text-sm">{(card as any).city}</span>
+                    )}
+                  </div>
+                </div>
+              )}
 
             {visibleFields.social_links && Object.keys(socialLinks).length > 0 && (
               <div className="flex gap-3 pt-2 flex-wrap justify-center">

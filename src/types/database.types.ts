@@ -59,6 +59,8 @@ export type Database = {
           scan_count: number
           created_at: string
           updated_at: string
+          address: string | null
+          city: string | null
         }
         Insert: {
           id?: string
@@ -77,6 +79,8 @@ export type Database = {
           scan_count?: number
           created_at?: string
           updated_at?: string
+          address?: string | null
+          city?: string | null
         }
         Update: {
           id?: string
@@ -95,6 +99,8 @@ export type Database = {
           scan_count?: number
           created_at?: string
           updated_at?: string
+          address?: string | null
+          city?: string | null
         }
       }
       organizations: {

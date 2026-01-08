@@ -93,6 +93,8 @@ export function CardForm({ card, mode }: CardFormProps) {
     email: card?.email || '',
     phone: card?.phone || '',
     website: card?.website || '',
+    address: (card as any)?.address || '',
+    city: (card as any)?.city || '',
     profile_photo_url: card?.profile_photo_url || '',
     template: (card as any)?.template || 'professional',
     username: card?.username || '',
@@ -103,6 +105,8 @@ export function CardForm({ card, mode }: CardFormProps) {
       phone: true,
       website: true,
       social_links: true,
+      address: true,
+      city: true,
     },
   })
 
@@ -340,6 +344,36 @@ export function CardForm({ card, mode }: CardFormProps) {
               placeholder="https://www.example.com"
             />
           </div>
+
+          {/* Address Field */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Alamat
+            </label>
+            <input
+              type="text"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Contoh: Jl. Sudirman No. 123"
+            />
+          </div>
+
+          {/* City Field */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Kota
+            </label>
+            <input
+              type="text"
+              name="city"
+              value={formData.city}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Contoh: Jakarta"
+            />
+          </div>
         </div>
       </div>
 
@@ -447,6 +481,8 @@ export function CardForm({ card, mode }: CardFormProps) {
                 { key: 'phone', label: 'Telepon' },
                 { key: 'website', label: 'Website' },
                 { key: 'social_links', label: 'Sosial Media' },
+                { key: 'address', label: 'Alamat' },
+                { key: 'city', label: 'Kota' },
               ].map(field => (
                 <label key={field.key} className="flex items-center gap-2">
                   <input

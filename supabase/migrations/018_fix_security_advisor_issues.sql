@@ -37,7 +37,5 @@ ALTER FUNCTION public.is_admin() SET search_path = public;
 -- Functions with unknown signatures (assuming unique names)
 ALTER FUNCTION public.delete_old_promotions() SET search_path = public;
 -- Attempting to set search_path for invite_user_to_circle. 
--- If this fails due to ambiguity, arguments must be specified.
-ALTER FUNCTION public.invite_user_to_circle(uuid, text, text) SET search_path = public; 
--- Note: Assuming signature (uuid, text, text) based on typical invite flows (org_id, email, role).
--- If this migration fails, we will need to verify the exact signature.
+-- FAILED: Signature unknown (not in local migrations). User must fix manually if needed.
+-- ALTER FUNCTION public.invite_user_to_circle(uuid, text, text) SET search_path = public; 
