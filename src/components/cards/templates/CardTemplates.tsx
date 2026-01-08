@@ -873,6 +873,11 @@ export const LuxuryCard = ({ card, visibleFields, socialLinks, onGenerateVCard, 
                     {card.company && (
                         <p className="text-gray-400 mt-1 text-center text-sm">{card.company}</p>
                     )}
+                    {card.show_business_description !== false && card.business_description && (
+                        <p className="text-yellow-600/80 mt-3 text-xs text-center border-y border-yellow-600/20 py-2 max-w-xs mx-auto">
+                            {card.business_description}
+                        </p>
+                    )}
                 </div>
             </div>
         </div>
@@ -991,6 +996,11 @@ export const VibrantCard = ({ card, visibleFields, socialLinks, onGenerateVCard,
                 )}
                 {card.company && (
                     <p className="text-gray-600 mt-1 text-center">{card.company}</p>
+                )}
+                {card.show_business_description !== false && card.business_description && (
+                    <p className="text-gray-700 mt-3 text-sm text-center italic max-w-sm mx-auto font-medium bg-white/30 p-2 rounded-lg backdrop-blur-sm">
+                        "{card.business_description}"
+                    </p>
                 )}
             </div>
 

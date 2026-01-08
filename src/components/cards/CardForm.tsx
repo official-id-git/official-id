@@ -313,12 +313,18 @@ export function CardForm({ card, mode }: CardFormProps) {
               value={(formData as any).business_description || ''}
               onChange={handleChange}
               rows={4}
+              maxLength={150}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
               placeholder="Ceritakan tentang bisnis, produk, atau layanan Anda..."
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Akan ditampilkan di kartu digital dan profil Circle Anda.
-            </p>
+            <div className="flex justify-between mt-1">
+              <p className="text-xs text-gray-500">
+                Akan ditampilkan di kartu digital dan profil Circle Anda.
+              </p>
+              <p className={`text-xs ${((formData as any).business_description?.length || 0) >= 150 ? 'text-red-500' : 'text-gray-400'}`}>
+                {((formData as any).business_description?.length || 0)}/150
+              </p>
+            </div>
           </div>
         </div>
       </div>
