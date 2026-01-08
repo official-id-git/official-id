@@ -238,10 +238,17 @@ export function CardPreview({ card, template = 'professional', readonly = false 
             )}
 
             {/* Address and City Display */}
-            {(visibleFields.address || visibleFields.city) && (
-              ((card as any).address && (card as any).address !== 'belum diisi') ||
-              ((card as any).city && (card as any).city !== 'belum diisi')
-            ) && (
+            {(() => {
+              const address = (card as any).address
+              const city = (card as any).city
+              const hasAddress = address && address.trim() !== '' && address !== 'belum diisi'
+              const hasCity = city && city.trim() !== '' && city !== 'belum diisi'
+              const showAddress = visibleFields.address && hasAddress
+              const showCity = visibleFields.city && hasCity
+
+              if (!showAddress && !showCity) return null
+
+              return (
                 <div className="flex items-center gap-3 text-gray-700">
                   <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                     <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -250,15 +257,16 @@ export function CardPreview({ card, template = 'professional', readonly = false 
                     </svg>
                   </div>
                   <div className="flex flex-col">
-                    {visibleFields.address && (card as any).address && (card as any).address !== 'belum diisi' && (
-                      <span className="break-words">{(card as any).address}</span>
+                    {showAddress && (
+                      <span className="break-words">{address}</span>
                     )}
-                    {visibleFields.city && (card as any).city && (card as any).city !== 'belum diisi' && (
-                      <span className="text-gray-500 text-sm">{(card as any).city}</span>
+                    {showCity && (
+                      <span className="text-gray-500 text-sm">{city}</span>
                     )}
                   </div>
                 </div>
-              )}
+              )
+            })()}
 
             {visibleFields.social_links && Object.keys(socialLinks).length > 0 && (
               <div className="flex gap-3 pt-2 flex-wrap justify-center">
