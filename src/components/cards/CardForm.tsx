@@ -494,6 +494,7 @@ export function CardForm({ card, mode }: CardFormProps) {
                 { key: 'social_links', label: 'Sosial Media' },
                 { key: 'address', label: 'Alamat' },
                 { key: 'city', label: 'Kota' },
+                { key: 'business_description', label: 'Deskripsi Bisnis' },
               ].map(field => (
                 <label key={field.key} className="flex items-center gap-2">
                   <input
