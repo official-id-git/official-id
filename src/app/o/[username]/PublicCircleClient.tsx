@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { useOrganizations } from '@/hooks/useOrganizations'
+import SendMessageModal from '@/components/messages/SendMessageModal'
 import type { Organization, OrganizationMember } from '@/types'
 
 interface PublicCircleClientProps {
@@ -24,6 +25,46 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
     const [isOwner, setIsOwner] = useState(false)
     const [joining, setJoining] = useState(false)
     const [error, setError] = useState<string | null>(null)
+
+    // Search and Sort state
+    const [searchQuery, setSearchQuery] = useState('')
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+
+    // Message modal state
+    const [messageModalOpen, setMessageModalOpen] = useState(false)
+    const [selectedRecipient, setSelectedRecipient] = useState<{ id: string; name: string } | null>(null)
+
+    // Filtered and sorted members
+    const filteredMembers = useMemo(() => {
+        let result = [...members]
+
+        // Filter by search query
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase()
+            result = result.filter((member: any) => {
+                const userName = member.users?.full_name?.toLowerCase() || ''
+                return userName.includes(query)
+            })
+        }
+
+        // Sort by name
+        result.sort((a: any, b: any) => {
+            const nameA = a.users?.full_name?.toLowerCase() || ''
+            const nameB = b.users?.full_name?.toLowerCase() || ''
+            if (sortOrder === 'asc') {
+                return nameA.localeCompare(nameB)
+            } else {
+                return nameB.localeCompare(nameA)
+            }
+        })
+
+        return result
+    }, [members, searchQuery, sortOrder])
+
+    const handleOpenMessageModal = (recipientId: string, recipientName: string) => {
+        setSelectedRecipient({ id: recipientId, name: recipientName })
+        setMessageModalOpen(true)
+    }
 
     useEffect(() => {
         loadCircleData()
@@ -242,13 +283,44 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
 
                 {/* Members List */}
                 <div className="bg-white rounded-2xl shadow-lg p-6">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Anggota Circle</h2>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900">Anggota Circle</h2>
+
+                        {/* Search and Sort Controls */}
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            {/* Search Input */}
+                            <div className="relative">
+                                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                <input
+                                    type="text"
+                                    placeholder="Cari anggota..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-48"
+                                />
+                            </div>
+
+                            {/* Sort Dropdown */}
+                            <select
+                                value={sortOrder}
+                                onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                                className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                            >
+                                <option value="asc">A - Z</option>
+                                <option value="desc">Z - A</option>
+                            </select>
+                        </div>
+                    </div>
 
                     {members.length === 0 ? (
                         <p className="text-gray-500 text-center py-8">Belum ada anggota yang bergabung</p>
+                    ) : filteredMembers.length === 0 ? (
+                        <p className="text-gray-500 text-center py-8">Tidak ada anggota yang sesuai dengan pencarian "{searchQuery}"</p>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {members.map((member: any) => {
+                            {filteredMembers.map((member: any) => {
                                 const userData = member.users || {}
                                 const userName = userData.full_name || 'Anonymous'
                                 const userAvatar = userData.avatar_url
@@ -257,23 +329,29 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                 // Link directly to business card using user_id
                                 const cardLink = userId ? `/c/${userId}` : null
 
-                                const CardContent = () => (
-                                    <>
+                                return (
+                                    <div
+                                        key={member.id}
+                                        className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100"
+                                    >
+                                        {/* Avatar */}
                                         {userAvatar ? (
                                             <Image
                                                 src={userAvatar}
                                                 alt={userName}
                                                 width={48}
                                                 height={48}
-                                                className="w-12 h-12 rounded-full object-cover"
+                                                className="w-12 h-12 rounded-full object-cover flex-shrink-0"
                                             />
                                         ) : (
-                                            <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+                                            <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
                                                 <span className="text-white font-semibold text-lg">
                                                     {userName.charAt(0) || '?'}
                                                 </span>
                                             </div>
                                         )}
+
+                                        {/* Info */}
                                         <div className="flex-1 min-w-0">
                                             <p className="font-semibold text-gray-900 truncate">
                                                 {userName}
@@ -282,28 +360,35 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                                 <span className="text-xs text-blue-600 font-medium">Admin</span>
                                             )}
                                         </div>
-                                        {cardLink && (
-                                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        )}
-                                    </>
-                                )
 
-                                return cardLink ? (
-                                    <Link
-                                        key={member.id}
-                                        href={cardLink}
-                                        className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-blue-50 hover:shadow-md transition-all border border-transparent hover:border-blue-200"
-                                    >
-                                        <CardContent />
-                                    </Link>
-                                ) : (
-                                    <div
-                                        key={member.id}
-                                        className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl opacity-60 cursor-not-allowed"
-                                    >
-                                        <CardContent />
+                                        {/* Action Buttons */}
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                            {/* Message Button */}
+                                            {userId && (
+                                                <button
+                                                    onClick={() => handleOpenMessageModal(userId, userName)}
+                                                    className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                                                    title="Kirim Pesan"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                    </svg>
+                                                </button>
+                                            )}
+
+                                            {/* View Card Button */}
+                                            {cardLink && (
+                                                <Link
+                                                    href={cardLink}
+                                                    className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                                                    title="Lihat Kartu"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                </Link>
+                                            )}
+                                        </div>
                                     </div>
                                 )
                             })}
@@ -311,6 +396,19 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                     )}
                 </div>
             </div>
+
+            {/* Message Modal */}
+            {selectedRecipient && (
+                <SendMessageModal
+                    isOpen={messageModalOpen}
+                    onClose={() => {
+                        setMessageModalOpen(false)
+                        setSelectedRecipient(null)
+                    }}
+                    recipientId={selectedRecipient.id}
+                    recipientName={selectedRecipient.name}
+                />
+            )}
         </div>
     )
 }

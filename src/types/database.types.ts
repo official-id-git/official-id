@@ -278,6 +278,41 @@ export type Database = {
           updated_at?: string
         }
       }
+      messages: {
+        Row: {
+          id: string
+          recipient_id: string
+          sender_name: string
+          sender_whatsapp: string
+          sender_email: string
+          purpose: 'bermitra' | 'produk' | 'jasa' | 'investasi' | 'lainnya'
+          message: string
+          is_read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          recipient_id: string
+          sender_name: string
+          sender_whatsapp: string
+          sender_email: string
+          purpose: 'bermitra' | 'produk' | 'jasa' | 'investasi' | 'lainnya'
+          message: string
+          is_read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          recipient_id?: string
+          sender_name?: string
+          sender_whatsapp?: string
+          sender_email?: string
+          purpose?: 'bermitra' | 'produk' | 'jasa' | 'investasi' | 'lainnya'
+          message?: string
+          is_read?: boolean
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
