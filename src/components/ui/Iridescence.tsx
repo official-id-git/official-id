@@ -105,6 +105,9 @@ export default function Iridescence({ color = [1, 1, 1], speed = 1.0, amplitude 
         }
         animateId = requestAnimationFrame(update);
         ctn.appendChild(gl.canvas);
+        gl.canvas.style.display = 'block';
+        gl.canvas.style.width = '100%';
+        gl.canvas.style.height = '100%';
 
         function handleMouseMove(e: MouseEvent) {
             const rect = ctn.getBoundingClientRect();

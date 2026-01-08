@@ -25,7 +25,7 @@ export default function DashboardHeader({ onOpenSideMenu }: { onOpenSideMenu: ()
     return (
         <div className="relative overflow-hidden rounded-b-3xl mb-6 shadow-xl">
             {/* Iridescent Background */}
-            <div className="absolute inset-0 z-0 bg-gray-50">
+            <div className="absolute inset-0 z-0 bg-gray-50 overflow-hidden rounded-b-3xl">
                 <Iridescence
                     color={[0.3, 0.5, 1.0]} // Brighter blue-ish tint
                     mouseInteraction={false}
