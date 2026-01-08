@@ -243,8 +243,8 @@ export function CardPreview({ card, template = 'professional', readonly = false 
               const city = (card as any).city
               const hasAddress = address && address.trim() !== '' && address !== 'belum diisi'
               const hasCity = city && city.trim() !== '' && city !== 'belum diisi'
-              const showAddress = visibleFields.address && hasAddress
-              const showCity = visibleFields.city && hasCity
+              const showAddress = visibleFields.address !== false && hasAddress
+              const showCity = visibleFields.city !== false && hasCity
 
               if (!showAddress && !showCity) return null
 
@@ -365,8 +365,8 @@ export function CardPreview({ card, template = 'professional', readonly = false 
                 const city = (card as any).city
                 const hasAddress = address && address.trim() !== '' && address !== 'belum diisi'
                 const hasCity = city && city.trim() !== '' && city !== 'belum diisi'
-                const showAddress = visibleFields.address && hasAddress
-                const showCity = visibleFields.city && hasCity
+                const showAddress = visibleFields.address !== false && hasAddress
+                const showCity = visibleFields.city !== false && hasCity
 
                 if (!showAddress && !showCity) return null
 
@@ -470,8 +470,8 @@ export function CardPreview({ card, template = 'professional', readonly = false 
                 const city = (card as any).city
                 const hasAddress = address && address.trim() !== '' && address !== 'belum diisi'
                 const hasCity = city && city.trim() !== '' && city !== 'belum diisi'
-                const showAddress = visibleFields.address && hasAddress
-                const showCity = visibleFields.city && hasCity
+                const showAddress = visibleFields.address !== false && hasAddress
+                const showCity = visibleFields.city !== false && hasCity
 
                 if (!showAddress && !showCity) return null
 
