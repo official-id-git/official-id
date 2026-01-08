@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { motion, AnimatePresence } from 'motion/react'
 
 interface SideMenuProps {
     isOpen: boolean
@@ -77,97 +78,109 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
         router.push(href)
     }
 
-    if (!isOpen) return null
-
     return (
-        <>
-            {/* Backdrop */}
-            <div
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity"
-                onClick={onClose}
-            />
-
-            {/* Side Menu Panel */}
-            <div className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-out">
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b">
-                    <h2 className="text-xl font-bold text-gray-900">Menu</h2>
-                    <button
+        <AnimatePresence>
+            {isOpen && (
+                <>
+                    {/* Backdrop */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
                         onClick={onClose}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
+                    />
 
-                {/* User Info */}
-                {user && (
-                    <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-purple-50">
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
-                                <span className="text-white font-bold text-lg">
-                                    {user.full_name?.charAt(0) || user.email?.charAt(0) || '?'}
-                                </span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-gray-900 truncate">
-                                    {user.full_name || 'User'}
-                                </p>
-                                <p className="text-sm text-gray-500 truncate">{user.email}</p>
-                            </div>
+                    {/* Side Menu Panel */}
+                    <motion.div
+                        initial={{ x: '100%' }}
+                        animate={{ x: 0 }}
+                        exit={{ x: '100%' }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                        className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl z-50 overflow-y-auto"
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 border-b">
+                            <h2 className="text-xl font-bold text-gray-900">Menu</h2>
+                            <button
+                                onClick={onClose}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
-                    </div>
-                )}
 
-                {/* Menu Items */}
-                <div className="p-4 space-y-1">
-                    {menuItems.map((item) => (
-                        <button
-                            key={item.href}
-                            onClick={() => handleNavigation(item.href)}
-                            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${item.highlight
-                                    ? 'bg-gradient-to-r from-yellow-50 to-orange-50 text-yellow-700 hover:from-yellow-100 hover:to-orange-100'
-                                    : 'text-gray-700 hover:bg-gray-100'
-                                }`}
-                        >
-                            <span className={item.highlight ? 'text-yellow-600' : 'text-gray-500'}>
-                                {item.icon}
-                            </span>
-                            <span className="font-medium">{item.label}</span>
-                            {item.highlight && (
-                                <span className="ml-auto px-2 py-0.5 bg-yellow-200 text-yellow-800 text-xs font-medium rounded-full">
-                                    PRO
-                                </span>
-                            )}
-                        </button>
-                    ))}
-                </div>
+                        {/* User Info */}
+                        {user && (
+                            <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-purple-50">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+                                        <span className="text-white font-bold text-lg">
+                                            {user.full_name?.charAt(0) || user.email?.charAt(0) || '?'}
+                                        </span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-gray-900 truncate">
+                                            {user.full_name || 'User'}
+                                        </p>
+                                        <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-                {/* Divider */}
-                <div className="px-6">
-                    <div className="border-t border-gray-200"></div>
-                </div>
+                        {/* Menu Items */}
+                        <div className="p-4 space-y-1">
+                            {menuItems.map((item) => (
+                                <button
+                                    key={item.href}
+                                    onClick={() => handleNavigation(item.href)}
+                                    className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${item.highlight
+                                        ? 'bg-gradient-to-r from-yellow-50 to-orange-50 text-yellow-700 hover:from-yellow-100 hover:to-orange-100'
+                                        : 'text-gray-700 hover:bg-gray-100'
+                                        }`}
+                                >
+                                    <span className={item.highlight ? 'text-yellow-600' : 'text-gray-500'}>
+                                        {item.icon}
+                                    </span>
+                                    <span className="font-medium">{item.label}</span>
+                                    {item.highlight && (
+                                        <span className="ml-auto px-2 py-0.5 bg-yellow-200 text-yellow-800 text-xs font-medium rounded-full">
+                                            PRO
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
 
-                {/* Sign Out */}
-                <div className="p-4">
-                    <button
-                        onClick={handleSignOut}
-                        className="w-full flex items-center gap-4 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                    >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        <span className="font-medium">Keluar</span>
-                    </button>
-                </div>
+                        {/* Divider */}
+                        <div className="px-6">
+                            <div className="border-t border-gray-200"></div>
+                        </div>
 
-                {/* App Version */}
-                <div className="absolute bottom-20 left-0 right-0 px-6">
-                    <p className="text-center text-xs text-gray-400">Official.id v1.0</p>
-                </div>
-            </div>
-        </>
+                        {/* Sign Out */}
+                        <div className="p-4">
+                            <button
+                                onClick={handleSignOut}
+                                className="w-full flex items-center gap-4 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                                <span className="font-medium">Keluar</span>
+                            </button>
+                        </div>
+
+                        {/* App Version */}
+                        <div className="absolute bottom-20 left-0 right-0 px-6">
+                            <p className="text-center text-xs text-gray-400">Official.id v1.0</p>
+                        </div>
+                    </motion.div>
+                </>
+            )}
+        </AnimatePresence>
     )
 }
