@@ -24,9 +24,12 @@ const CATEGORIES = [
   'Lainnya',
 ]
 
+import { useSecurity } from '@/hooks/useSecurity'
+
 export function OrgForm({ organization, mode }: OrgFormProps) {
   const router = useRouter()
   const { createOrganization, updateOrganization, loading, error, generateRandomUsername, checkUsernameAvailability } = useOrganizations()
+  const { validateInput } = useSecurity()
 
   const [formData, setFormData] = useState({
     name: organization?.name || '',
@@ -42,8 +45,12 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
   const [checkingUsername, setCheckingUsername] = useState(false)
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
+
+    // Security Check
+    const isValid = await validateInput(value)
+    if (!isValid) return // Block input if potentially malicious
 
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked
@@ -67,8 +74,12 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
   }
 
   const handleUsernameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Only allow lowercase alphanumeric, auto-remove invalid chars
     const value = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+    // Security Check
+    const isValid = await validateInput(value)
+    if (!isValid) return
+
     setFormData(prev => ({ ...prev, username: value }))
 
     // Check availability if length is valid (3-20 characters)

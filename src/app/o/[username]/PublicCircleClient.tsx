@@ -13,10 +13,13 @@ interface PublicCircleClientProps {
     circleUsername: string
 }
 
+import { useSecurity } from '@/hooks/useSecurity'
+
 export default function PublicCircleClient({ circleUsername }: PublicCircleClientProps) {
     const router = useRouter()
     const { user } = useAuth()
     const { fetchOrganization, fetchMembers, joinOrganization, checkMembership, loading } = useOrganizations()
+    const { validateInput } = useSecurity()
 
     const [org, setOrg] = useState<Organization | null>(null)
     const [members, setMembers] = useState<OrganizationMember[]>([])
@@ -306,7 +309,11 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                     type="text"
                                     placeholder="Cari anggota..."
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onChange={async (e) => {
+                                        const val = e.target.value
+                                        const isValid = await validateInput(val)
+                                        if (isValid) setSearchQuery(val)
+                                    }}
                                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-48"
                                 />
                             </div>

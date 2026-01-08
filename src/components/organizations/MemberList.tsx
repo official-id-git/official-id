@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useOrganizations } from '@/hooks/useOrganizations'
 import { createClient } from '@/lib/supabase/client'
 import SendMessageModal from '@/components/messages/SendMessageModal'
+import { useSecurity } from '@/hooks/useSecurity'
 import type { OrganizationMember, BusinessCard } from '@/types'
 
 interface MemberListProps {
@@ -26,6 +27,7 @@ interface MemberWithUser extends OrganizationMember {
 
 export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
   const { updateMemberStatus, removeMember } = useOrganizations()
+  const { validateInput } = useSecurity()
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [selectedMember, setSelectedMember] = useState<MemberWithUser | null>(null)
   const [memberCards, setMemberCards] = useState<BusinessCard[]>([])
@@ -231,7 +233,11 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
             type="text"
             placeholder="Cari anggota berdasarkan nama, email, perusahaan, kota, atau deskripsi..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={async (e) => {
+              const val = e.target.value
+              const isValid = await validateInput(val)
+              if (isValid) setSearchQuery(val)
+            }}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>

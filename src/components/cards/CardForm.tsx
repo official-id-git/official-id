@@ -82,9 +82,12 @@ const TEMPLATES = [
   },
 ]
 
+import { useSecurity } from '@/hooks/useSecurity'
+
 export function CardForm({ card, mode }: CardFormProps) {
   const router = useRouter()
   const { createCard, updateCard, loading, error } = useCards()
+  const { validateInput } = useSecurity()
 
   const [formData, setFormData] = useState({
     full_name: card?.full_name || '',
@@ -121,10 +124,12 @@ export function CardForm({ card, mode }: CardFormProps) {
     if (index >= 0) setCurrentTemplateIndex(index)
   })
 
-
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
+
+    // Security Check
+    const isValid = await validateInput(value)
+    if (!isValid) return // Block input if potentially malicious
 
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked
@@ -423,7 +428,9 @@ export function CardForm({ card, mode }: CardFormProps) {
                     qr_code_url: '',
                     scan_count: 0,
                     ...formData,
-                    social_links: formData.social_links // Ensure social links are passed correctly
+                    social_links: formData.social_links,
+                    business_description: (formData as any).business_description || '',
+                    show_business_description: (formData as any).visible_fields?.business_description ?? true
                   }}
                   readonly={true}
                 />
