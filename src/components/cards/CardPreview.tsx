@@ -1,8 +1,6 @@
 'use client'
 
 import React, { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { toast } from 'sonner'
 import Image from 'next/image'
 import type { BusinessCard } from '@/types'
 
@@ -25,49 +23,7 @@ interface CardPreviewProps {
 }
 
 export function CardPreview({ card, template = 'professional', readonly = false }: CardPreviewProps) {
-  // --- LOGIKA SHARE LINKEDIN (BARU) ---
-  const [isSharing, setIsSharing] = useState(false)
-  const supabase = createClient()
 
-  const handleLinkedInShare = async () => {
-    setIsSharing(true)
-    try {
-      // 1. Ambil session browser untuk mendapatkan provider_token (LinkedIn Access Token)
-      const { data: { session } } = await supabase.auth.getSession()
-
-      // Cek apakah token LinkedIn tersedia
-      if (!session?.provider_token) {
-        toast.error('Token LinkedIn tidak ditemukan. Mohon Login ulang dengan LinkedIn.')
-        setIsSharing(false)
-        return
-      }
-
-      // 2. Panggil API Route Backend kita
-      const response = await fetch('/api/linkedin/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accessToken: session.provider_token, // Token dikirim ke server
-          cardUrl: `${window.location.origin}/c/${card.id}`,
-          title: card.full_name,
-          text: `Halo, ini kartu nama digital saya sebagai ${card.job_title} di ${card.company}. Mari terhubung!`
-        }),
-      })
-
-      if (!response.ok) {
-        const result = await response.json()
-        throw new Error(result.error || 'Gagal memposting ke LinkedIn')
-      }
-
-      toast.success('Berhasil dibagikan ke LinkedIn!')
-    } catch (error: any) {
-      toast.error(error.message || 'Terjadi kesalahan saat membagikan.')
-      console.error(error)
-    } finally {
-      setIsSharing(false)
-    }
-  }
-  // --- AKHIR LOGIKA SHARE LINKEDIN ---
 
   // Use card's saved template if no template prop provided
   const activeTemplate = (card as any).template || template
@@ -601,21 +557,17 @@ export function CardPreview({ card, template = 'professional', readonly = false 
       {!readonly && (
         <div className="mt-6 px-4 pb-4">
           <button
-            onClick={handleLinkedInShare}
-            disabled={isSharing}
-            className="w-full flex items-center justify-center gap-2 bg-[#0077b5] text-white py-3 rounded-xl font-medium hover:bg-[#006396] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            onClick={() => {
+              const shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${window.location.origin}/c/${card.id}`)}`
+              window.open(shareUrl, '_blank', 'width=600,height=600')
+            }}
+            className="w-full flex items-center justify-center gap-2 bg-[#0077b5] text-white py-3 rounded-xl font-medium hover:bg-[#006396] transition-colors"
           >
-            {isSharing ? (
-              <span>Memposting...</span>
-            ) : (
-              <>
-                {/* Icon LinkedIn Simple */}
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-                </svg>
-                Bagikan ke LinkedIn
-              </>
-            )}
+            {/* Icon LinkedIn Simple */}
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+            </svg>
+            Bagikan ke LinkedIn
           </button>
         </div>
       )}
