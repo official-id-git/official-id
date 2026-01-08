@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useOrganizations } from '@/hooks/useOrganizations'
 import { createClient } from '@/lib/supabase/client'
+import SendMessageModal from '@/components/messages/SendMessageModal'
 import type { OrganizationMember, BusinessCard } from '@/types'
 
 interface MemberListProps {
@@ -29,6 +30,10 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
   const [memberCards, setMemberCards] = useState<BusinessCard[]>([])
   const [loadingCards, setLoadingCards] = useState(false)
   const supabase = createClient()
+
+  // Message modal state
+  const [messageModalOpen, setMessageModalOpen] = useState(false)
+  const [messageRecipient, setMessageRecipient] = useState<{ id: string; name: string } | null>(null)
 
   // Fetch member's business cards when modal opens
   useEffect(() => {
@@ -96,6 +101,11 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
   const pendingMembers = members.filter(m => m.status === 'PENDING')
   const approvedMembers = members.filter(m => m.status === 'APPROVED')
   const rejectedMembers = members.filter(m => m.status === 'REJECTED')
+
+  const handleOpenMessage = (userId: string, userName: string) => {
+    setMessageRecipient({ id: userId, name: userName })
+    setMessageModalOpen(true)
+  }
 
   // Avatar component with fallback
   const Avatar = ({ user, size = 'md' }: { user?: MemberWithUser['users'], size?: 'sm' | 'md' | 'lg' }) => {
@@ -280,6 +290,16 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
                     <span className="text-xs text-gray-400 hidden sm:block">
                       {m.joined_at ? new Date(m.joined_at).toLocaleDateString('id-ID') : '-'}
                     </span>
+                    {/* Message Button */}
+                    <button
+                      onClick={() => handleOpenMessage(m.users?.id || '', m.users?.full_name || '')}
+                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Kirim Pesan"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                    </button>
                     <button
                       onClick={() => setSelectedMember(m)}
                       className="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -438,15 +458,18 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
             {/* Footer Actions */}
             <div className="p-6 border-t bg-gray-50">
               <div className="flex gap-3">
-                <a
-                  href={`mailto:${selectedMember.users?.email}`}
+                <button
+                  onClick={() => {
+                    handleOpenMessage(selectedMember.users?.id || '', selectedMember.users?.full_name || '')
+                    // Does not close modal, allows messaging while viewing details
+                  }}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
-                  Kirim Email
-                </a>
+                  Kirim Pesan
+                </button>
                 {isAdmin && !selectedMember.is_admin && (
                   <button
                     onClick={() => handleRemove(selectedMember.id)}
@@ -461,6 +484,14 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
           </div>
         </div>
       )}
+
+      {/* Send Message Modal */}
+      <SendMessageModal
+        isOpen={messageModalOpen}
+        onClose={() => setMessageModalOpen(false)}
+        recipientId={messageRecipient?.id || ''}
+        recipientName={messageRecipient?.name || ''}
+      />
     </div>
   )
 }
