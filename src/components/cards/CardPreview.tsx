@@ -359,6 +359,34 @@ export function CardPreview({ card, template = 'professional', readonly = false 
                   <span className="break-all">{card.website}</span>
                 </a>
               )}
+              {/* Address and City Display - Modern */}
+              {(() => {
+                const address = (card as any).address
+                const city = (card as any).city
+                const hasAddress = address && address.trim() !== '' && address !== 'belum diisi'
+                const hasCity = city && city.trim() !== '' && city !== 'belum diisi'
+                const showAddress = visibleFields.address && hasAddress
+                const showCity = visibleFields.city && hasCity
+
+                if (!showAddress && !showCity) return null
+
+                return (
+                  <div className="flex items-center gap-3 text-gray-300">
+                    <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <div className="flex flex-col">
+                      {showAddress && (
+                        <span className="break-words">{address}</span>
+                      )}
+                      {showCity && (
+                        <span className="text-gray-500 text-sm">{city}</span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
 
             {visibleFields.social_links && Object.keys(socialLinks).length > 0 && (
@@ -436,6 +464,25 @@ export function CardPreview({ card, template = 'professional', readonly = false 
                   {card.website}
                 </a>
               )}
+              {/* Address and City - Minimal */}
+              {(() => {
+                const address = (card as any).address
+                const city = (card as any).city
+                const hasAddress = address && address.trim() !== '' && address !== 'belum diisi'
+                const hasCity = city && city.trim() !== '' && city !== 'belum diisi'
+                const showAddress = visibleFields.address && hasAddress
+                const showCity = visibleFields.city && hasCity
+
+                if (!showAddress && !showCity) return null
+
+                return (
+                  <div className="text-gray-600">
+                    {showAddress && <span>{address}</span>}
+                    {showAddress && showCity && ', '}
+                    {showCity && <span>{city}</span>}
+                  </div>
+                )
+              })()}
             </div>
 
             {visibleFields.social_links && Object.keys(socialLinks).length > 0 && (
