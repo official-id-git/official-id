@@ -65,6 +65,7 @@ export interface VisibleFields {
   phone: boolean
   website: boolean
   social_links: boolean
+  business_description: boolean
 }
 
 // API response type

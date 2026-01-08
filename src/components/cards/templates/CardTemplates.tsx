@@ -65,6 +65,11 @@ export const ModernDarkCard = ({ card, visibleFields, socialLinks, onGenerateVCa
                 <h1 className="text-xl sm:text-2xl md:text-3xl text-white mt-4 font-bold text-center break-words">{card.full_name}</h1>
                 {card.job_title && <p className="text-emerald-400 mt-2 text-lg font-medium text-center">{card.job_title}</p>}
                 {card.company && <p className="text-gray-400 text-center">{card.company}</p>}
+                {card.show_business_description !== false && card.business_description && (
+                    <p className="text-gray-300 text-center mt-3 text-sm px-4 max-w-sm mx-auto italic opacity-80">
+                        {card.business_description}
+                    </p>
+                )}
             </div>
 
             <div className="mt-6 space-y-3">
@@ -164,6 +169,11 @@ export const CreativeCard = ({ card, visibleFields, socialLinks, onGenerateVCard
                     )}
                     {card.company && (
                         <p className="text-gray-500 mt-1">{card.company}</p>
+                    )}
+                    {card.show_business_description !== false && card.business_description && (
+                        <p className="text-gray-600 mt-3 text-sm italic border-l-2 border-purple-500 pl-3">
+                            {card.business_description}
+                        </p>
                     )}
                 </div>
             </div>
@@ -272,6 +282,11 @@ export const MinimalWhiteCard = ({ card, visibleFields, socialLinks, onGenerateV
                 {card.company && (
                     <p className="text-gray-500 text-sm mt-1">{card.company}</p>
                 )}
+                {card.show_business_description !== false && card.business_description && (
+                    <p className="text-gray-600 mt-3 text-sm max-w-xs mx-auto italic">
+                        "{card.business_description}"
+                    </p>
+                )}
             </div>
 
             <div className="mt-8 space-y-4 border-t border-gray-200 pt-6">
@@ -374,6 +389,15 @@ export const ElegantCard = ({ card, visibleFields, socialLinks, onGenerateVCard,
                 )}
                 {card.company && (
                     <p className="text-amber-600 mt-1">{card.company}</p>
+                )}
+                {card.show_business_description !== false && card.business_description && (
+                    <div className="mt-4 relative px-8">
+                        <span className="absolute top-0 left-4 text-4xl text-amber-200 font-serif">"</span>
+                        <p className="text-amber-800 text-sm italic relative z-10">
+                            {card.business_description}
+                        </p>
+                        <span className="absolute bottom-0 right-4 text-4xl text-amber-200 font-serif line-height-none">"</span>
+                    </div>
                 )}
             </div>
 
@@ -482,6 +506,11 @@ export const CorporateCard = ({ card, visibleFields, socialLinks, onGenerateVCar
                     {card.company && (
                         <p className="text-gray-400 text-sm mt-1">{card.company}</p>
                     )}
+                    {card.show_business_description !== false && card.business_description && (
+                        <p className="text-gray-300 text-xs mt-2 italic px-2 border-l border-gray-500">
+                            {card.business_description}
+                        </p>
+                    )}
                 </div>
             </div>
         </div>
@@ -586,6 +615,11 @@ export const TechCard = ({ card, visibleFields, socialLinks, onGenerateVCard, re
                         )}
                         {card.company && (
                             <p className="text-gray-400 text-sm mt-1">{card.company}</p>
+                        )}
+                        {card.show_business_description !== false && card.business_description && (
+                            <p className="text-cyan-200/80 text-xs mt-2 italic bg-gray-900/50 p-2 rounded border-l-2 border-cyan-500">
+                                {card.business_description}
+                            </p>
                         )}
                     </div>
                 </div>
@@ -712,6 +746,15 @@ export const ArtisticCard = ({ card, visibleFields, socialLinks, onGenerateVCard
                 )}
                 {card.company && (
                     <p className="text-gray-600 mt-2 text-center">{card.company}</p>
+                )}
+                {card.show_business_description !== false && card.business_description && (
+                    <div className="mt-4 px-6 text-center">
+                        <p className="text-gray-700 italic text-sm font-medium relative inline-block">
+                            <span className="absolute -top-2 -left-2 text-2xl text-rose-300">"</span>
+                            {card.business_description}
+                            <span className="absolute -bottom-2 -right-2 text-2xl text-indigo-300">"</span>
+                        </p>
+                    </div>
                 )}
             </div>
 

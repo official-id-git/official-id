@@ -20,6 +20,7 @@ interface MemberWithUser extends OrganizationMember {
     full_name: string
     email: string
     avatar_url: string | null
+    business_cards?: BusinessCard[]
   }
 }
 
@@ -29,6 +30,7 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
   const [selectedMember, setSelectedMember] = useState<MemberWithUser | null>(null)
   const [memberCards, setMemberCards] = useState<BusinessCard[]>([])
   const [loadingCards, setLoadingCards] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const supabase = createClient()
 
   // Message modal state
@@ -98,14 +100,37 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
     setSelectedMember(null)
   }
 
-  const pendingMembers = members.filter(m => m.status === 'PENDING')
-  const approvedMembers = members.filter(m => m.status === 'APPROVED')
-  const rejectedMembers = members.filter(m => m.status === 'REJECTED')
-
   const handleOpenMessage = (userId: string, userName: string) => {
     setMessageRecipient({ id: userId, name: userName })
     setMessageModalOpen(true)
   }
+
+  // Filter members based on search query
+  const filteredMembersList = members.filter(member => {
+    if (!searchQuery.trim()) return true
+
+    const m = member as MemberWithUser
+    const query = searchQuery.toLowerCase()
+
+    // Check name and email
+    const nameMatch = m.users?.full_name?.toLowerCase().includes(query)
+    const emailMatch = m.users?.email?.toLowerCase().includes(query)
+
+    // Check business cards
+    const businessCards = m.users?.business_cards || []
+    const cardMatch = businessCards.some(card =>
+      card.company?.toLowerCase().includes(query) ||
+      card.city?.toLowerCase().includes(query) ||
+      (card.business_description && card.business_description.toLowerCase().includes(query))
+    )
+
+    return nameMatch || emailMatch || cardMatch
+  })
+
+  // Derived lists from filtered members
+  const pendingMembers = filteredMembersList.filter(m => m.status === 'PENDING')
+  const approvedMembers = filteredMembersList.filter(m => m.status === 'APPROVED')
+  const rejectedMembers = filteredMembersList.filter(m => m.status === 'REJECTED')
 
   // Avatar component with fallback
   const Avatar = ({ user, size = 'md' }: { user?: MemberWithUser['users'], size?: 'sm' | 'md' | 'lg' }) => {
@@ -196,6 +221,22 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
 
   return (
     <div className="space-y-6">
+      {/* Search Input */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+        <div className="relative">
+          <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Cari anggota berdasarkan nama, email, perusahaan, kota, atau deskripsi..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+      </div>
+
       {/* Pending Members */}
       {isAdmin && pendingMembers.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">

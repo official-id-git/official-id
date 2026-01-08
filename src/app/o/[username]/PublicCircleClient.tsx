@@ -44,15 +44,15 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
             result = result.filter((member: any) => {
                 const userName = member.users?.full_name?.toLowerCase() || ''
 
-                // Check if any business card matches
-                const cards = member.users?.business_cards || []
-                const hasMatchingCard = cards.some((card: any) => {
-                    const company = (card.company || '').toLowerCase()
-                    const city = (card.city || '').toLowerCase()
-                    return company.includes(query) || city.includes(query)
-                })
+                // Get business card data
+                const businessCards = member.users?.business_cards || []
+                const companyMatch = businessCards.some((card: any) =>
+                    card.company?.toLowerCase().includes(query) ||
+                    card.city?.toLowerCase().includes(query) ||
+                    (card.business_description && card.business_description.toLowerCase().includes(query))
+                )
 
-                return userName.includes(query) || hasMatchingCard
+                return userName.includes(query) || companyMatch
             })
         }
 
@@ -341,42 +341,37 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                 return (
                                     <div
                                         key={member.id}
-                                        className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100"
+                                        className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
                                     >
-                                        {/* Avatar */}
-                                        {userAvatar ? (
-                                            <Image
-                                                src={userAvatar}
-                                                alt={userName}
-                                                width={48}
-                                                height={48}
-                                                className="w-12 h-12 rounded-full object-cover flex-shrink-0"
-                                            />
-                                        ) : (
-                                            <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-                                                <span className="text-white font-semibold text-lg">
-                                                    {userName.charAt(0) || '?'}
-                                                </span>
-                                            </div>
-                                        )}
-
-                                        {/* Info */}
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-semibold text-gray-900 truncate">
-                                                {userName}
-                                            </p>
-                                            {member.is_admin && (
-                                                <span className="text-xs text-blue-600 font-medium">Admin</span>
+                                        {/* Header Info */}
+                                        <div className="p-4 flex items-center gap-3 border-b border-gray-100">
+                                            {userAvatar ? (
+                                                <Image
+                                                    src={userAvatar}
+                                                    alt={userName}
+                                                    width={40}
+                                                    height={40}
+                                                    className="w-10 h-10 rounded-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+                                                    <span className="text-white font-semibold text-sm">
+                                                        {userName.charAt(0) || '?'}
+                                                    </span>
+                                                </div>
                                             )}
-                                        </div>
-
-                                        {/* Action Buttons */}
-                                        <div className="flex items-center gap-2 flex-shrink-0">
-                                            {/* Message Button */}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-gray-900 truncate text-sm">
+                                                    {userName}
+                                                </p>
+                                                {member.is_admin && (
+                                                    <span className="text-[10px] text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full">Admin</span>
+                                                )}
+                                            </div>
                                             {userId && (
                                                 <button
                                                     onClick={() => handleOpenMessageModal(userId, userName)}
-                                                    className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                     title="Kirim Pesan"
                                                 >
                                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -384,18 +379,19 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                                     </svg>
                                                 </button>
                                             )}
+                                        </div>
 
-                                            {/* View Card Button */}
-                                            {cardLink && (
-                                                <Link
-                                                    href={cardLink}
-                                                    className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
-                                                    title="Lihat Kartu"
-                                                >
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                    </svg>
-                                                </Link>
+                                        {/* Cards Carousel */}
+                                        <div className="relative">
+                                            {userData.business_cards && userData.business_cards.length > 0 ? (
+                                                <MemberToCardCarousel
+                                                    cards={userData.business_cards}
+                                                    userId={userId}
+                                                />
+                                            ) : (
+                                                <div className="p-8 text-center text-gray-400 text-sm bg-gray-50">
+                                                    Belum ada kartu nama
+                                                </div>
                                             )}
                                         </div>
                                     </div>
@@ -417,6 +413,116 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                     recipientId={selectedRecipient.id}
                     recipientName={selectedRecipient.name}
                 />
+            )}
+        </div>
+    )
+}
+
+import {
+    ModernDarkCard,
+    CreativeCard,
+    MinimalWhiteCard,
+    ElegantCard,
+    CorporateCard,
+    TechCard,
+    ArtisticCard,
+    LuxuryCard,
+    VibrantCard
+} from '@/components/cards/templates/CardTemplates'
+
+// Helper component for carousel
+function MemberToCardCarousel({ cards, userId }: { cards: any[], userId: string }) {
+    // Sort cards: main cards first (if any logic), otherwise by creation
+    // For now just taking them as is
+
+    // We only show public cards or whatever logic is needed. Assuming all fetched cards are displayable.
+
+    // If carousel needed
+    const [activeIndex, setActiveIndex] = useState(0)
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const container = e.currentTarget
+        const index = Math.round(container.scrollLeft / container.clientWidth)
+        if (index !== activeIndex) {
+            setActiveIndex(index)
+        }
+    }
+
+    // Mapping template ID to component
+    const getTemplateComponent = (templateId: string) => {
+        const templates: any = {
+            'modern_dark': ModernDarkCard,
+            'creative': CreativeCard,
+            'minimal_white': MinimalWhiteCard,
+            'elegant': ElegantCard,
+            'corporate': CorporateCard,
+            'tech': TechCard,
+            'artistic': ArtisticCard,
+            'luxury': LuxuryCard,
+            'vibrant': VibrantCard,
+            'professional': ModernDarkCard, // Fallback or mapping for 'professional'
+            'modern': ModernDarkCard // Fallback for 'modern'
+        }
+        return templates[templateId] || ModernDarkCard
+    }
+
+    if (cards.length === 0) return null
+
+    return (
+        <div className="relative pb-6 bg-gray-50">
+            {/* Scroll Container */}
+            <div
+                className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+                onScroll={handleScroll}
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+                {cards.map((card, idx) => {
+                    const Template = getTemplateComponent(card.template)
+                    // Ensure visible_fields is an object
+                    const visibleFields = typeof card.visible_fields === 'object' ? card.visible_fields : {}
+                    const socialLinks = typeof card.social_links === 'object' ? card.social_links : {}
+
+                    // IMPORTANT: Ensure show_business_description is passed if it's not in visibleFields (it's a top level prop in card now, but templates might look for it in card object)
+                    // The templates use `card.show_business_description`.
+
+                    return (
+                        <div key={card.id} className="w-full flex-shrink-0 snap-center p-4">
+                            <div className="transform scale-[0.85] origin-top-center -mb-8 sm:scale-95 sm:mb-0 transition-transform">
+                                <Link href={`/c/${userId}?card=${card.id}`} className="block hover:opacity-95 transition-opacity">
+                                    <div className="pointer-events-none"> {/* Disable interaction within carousel preview to allow clicking the whole card to view detail */}
+                                        <Template
+                                            card={card}
+                                            visibleFields={visibleFields}
+                                            socialLinks={socialLinks}
+                                            onGenerateVCard={() => { }} // No action in preview
+                                            readonly={true}
+                                        />
+                                    </div>
+                                </Link>
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+
+            {/* Dots */}
+            {cards.length > 1 && (
+                <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
+                    {cards.map((_, idx) => (
+                        <div
+                            key={idx}
+                            className={`w-1.5 h-1.5 rounded-full transition-all ${idx === activeIndex ? 'bg-blue-600 w-3' : 'bg-gray-300'
+                                }`}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* Swipe Hint */}
+            {cards.length > 1 && (
+                <div className="absolute bottom-0 left-0 right-0 text-center">
+                    <span className="text-[10px] text-gray-400 font-medium">Swipe untuk lihat kartu lain</span>
+                </div>
             )}
         </div>
     )

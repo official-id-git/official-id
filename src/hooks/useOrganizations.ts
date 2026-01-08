@@ -331,7 +331,7 @@ export function useOrganizations() {
       // Fetch members with user info and business cards (for search)
       const { data, error: fetchError } = await supabase
         .from('organization_members')
-        .select('*, users!organization_members_user_id_fkey(id, full_name, email, avatar_url, business_cards(company, city))')
+        .select('*, users!organization_members_user_id_fkey(id, full_name, email, avatar_url, business_cards(*))')
         .eq('organization_id', orgId)
         .order('joined_at', { ascending: false })
 

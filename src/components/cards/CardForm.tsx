@@ -130,6 +130,10 @@ export function CardForm({ card, mode }: CardFormProps) {
       const checked = (e.target as HTMLInputElement).checked
       setFormData(prev => ({ ...prev, [name]: checked }))
     } else {
+      if (name === 'business_description') {
+        setFormData(prev => ({ ...prev, business_description: value }))
+        return
+      }
       setFormData(prev => ({ ...prev, [name]: value }))
     }
   }

@@ -61,6 +61,8 @@ export type Database = {
           updated_at: string
           address: string | null
           city: string | null
+          business_description: string | null
+          show_business_description: boolean
         }
         Insert: {
           id?: string
@@ -81,6 +83,8 @@ export type Database = {
           updated_at?: string
           address?: string | null
           city?: string | null
+          business_description?: string | null
+          show_business_description?: boolean
         }
         Update: {
           id?: string
@@ -101,6 +105,8 @@ export type Database = {
           updated_at?: string
           address?: string | null
           city?: string | null
+          business_description?: string | null
+          show_business_description?: boolean
         }
       }
       organizations: {
