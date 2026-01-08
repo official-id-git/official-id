@@ -33,7 +33,7 @@ export function OnboardingSlide({ illustration, title, description }: Onboarding
                 transition={{ delay: 0.4, duration: 0.5 }}
                 className="text-center max-w-md"
             >
-                <h2 className="text-2xl mb-4 font-bold text-gray-900">{title}</h2>
+                <h1 className="text-2xl mb-4 font-bold text-gray-900">{title}</h1>
                 <p className="text-gray-600 leading-relaxed">{description}</p>
             </motion.div>
         </motion.div>

@@ -15,6 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const keywords = settings?.keywords || ["official id", "kartu nama digital", "bisnis", "profesional"]
 
   return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://official.id'),
     title,
     description,
     keywords,
