@@ -476,12 +476,12 @@ function MemberToCardCarousel({ cards, userId }: { cards: any[], userId: string 
     if (cards.length === 0) return null
 
     return (
-        <div className="relative pb-10 bg-gray-50">
+        <div className="relative pb-4 bg-gray-50">
             {/* Scroll Container */}
             <div
-                className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+                className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide touch-pan-x"
                 onScroll={handleScroll}
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
             >
                 {cards.map((card, idx) => {
                     const Template = getTemplateComponent(card.template)
@@ -489,12 +489,9 @@ function MemberToCardCarousel({ cards, userId }: { cards: any[], userId: string 
                     const visibleFields = typeof card.visible_fields === 'object' ? card.visible_fields : {}
                     const socialLinks = typeof card.social_links === 'object' ? card.social_links : {}
 
-                    // IMPORTANT: Ensure show_business_description is passed if it's not in visibleFields (it's a top level prop in card now, but templates might look for it in card object)
-                    // The templates use `card.show_business_description`.
-
                     return (
-                        <div key={card.id} className="w-full flex-shrink-0 snap-center p-4">
-                            <div className="transform scale-[0.85] origin-top-center -mb-8 sm:scale-95 sm:mb-0 transition-transform">
+                        <div key={card.id} className="w-full flex-shrink-0 snap-center px-4 pt-4">
+                            <div className="transform scale-[0.85] origin-top-center -mb-12 sm:scale-95 sm:mb-0 transition-transform">
                                 <Link href={`/c/${userId}?card=${card.id}`} className="block hover:opacity-95 transition-opacity">
                                     <div className="pointer-events-none"> {/* Disable interaction within carousel preview to allow clicking the whole card to view detail */}
                                         <Template
@@ -514,7 +511,7 @@ function MemberToCardCarousel({ cards, userId }: { cards: any[], userId: string 
 
             {/* Dots */}
             {cards.length > 1 && (
-                <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5">
+                <div className="flex justify-center gap-1.5 mt-2 mb-1">
                     {cards.map((_, idx) => (
                         <div
                             key={idx}
@@ -527,7 +524,7 @@ function MemberToCardCarousel({ cards, userId }: { cards: any[], userId: string 
 
             {/* Swipe Hint */}
             {cards.length > 1 && (
-                <div className="absolute bottom-1 left-0 right-0 text-center">
+                <div className="text-center pb-2">
                     <span className="text-[10px] text-gray-400 font-medium">Swipe untuk lihat kartu lain</span>
                 </div>
             )}
