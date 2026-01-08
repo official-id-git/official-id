@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useMessages } from '@/hooks/useMessages' // Assuming you want to use the hook here too, or pass it down
+import { useMessages } from '@/hooks/useMessages'
+import Iridescence from '@/components/ui/Iridescence'
 
 export default function DashboardHeader({ onOpenSideMenu }: { onOpenSideMenu: () => void }) {
     const { getUnreadCount } = useMessages()
@@ -22,12 +23,16 @@ export default function DashboardHeader({ onOpenSideMenu }: { onOpenSideMenu: ()
     }, [getUnreadCount])
 
     return (
-        <div className="relative overflow-hidden rounded-b-3xl mb-6">
-            <div className="absolute inset-0 bg-blue-600/5 z-0" />
-            {/* Animated Background Elements - Simplified for reused header */}
-            <div className="absolute inset-0 z-10 opacity-30 pointer-events-none overflow-hidden">
-                <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20" />
-                <div className="absolute top-0 -right-4 w-72 h-72 bg-cyan-400 rounded-full mix-blend-multiply filter blur-xl opacity-20" />
+        <div className="relative overflow-hidden rounded-b-3xl mb-6 shadow-xl">
+            {/* Iridescent Background */}
+            <div className="absolute inset-0 z-0 bg-gray-50">
+                <Iridescence
+                    color={[0.3, 0.5, 1.0]} // Brighter blue-ish tint
+                    mouseInteraction={false}
+                    amplitude={0.1}
+                    speed={1.0}
+                />
+                <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px]" />
             </div>
 
             <div className="relative z-20 px-4 pt-12 pb-6">
@@ -49,7 +54,7 @@ export default function DashboardHeader({ onOpenSideMenu }: { onOpenSideMenu: ()
                             {/* Bell/Notification Icon with Badge */}
                             <Link
                                 href="/dashboard/messages"
-                                className="relative w-10 h-10 bg-white/40 backdrop-blur-md rounded-xl flex items-center justify-center text-blue-600 hover:bg-white/60 transition-all duration-300 shadow-sm"
+                                className="relative w-10 h-10 bg-white/40 backdrop-blur-md rounded-xl flex items-center justify-center text-blue-900 hover:bg-white/60 transition-all duration-300 shadow-sm"
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -64,7 +69,7 @@ export default function DashboardHeader({ onOpenSideMenu }: { onOpenSideMenu: ()
                             {/* Hamburger Menu Icon */}
                             <button
                                 onClick={onOpenSideMenu}
-                                className="w-10 h-10 bg-white/40 backdrop-blur-md rounded-xl flex items-center justify-center text-blue-600 hover:bg-white/60 transition-all duration-300 shadow-sm"
+                                className="w-10 h-10 bg-white/40 backdrop-blur-md rounded-xl flex items-center justify-center text-blue-900 hover:bg-white/60 transition-all duration-300 shadow-sm"
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
