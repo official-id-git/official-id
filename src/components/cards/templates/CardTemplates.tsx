@@ -619,6 +619,22 @@ export const TechCard = ({ card, visibleFields, socialLinks, onGenerateVCard, re
                     <span className="text-gray-300 break-all text-sm">{card.website}</span>
                 </a>
             )}
+
+            {(() => {
+                const loc = getLocationDisplay(card, visibleFields)
+                if (!loc.hasAny) return null
+                return (
+                    <div className="flex items-center gap-3 p-3 bg-gray-900/50 rounded-lg border border-cyan-500/20 hover:border-cyan-500 transition-all group">
+                        <div className="w-10 h-10 shrink-0 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <MapPin className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex flex-col text-gray-300">
+                            {loc.showAddress && <span className="break-words text-sm">{loc.address}</span>}
+                            {loc.showCity && <span className="text-cyan-400 text-xs">{loc.city}</span>}
+                        </div>
+                    </div>
+                )
+            })()}
         </div>
 
         {visibleFields.social_links && Object.keys(socialLinks).length > 0 && (
@@ -726,6 +742,22 @@ export const ArtisticCard = ({ card, visibleFields, socialLinks, onGenerateVCard
                         <span className="text-gray-800 break-all">{card.website}</span>
                     </a>
                 )}
+
+                {(() => {
+                    const loc = getLocationDisplay(card, visibleFields)
+                    if (!loc.hasAny) return null
+                    return (
+                        <div className="flex items-center gap-4 p-4 bg-white/70 backdrop-blur-sm rounded-2xl shadow-sm">
+                            <div className="w-12 h-12 shrink-0 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
+                                <MapPin className="w-6 h-6 text-white" />
+                            </div>
+                            <div className="flex flex-col text-gray-800">
+                                {loc.showAddress && <span className="break-words">{loc.address}</span>}
+                                {loc.showCity && <span className="text-purple-700 text-sm">{loc.city}</span>}
+                            </div>
+                        </div>
+                    )
+                })()}
             </div>
 
             {visibleFields.social_links && Object.keys(socialLinks).length > 0 && (
@@ -829,6 +861,21 @@ export const LuxuryCard = ({ card, visibleFields, socialLinks, onGenerateVCard, 
                     <span className="text-gray-200 break-all text-sm">{card.website}</span>
                 </a>
             )}
+            {(() => {
+                const loc = getLocationDisplay(card, visibleFields)
+                if (!loc.hasAny) return null
+                return (
+                    <div className="flex items-center gap-3 p-4 bg-gray-800/50 rounded-lg border border-yellow-600/30">
+                        <div className="w-10 h-10 shrink-0 bg-gradient-to-br from-yellow-600 to-yellow-500 rounded-lg flex items-center justify-center">
+                            <MapPin className="w-5 h-5 text-gray-900" />
+                        </div>
+                        <div className="flex flex-col text-gray-200">
+                            {loc.showAddress && <span className="break-words text-sm">{loc.address}</span>}
+                            {loc.showCity && <span className="text-yellow-500 text-xs">{loc.city}</span>}
+                        </div>
+                    </div>
+                )
+            })()}
         </div>
 
         {visibleFields.social_links && Object.keys(socialLinks).length > 0 && (
@@ -931,6 +978,22 @@ export const VibrantCard = ({ card, visibleFields, socialLinks, onGenerateVCard,
                         <span className="text-gray-800 break-all">{card.website}</span>
                     </a>
                 )}
+
+                {(() => {
+                    const loc = getLocationDisplay(card, visibleFields)
+                    if (!loc.hasAny) return null
+                    return (
+                        <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-orange-100 to-amber-100 rounded-2xl group">
+                            <div className="w-12 h-12 shrink-0 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                                <MapPin className="w-6 h-6 text-white" />
+                            </div>
+                            <div className="flex flex-col text-gray-800">
+                                {loc.showAddress && <span className="break-words">{loc.address}</span>}
+                                {loc.showCity && <span className="text-gray-600 text-sm">{loc.city}</span>}
+                            </div>
+                        </div>
+                    )
+                })()}
             </div>
 
             {visibleFields.social_links && Object.keys(socialLinks).length > 0 && (

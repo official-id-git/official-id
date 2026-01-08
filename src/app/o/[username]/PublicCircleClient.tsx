@@ -43,7 +43,16 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
             const query = searchQuery.toLowerCase()
             result = result.filter((member: any) => {
                 const userName = member.users?.full_name?.toLowerCase() || ''
-                return userName.includes(query)
+
+                // Check if any business card matches
+                const cards = member.users?.business_cards || []
+                const hasMatchingCard = cards.some((card: any) => {
+                    const company = (card.company || '').toLowerCase()
+                    const city = (card.city || '').toLowerCase()
+                    return company.includes(query) || city.includes(query)
+                })
+
+                return userName.includes(query) || hasMatchingCard
             })
         }
 
