@@ -339,45 +339,41 @@ export default function OrganizationsPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No public Circle yet</h3>
             </div>
           ) : (
-            <div className="grid gap-4">
+            <div className="space-y-3">
               {publicOrgs.map((org) => {
                 const status = membershipStatus[org.id]
                 const isJoined = status === 'APPROVED' || status === 'OWNER'
                 const isPending = status === 'PENDING'
 
                 return (
-                  <div key={org.id} className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-center sm:text-left">
-
-                      <div className="flex items-center gap-3 sm:gap-4 w-full">
-                        <OrgAvatar org={org} colorClass="from-blue-100 to-blue-200 text-blue-600" />
-                        <div className="flex-1 min-w-0 text-left">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-gray-900 truncate">{org.name}</h3>
-                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full flex-shrink-0">Public</span>
-                          </div>
-                          <p className="text-gray-500 text-sm truncate mt-1">{org.description}</p>
+                  <div key={org.id} className="bg-white rounded-2xl p-4 shadow-sm border">
+                    <div className="flex items-center gap-3">
+                      <OrgAvatar org={org} colorClass="from-blue-100 to-blue-200 text-blue-600" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-gray-900 truncate text-sm sm:text-base">{org.name}</h3>
+                          <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full flex-shrink-0">Public</span>
                         </div>
+                        <p className="text-gray-500 text-xs sm:text-sm truncate mt-0.5">{org.description}</p>
                       </div>
 
-                      <div className="w-full sm:w-auto flex flex-shrink-0 justify-end">
+                      <div className="flex-shrink-0">
                         {status === 'OWNER' ? (
-                          <Link href={`/dashboard/organizations/${org.id}`} className="block w-full sm:w-auto text-center px-4 py-2 bg-blue-100 text-blue-700 text-sm font-medium rounded-xl">Manage</Link>
+                          <Link href={`/dashboard/organizations/${org.id}`} className="px-3 py-1.5 bg-blue-100 text-blue-700 text-xs sm:text-sm font-medium rounded-xl whitespace-nowrap">Manage</Link>
                         ) : isJoined ? (
-                          <Link href={`/dashboard/organizations/${org.id}`} className="block w-full sm:w-auto text-center px-4 py-2 bg-green-100 text-green-700 text-sm font-medium rounded-xl">View</Link>
+                          <Link href={`/dashboard/organizations/${org.id}`} className="px-3 py-1.5 bg-green-100 text-green-700 text-xs sm:text-sm font-medium rounded-xl whitespace-nowrap">View</Link>
                         ) : isPending ? (
-                          <span className="block w-full sm:w-auto text-center px-4 py-2 bg-yellow-100 text-yellow-700 text-sm font-medium rounded-xl">Pending</span>
+                          <span className="px-3 py-1.5 bg-yellow-100 text-yellow-700 text-xs sm:text-sm font-medium rounded-xl whitespace-nowrap">Pending</span>
                         ) : (
                           <button
                             onClick={() => handleJoinOrganization(org.id)}
                             disabled={joiningOrgId === org.id}
-                            className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap"
+                            className="px-4 py-1.5 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap"
                           >
-                            {joiningOrgId === org.id ? 'Processing...' : 'Join'}
+                            {joiningOrgId === org.id ? '...' : 'Join'}
                           </button>
                         )}
                       </div>
-
                     </div>
                   </div>
                 )
