@@ -933,6 +933,37 @@ export function useOrganizations() {
         throw new Error('Failed to deliver messages to members')
       }
 
+      // Send email notifications to all members
+      try {
+        const emailRecipients = approvedMembers
+          .filter((m: any) => m.users?.email)
+          .map((m: any) => ({
+            email: m.users.email,
+            name: m.users.full_name || 'Member',
+          }))
+
+        if (emailRecipients.length > 0) {
+          const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://official.id'
+          fetch(`${baseUrl}/api/email/circle`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'broadcast',
+              recipients: emailRecipients,
+              circleName: orgName,
+              senderName: sender?.full_name || 'Admin',
+              message: message.trim(),
+            }),
+          })
+            .then(res => res.json())
+            .then(result => console.log('Broadcast email result:', result))
+            .catch(err => console.error('Email send failed:', err))
+        }
+      } catch (emailErr) {
+        console.error('Failed to send email notifications:', emailErr)
+        // Don't fail the broadcast if email fails
+      }
+
       return { success: true, recipientCount: approvedMembers.length }
     } catch (err: any) {
       setError(err.message)

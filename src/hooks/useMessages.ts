@@ -43,7 +43,7 @@ export function useMessages() {
     }, [supabase])
 
     // Send a new message
-    const sendMessage = useCallback(async (data: SendMessageData): Promise<boolean> => {
+    const sendMessage = useCallback(async (data: SendMessageData, circleName?: string): Promise<boolean> => {
         setLoading(true)
         setError(null)
 
@@ -63,6 +63,41 @@ export function useMessages() {
                 .insert(insertData)
 
             if (insertError) throw insertError
+
+            // Send email notification to recipient
+            try {
+                // Get recipient's email
+                const { data: recipient } = await supabase
+                    .from('users')
+                    .select('email, full_name')
+                    .eq('id', data.recipient_id)
+                    .single()
+
+                if (recipient?.email) {
+                    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://official.id'
+                    fetch(`${baseUrl}/api/email/circle`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            type: 'message',
+                            recipients: [{
+                                email: recipient.email,
+                                name: recipient.full_name || 'Member',
+                            }],
+                            circleName: circleName || 'Official ID',
+                            senderName: data.sender_name,
+                            message: data.message,
+                        }),
+                    })
+                        .then(res => res.json())
+                        .then(result => console.log('Email API result:', result))
+                        .catch(err => console.error('Email send failed:', err))
+                }
+            } catch (emailErr) {
+                console.error('Failed to send email notification:', emailErr)
+                // Don't fail the message if email fails
+            }
+
             return true
         } catch (err: any) {
             setError(err.message)
