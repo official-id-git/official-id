@@ -48,16 +48,18 @@ export function OrgForm({ organization, mode }: OrgFormProps) {
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
 
-    // Security Check
-    const isValid = await validateInput(value)
-    if (!isValid) return // Block input if potentially malicious
-
+    // Handle checkbox separately - no security check needed for boolean toggle
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked
       setFormData(prev => ({ ...prev, [name]: checked }))
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }))
+      return
     }
+
+    // Security Check for text inputs
+    const isValid = await validateInput(value)
+    if (!isValid) return // Block input if potentially malicious
+
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
   const handleVisibilityChange = (isPublic: boolean) => {
