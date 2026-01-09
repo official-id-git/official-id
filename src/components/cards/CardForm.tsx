@@ -124,30 +124,33 @@ export function CardForm({ card, mode }: CardFormProps) {
     if (index >= 0) setCurrentTemplateIndex(index)
   })
 
+  // Synchronous handler for display fields - no race conditions
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    // Basic sanitization - just remove script tags
+    const sanitized = value.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    setFormData(prev => ({ ...prev, [name]: sanitized }))
+  }
+
+  // Handler for checkboxes
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target
+    setFormData(prev => ({ ...prev, [name]: checked }))
+  }
+
+  // Async handler for fields that need security validation (kept for backwards compatibility)
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
 
-    // Handle checkbox separately - no security check needed for boolean toggle
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked
       setFormData(prev => ({ ...prev, [name]: checked }))
       return
     }
 
-    // Fields that skip strict security validation
-    // These are display-only fields that often trigger false positives
-    const skipValidationFields = ['business_description', 'address', 'city', 'full_name', 'job_title', 'company']
-
-    if (skipValidationFields.includes(name)) {
-      // Basic sanitization - just remove script tags
-      const sanitized = value.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      setFormData(prev => ({ ...prev, [name]: sanitized }))
-      return
-    }
-
-    // Security Check for other text inputs (email, phone, website, social links)
+    // Security Check
     const isValid = await validateInput(value)
-    if (!isValid) return // Block input if potentially malicious
+    if (!isValid) return
 
     setFormData(prev => ({ ...prev, [name]: value }))
   }
