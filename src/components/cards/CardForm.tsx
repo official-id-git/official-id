@@ -134,16 +134,18 @@ export function CardForm({ card, mode }: CardFormProps) {
       return
     }
 
-    // Handle business_description separately - skip strict security check
-    // as it's a display-only field and strict validation causes false positives
-    if (name === 'business_description') {
+    // Fields that skip strict security validation
+    // These are display-only fields that often trigger false positives
+    const skipValidationFields = ['business_description', 'address', 'city', 'full_name', 'job_title', 'company']
+
+    if (skipValidationFields.includes(name)) {
       // Basic sanitization - just remove script tags
       const sanitized = value.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      setFormData(prev => ({ ...prev, business_description: sanitized }))
+      setFormData(prev => ({ ...prev, [name]: sanitized }))
       return
     }
 
-    // Security Check for other text inputs
+    // Security Check for other text inputs (email, phone, website, social links)
     const isValid = await validateInput(value)
     if (!isValid) return // Block input if potentially malicious
 
