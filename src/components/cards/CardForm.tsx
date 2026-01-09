@@ -450,8 +450,62 @@ export function CardForm({ card, mode }: CardFormProps) {
         <p className="text-sm text-gray-500 mb-6">Pilih template yang sesuai dengan gaya Anda</p>
 
         <div className="flex flex-col items-center">
-          {/* Carousel Controls */}
-          <div className="w-full">
+          {/* Swipeable Carousel */}
+          <div
+            className="w-full touch-pan-y select-none cursor-grab active:cursor-grabbing"
+            onTouchStart={(e) => {
+              const touch = e.touches[0]
+                ; (e.currentTarget as any).touchStartX = touch.clientX
+                ; (e.currentTarget as any).touchStartY = touch.clientY
+            }}
+            onTouchEnd={(e) => {
+              const startX = (e.currentTarget as any).touchStartX
+              const startY = (e.currentTarget as any).touchStartY
+              const touch = e.changedTouches[0]
+              const diffX = touch.clientX - startX
+              const diffY = touch.clientY - startY
+
+              // Only swipe if horizontal movement is greater than vertical
+              if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                if (diffX < 0 && currentTemplateIndex < TEMPLATES.length - 1) {
+                  // Swipe left - next template
+                  const newIndex = currentTemplateIndex + 1
+                  setCurrentTemplateIndex(newIndex)
+                  setFormData(prev => ({ ...prev, template: TEMPLATES[newIndex].id }))
+                } else if (diffX > 0 && currentTemplateIndex > 0) {
+                  // Swipe right - previous template
+                  const newIndex = currentTemplateIndex - 1
+                  setCurrentTemplateIndex(newIndex)
+                  setFormData(prev => ({ ...prev, template: TEMPLATES[newIndex].id }))
+                }
+              }
+            }}
+            onMouseDown={(e) => {
+              ; (e.currentTarget as any).mouseStartX = e.clientX
+                ; (e.currentTarget as any).isDragging = true
+            }}
+            onMouseUp={(e) => {
+              if (!(e.currentTarget as any).isDragging) return
+                ; (e.currentTarget as any).isDragging = false
+              const startX = (e.currentTarget as any).mouseStartX
+              const diffX = e.clientX - startX
+
+              if (Math.abs(diffX) > 50) {
+                if (diffX < 0 && currentTemplateIndex < TEMPLATES.length - 1) {
+                  const newIndex = currentTemplateIndex + 1
+                  setCurrentTemplateIndex(newIndex)
+                  setFormData(prev => ({ ...prev, template: TEMPLATES[newIndex].id }))
+                } else if (diffX > 0 && currentTemplateIndex > 0) {
+                  const newIndex = currentTemplateIndex - 1
+                  setCurrentTemplateIndex(newIndex)
+                  setFormData(prev => ({ ...prev, template: TEMPLATES[newIndex].id }))
+                }
+              }
+            }}
+            onMouseLeave={(e) => {
+              ; (e.currentTarget as any).isDragging = false
+            }}
+          >
             <div className="overflow-hidden relative flex items-center justify-center py-4">
               {/* Live Preview */}
               <div className="w-full max-w-sm transform scale-100 transition-transform">
@@ -482,6 +536,7 @@ export function CardForm({ card, mode }: CardFormProps) {
             <p className="text-gray-500 mt-1">
               {TEMPLATES[currentTemplateIndex].description}
             </p>
+            <p className="text-xs text-gray-400 mt-2">Swipe to change template</p>
             <div className="flex gap-2 justify-center mt-4">
               {TEMPLATES.map((t, idx) => (
                 <button

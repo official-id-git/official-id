@@ -142,20 +142,75 @@ export default function DashboardPage() {
               {selectedCard.template || 'professional'}
             </span>
           </div>
-          <Link href={`/dashboard/cards/${selectedCard.id}`}>
-            <CardPreview card={selectedCard} readonly={true} />
-          </Link>
+
+          {/* Swipeable Card Container */}
+          <div
+            className="touch-pan-y select-none cursor-grab active:cursor-grabbing"
+            onTouchStart={(e) => {
+              const touch = e.touches[0]
+                ; (e.currentTarget as any).touchStartX = touch.clientX
+                ; (e.currentTarget as any).touchStartY = touch.clientY
+            }}
+            onTouchEnd={(e) => {
+              const startX = (e.currentTarget as any).touchStartX
+              const startY = (e.currentTarget as any).touchStartY
+              const touch = e.changedTouches[0]
+              const diffX = touch.clientX - startX
+              const diffY = touch.clientY - startY
+
+              // Only swipe if horizontal movement is greater than vertical
+              if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                const currentIndex = cards.findIndex(c => c.id === selectedCard.id)
+                if (diffX < 0 && currentIndex < cards.length - 1) {
+                  // Swipe left - next card
+                  setSelectedCard(cards[currentIndex + 1])
+                } else if (diffX > 0 && currentIndex > 0) {
+                  // Swipe right - previous card
+                  setSelectedCard(cards[currentIndex - 1])
+                }
+              }
+            }}
+            onMouseDown={(e) => {
+              ; (e.currentTarget as any).mouseStartX = e.clientX
+                ; (e.currentTarget as any).isDragging = true
+            }}
+            onMouseUp={(e) => {
+              if (!(e.currentTarget as any).isDragging) return
+                ; (e.currentTarget as any).isDragging = false
+              const startX = (e.currentTarget as any).mouseStartX
+              const diffX = e.clientX - startX
+
+              if (Math.abs(diffX) > 50) {
+                const currentIndex = cards.findIndex(c => c.id === selectedCard.id)
+                if (diffX < 0 && currentIndex < cards.length - 1) {
+                  setSelectedCard(cards[currentIndex + 1])
+                } else if (diffX > 0 && currentIndex > 0) {
+                  setSelectedCard(cards[currentIndex - 1])
+                }
+              }
+            }}
+            onMouseLeave={(e) => {
+              ; (e.currentTarget as any).isDragging = false
+            }}
+          >
+            <Link href={`/dashboard/cards/${selectedCard.id}`} draggable={false}>
+              <CardPreview card={selectedCard} readonly={true} />
+            </Link>
+          </div>
 
           {cards.length > 1 && (
-            <div className="flex gap-2 justify-center">
-              {cards.slice(0, 3).map((card) => (
-                <button
-                  key={card.id}
-                  onClick={() => setSelectedCard(card)}
-                  className={`w-3 h-3 rounded-full transition-colors ${selectedCard.id === card.id ? 'bg-blue-600' : 'bg-gray-300'
-                    }`}
-                />
-              ))}
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex gap-2 justify-center">
+                {cards.slice(0, 5).map((card) => (
+                  <button
+                    key={card.id}
+                    onClick={() => setSelectedCard(card)}
+                    className={`w-3 h-3 rounded-full transition-all ${selectedCard.id === card.id ? 'bg-blue-600 w-5' : 'bg-gray-300'
+                      }`}
+                  />
+                ))}
+              </div>
+              <p className="text-xs text-gray-400">Swipe to change card</p>
             </div>
           )}
         </div>
