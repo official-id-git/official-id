@@ -23,7 +23,7 @@ const menuItems = [
         ),
     },
     {
-        label: 'My Contacts',
+        label: 'Leads',
         href: '/dashboard/contacts',
         icon: (
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

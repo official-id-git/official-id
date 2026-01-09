@@ -84,7 +84,7 @@ export function useAdmin() {
 
   // Fetch all users with pagination
   const fetchUsers = useCallback(async (
-    page: number = 1, 
+    page: number = 1,
     limit: number = 20,
     search: string = '',
     roleFilter: UserRole | 'ALL' = 'ALL'
@@ -181,9 +181,10 @@ export function useAdmin() {
     setError(null)
 
     try {
+      // First, fetch payments
       let query = supabase
         .from('payment_transactions')
-        .select('*, users(id, full_name, email, avatar_url)', { count: 'exact' })
+        .select('*', { count: 'exact' })
 
       if (statusFilter !== 'ALL') {
         query = query.eq('status', statusFilter)
@@ -192,14 +193,36 @@ export function useAdmin() {
       const from = (page - 1) * limit
       const to = from + limit - 1
 
-      const { data, error: fetchError, count } = await query
+      const { data: payments, error: fetchError, count } = await query
         .order('created_at', { ascending: false })
         .range(from, to)
 
       if (fetchError) throw fetchError
 
+      // Then, fetch user details for each payment
+      if (payments && payments.length > 0) {
+        const userIds = [...new Set(payments.map(p => p.user_id))]
+
+        const { data: users } = await supabase
+          .from('users')
+          .select('id, full_name, email, avatar_url')
+          .in('id', userIds)
+
+        // Map users to payments
+        const userMap = new Map(users?.map(u => [u.id, u]) || [])
+        const paymentsWithUsers = payments.map(p => ({
+          ...p,
+          users: userMap.get(p.user_id) || undefined
+        }))
+
+        return {
+          payments: paymentsWithUsers,
+          total: count || 0
+        }
+      }
+
       return {
-        payments: data || [],
+        payments: payments || [],
         total: count || 0
       }
     } catch (err: any) {
@@ -212,7 +235,7 @@ export function useAdmin() {
 
   // Approve payment
   const approvePayment = useCallback(async (
-    paymentId: string, 
+    paymentId: string,
     userId: string,
     adminId: string
   ): Promise<boolean> => {
@@ -223,7 +246,7 @@ export function useAdmin() {
       // Update payment status
       const { error: paymentError } = await supabase
         .from('payment_transactions')
-        .update({ 
+        .update({
           status: 'APPROVED',
           verified_by: adminId,
           verified_at: new Date().toISOString(),
@@ -236,7 +259,7 @@ export function useAdmin() {
       // Upgrade user to PAID_USER
       const { error: userError } = await supabase
         .from('users')
-        .update({ 
+        .update({
           role: 'PAID_USER',
           updated_at: new Date().toISOString()
         })
@@ -265,7 +288,7 @@ export function useAdmin() {
     try {
       const { error: updateError } = await supabase
         .from('payment_transactions')
-        .update({ 
+        .update({
           status: 'REJECTED',
           verified_by: adminId,
           verified_at: new Date().toISOString(),

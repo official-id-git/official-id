@@ -43,7 +43,7 @@ export default function CardDetailPage() {
 
   const handleDelete = async () => {
     if (!card) return
-    if (!confirm(`Yakin ingin menghapus kartu "${card.full_name}"?`)) return
+    if (!confirm(`Are you sure you want to delete the card "${card.full_name}"?`)) return
 
     const success = await deleteCard(card.id)
     if (success) {
@@ -72,7 +72,7 @@ export default function CardDetailPage() {
       })
 
       if (result.success) {
-        setShareResult({ success: true, message: 'Email berhasil dikirim!' })
+        setShareResult({ success: true, message: 'Email sent successfully!' })
         setShareEmail('')
         setShareMessage('')
         setTimeout(() => {
@@ -80,10 +80,10 @@ export default function CardDetailPage() {
           setShareResult(null)
         }, 2000)
       } else {
-        setShareResult({ success: false, message: result.error || 'Gagal mengirim email' })
+        setShareResult({ success: false, message: result.error || 'Failed to send email' })
       }
     } catch (error: any) {
-      setShareResult({ success: false, message: error.message || 'Terjadi kesalahan' })
+      setShareResult({ success: false, message: error.message || 'An error occurred' })
     } finally {
       setSending(false)
     }
@@ -94,7 +94,7 @@ export default function CardDetailPage() {
 
     const publicUrl = getPublicCardUrl(card.id, card.username)
     const title = `${card.full_name} - Official ID`
-    const summary = `🎯 Lihat kartu bisnis digital saya!\n\n👤 ${card.full_name}${card.job_title ? `\n💼 ${card.job_title}` : ''}${card.company ? `\n🏢 ${card.company}` : ''}\n\n📇 Buat kartu bisnis digital Anda sendiri di Official ID!`
+    const summary = `🎯 Check out my digital business card!\n\n👤 ${card.full_name}${card.job_title ? `\n💼 ${card.job_title}` : ''}${card.company ? `\n🏢 ${card.company}` : ''}\n\n📇 Create your own digital business card at Official ID!`
 
     // Use LinkedIn Share Dialog URL (no API permission needed)
     const linkedInShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(publicUrl)}`
@@ -113,7 +113,7 @@ export default function CardDetailPage() {
       await downloadBusinessCard(card)
     } catch (error) {
       console.error('Download error:', error)
-      alert('Gagal mengunduh kartu nama')
+      alert('Failed to download card')
     } finally {
       setDownloading(false)
     }
@@ -131,7 +131,7 @@ export default function CardDetailPage() {
     if (!card) return
     const url = getPublicCardUrl(card.id, card.username)
     await navigator.clipboard.writeText(url)
-    alert('Link berhasil disalin!')
+    alert('Link copied successfully!')
   }
 
   if (authLoading || loading || !card) {
@@ -139,7 +139,7 @@ export default function CardDetailPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat...</p>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     )
@@ -161,7 +161,7 @@ export default function CardDetailPage() {
               href="/dashboard/cards"
               className="text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
-              ← Kembali ke Daftar Kartu
+              ← Back to Card List
             </Link>
             <div className="flex gap-2">
               <Link
@@ -174,7 +174,7 @@ export default function CardDetailPage() {
                 onClick={handleDelete}
                 className="px-4 py-2 border border-red-300 text-red-600 text-sm rounded-lg hover:bg-red-50 transition-colors"
               >
-                Hapus
+                Delete
               </button>
             </div>
           </div>
@@ -191,7 +191,7 @@ export default function CardDetailPage() {
         {/* Card Preview Section */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">Preview Kartu</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Card Preview</h2>
             <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full capitalize">
               {template}
             </span>
@@ -203,7 +203,7 @@ export default function CardDetailPage() {
 
         {/* Public Link - Moved under preview */}
         <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Link Publik</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Public Link</h2>
           <div className="bg-gray-100 rounded-xl p-4 mb-4">
             <p className="text-sm text-gray-600 break-all font-mono">{publicUrl}</p>
           </div>
@@ -215,7 +215,7 @@ export default function CardDetailPage() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
-              Salin Link
+              Copy Link
             </button>
             <a
               href={publicUrl}
@@ -226,14 +226,14 @@ export default function CardDetailPage() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
-              Buka
+              Open
             </a>
           </div>
         </div>
 
         {/* QR Code & Download */}
         <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 text-center">QR Code & Unduh</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 text-center">QR Code & Download</h2>
           {card.qr_code_url ? (
             <div className="flex flex-col items-center">
               <Image
@@ -252,7 +252,7 @@ export default function CardDetailPage() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                  {downloading ? 'Mengunduh...' : 'Unduh Kartu'}
+                  {downloading ? 'Downloading...' : 'Download Card'}
                 </button>
                 <button
                   onClick={handleRegenerateQR}
@@ -265,17 +265,17 @@ export default function CardDetailPage() {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-3 text-center">
-                Unduh kartu nama ukuran standar (85.6mm x 53.98mm)
+                Download standard size business card (85.6mm x 53.98mm)
               </p>
             </div>
           ) : (
             <div className="text-center py-8">
-              <p className="text-gray-500 mb-4">QR Code belum dibuat</p>
+              <p className="text-gray-500 mb-4">QR Code not yet created</p>
               <button
                 onClick={handleRegenerateQR}
                 className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700"
               >
-                Buat QR Code
+                Create QR Code
               </button>
             </div>
           )}
@@ -283,18 +283,18 @@ export default function CardDetailPage() {
 
         {/* Basic Info */}
         <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Informasi Kartu</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Card Information</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="p-3 bg-gray-50 rounded-xl">
-              <p className="text-xs text-gray-500 mb-1">Nama Lengkap</p>
+              <p className="text-xs text-gray-500 mb-1">Full Name</p>
               <p className="font-medium text-gray-900">{card.full_name}</p>
             </div>
             <div className="p-3 bg-gray-50 rounded-xl">
-              <p className="text-xs text-gray-500 mb-1">Jabatan</p>
+              <p className="text-xs text-gray-500 mb-1">Job Title</p>
               <p className="font-medium text-gray-900">{card.job_title || '-'}</p>
             </div>
             <div className="p-3 bg-gray-50 rounded-xl">
-              <p className="text-xs text-gray-500 mb-1">Perusahaan</p>
+              <p className="text-xs text-gray-500 mb-1">Company</p>
               <p className="font-medium text-gray-900">{card.company || '-'}</p>
             </div>
             <div className="p-3 bg-gray-50 rounded-xl">
@@ -302,7 +302,7 @@ export default function CardDetailPage() {
               <p className="font-medium text-gray-900 text-sm break-all">{card.email}</p>
             </div>
             <div className="p-3 bg-gray-50 rounded-xl">
-              <p className="text-xs text-gray-500 mb-1">Telepon</p>
+              <p className="text-xs text-gray-500 mb-1">Phone</p>
               <p className="font-medium text-gray-900">{card.phone}</p>
             </div>
             <div className="p-3 bg-gray-50 rounded-xl">
@@ -315,7 +315,7 @@ export default function CardDetailPage() {
         {/* Social Links */}
         {Object.keys(socialLinks).filter(k => socialLinks[k]).length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Media Sosial</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Social Media</h2>
             <div className="grid grid-cols-2 gap-3">
               {Object.entries(socialLinks).map(([platform, url]) => {
                 if (!url) return null
@@ -338,30 +338,30 @@ export default function CardDetailPage() {
 
         {/* Stats */}
         <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Statistik</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Statistics</h2>
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-blue-50 rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-blue-600">{card.scan_count}</p>
-              <p className="text-xs text-gray-600 mt-1">Total Scan</p>
+              <p className="text-xs text-gray-600 mt-1">Total Scans</p>
             </div>
             <div className="bg-green-50 rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-green-600">
-                {card.is_public ? 'Ya' : 'Tidak'}
+                {card.is_public ? 'Yes' : 'No'}
               </p>
               <p className="text-xs text-gray-600 mt-1">Publik</p>
             </div>
             <div className="bg-purple-50 rounded-xl p-4 text-center">
               <p className="text-lg font-bold text-purple-600">
-                {new Date(card.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                {new Date(card.created_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}
               </p>
-              <p className="text-xs text-gray-600 mt-1">Dibuat</p>
+              <p className="text-xs text-gray-600 mt-1">Created</p>
             </div>
           </div>
         </div>
 
         {/* Quick Share Actions */}
         <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Bagikan</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Share</h2>
           <div className="grid grid-cols-3 gap-3">
             <button
               onClick={() => setShowShareModal(true)}
@@ -373,7 +373,7 @@ export default function CardDetailPage() {
               <span className="text-xs">Email</span>
             </button>
             <a
-              href={`https://wa.me/?text=${encodeURIComponent(`Lihat kartu bisnis saya: ${publicUrl}`)}`}
+              href={`https://wa.me/?text=${encodeURIComponent(`Check out my business card: ${publicUrl}`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex flex-col items-center justify-center gap-1 px-3 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700"
@@ -401,7 +401,7 @@ export default function CardDetailPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Kirim via Email</h3>
+              <h3 className="text-lg font-semibold">Send via Email</h3>
               <button
                 onClick={() => {
                   setShowShareModal(false)
@@ -417,15 +417,15 @@ export default function CardDetailPage() {
 
             {shareResult ? (
               <div className={`p-4 rounded-xl mb-4 ${shareResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                <p className="font-medium">{shareResult.success ? '✓ Berhasil' : '✗ Gagal'}</p>
+                <p className="font-medium">{shareResult.success ? '✓ Success' : '✗ Failed'}</p>
                 <p className="text-sm mt-1">
                   {shareResult.message.includes('validation_error')
-                    ? 'Email tidak dapat dikirim. Resend memerlukan domain terverifikasi untuk mengirim ke alamat email lain.'
+                    ? 'Email cannot be sent. Resend requires a verified domain to send to other email addresses.'
                     : shareResult.message}
                 </p>
                 {!shareResult.success && (
                   <p className="text-xs mt-2 opacity-75">
-                    Tip: Gunakan WhatsApp untuk berbagi kartu, atau hubungi admin untuk konfigurasi email.
+                    Tip: Use WhatsApp to share the card, or contact admin for email configuration.
                   </p>
                 )}
               </div>
@@ -433,7 +433,7 @@ export default function CardDetailPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email Penerima *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Recipient Email *</label>
                 <input
                   type="email"
                   value={shareEmail}
@@ -443,11 +443,11 @@ export default function CardDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Pesan (Opsional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Message (Optional)</label>
                 <textarea
                   value={shareMessage}
                   onChange={(e) => setShareMessage(e.target.value)}
-                  placeholder="Tulis pesan singkat..."
+                  placeholder="Write a short message..."
                   rows={3}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 />
@@ -460,14 +460,14 @@ export default function CardDetailPage() {
                 {sending ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Mengirim...
+                    Sending...
                   </>
                 ) : (
                   <>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                     </svg>
-                    Kirim Email
+                    Send Email
                   </>
                 )}
               </button>
@@ -486,7 +486,7 @@ export default function CardDetailPage() {
                 <svg className="w-6 h-6 text-[#0077B5]" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                 </svg>
-                <h3 className="text-lg font-semibold text-gray-900">Bagikan ke LinkedIn</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Share to LinkedIn</h3>
               </div>
               <button
                 onClick={() => {
@@ -505,7 +505,7 @@ export default function CardDetailPage() {
             <div className="p-4">
               {/* Card Preview - Professional Style */}
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 mb-4">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Preview Konten</p>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Content Preview</p>
 
                 {/* Profile Info */}
                 <div className="flex items-start gap-3 mb-4">
@@ -548,7 +548,7 @@ export default function CardDetailPage() {
                     <div className="p-3 flex-1 min-w-0">
                       <p className="text-xs text-gray-500 mb-0.5">official.id</p>
                       <p className="font-medium text-gray-900 text-sm line-clamp-1">{card.full_name} - Official ID</p>
-                      <p className="text-xs text-gray-500 line-clamp-1">Kartu Bisnis Digital Profesional</p>
+                      <p className="text-xs text-gray-500 line-clamp-1">Professional Digital Business Card</p>
                     </div>
                   </div>
                 </div>
@@ -556,7 +556,7 @@ export default function CardDetailPage() {
                 {/* CTA Message */}
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <p className="text-sm text-gray-700">
-                    Buat kartu bisnis digital profesional Anda sendiri di{' '}
+                    Create your own professional digital business card at{' '}
                     <span className="text-[#2D7C88] font-medium">Official ID</span>
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
@@ -567,7 +567,7 @@ export default function CardDetailPage() {
 
               {/* Info Text */}
               <p className="text-sm text-gray-500 text-center mb-4">
-                Anda akan diarahkan ke LinkedIn untuk menambahkan komentar pada postingan
+                You will be redirected to LinkedIn to add a comment to the post
               </p>
 
               {/* Action Button */}
@@ -578,7 +578,7 @@ export default function CardDetailPage() {
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                 </svg>
-                Bagikan ke LinkedIn
+                Share to LinkedIn
               </button>
             </div>
           </div>
