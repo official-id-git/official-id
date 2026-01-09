@@ -127,20 +127,27 @@ export function CardForm({ card, mode }: CardFormProps) {
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
 
-    // Security Check
-    const isValid = await validateInput(value)
-    if (!isValid) return // Block input if potentially malicious
-
+    // Handle checkbox separately - no security check needed for boolean toggle
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked
       setFormData(prev => ({ ...prev, [name]: checked }))
-    } else {
-      if (name === 'business_description') {
-        setFormData(prev => ({ ...prev, business_description: value }))
-        return
-      }
-      setFormData(prev => ({ ...prev, [name]: value }))
+      return
     }
+
+    // Handle business_description separately - skip strict security check
+    // as it's a display-only field and strict validation causes false positives
+    if (name === 'business_description') {
+      // Basic sanitization - just remove script tags
+      const sanitized = value.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      setFormData(prev => ({ ...prev, business_description: sanitized }))
+      return
+    }
+
+    // Security Check for other text inputs
+    const isValid = await validateInput(value)
+    if (!isValid) return // Block input if potentially malicious
+
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
   const handlePhotoChange = (url: string) => {
