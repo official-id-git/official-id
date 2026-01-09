@@ -94,7 +94,7 @@ export function useOrganizations() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Tidak terautentikasi')
+      if (!user) throw new Error('Not authenticated')
 
       const { data, error: fetchError } = await supabase
         .from('organizations')
@@ -119,7 +119,7 @@ export function useOrganizations() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Tidak terautentikasi')
+      if (!user) throw new Error('Not authenticated')
 
       const { data, error: fetchError } = await supabase
         .from('organization_members')
@@ -184,7 +184,7 @@ export function useOrganizations() {
       // Check username availability
       const isAvailable = await checkUsernameAvailability(username)
       if (!isAvailable) {
-        throw new Error('Username sudah digunakan. Silakan pilih username lain.')
+        throw new Error('Username already taken. Please choose another.')
       }
 
       const { data, error: insertError } = await supabase
@@ -211,11 +211,11 @@ export function useOrganizations() {
             const retryData = { ...orgData, username: newUsername }
             return createOrganization(retryData)
           }
-          throw new Error('Username sudah digunakan. Silakan pilih username lain.')
+          throw new Error('Username already taken. Please choose another.')
         }
 
         if (insertError.message.includes('pengguna berbayar')) {
-          throw new Error('Hanya pengguna berbayar yang dapat membuat organisasi. Silakan upgrade akun Anda.')
+          throw new Error('Only paid users can create organizations. Please upgrade your account.')
         }
         throw insertError
       }
@@ -259,7 +259,7 @@ export function useOrganizations() {
       if (updateData.username) {
         const isAvailable = await checkUsernameAvailability(updateData.username, id)
         if (!isAvailable) {
-          throw new Error('Username sudah digunakan. Silakan pilih username lain.')
+          throw new Error('Username already taken. Please choose another.')
         }
       }
 
@@ -276,7 +276,7 @@ export function useOrganizations() {
       if (updateError) {
         // Handle username unique constraint
         if (updateError.message.includes('username') || updateError.message.includes('organizations_username_key')) {
-          throw new Error('Username sudah digunakan. Silakan pilih username lain.')
+          throw new Error('Username already taken. Please choose another.')
         }
         throw updateError
       }
@@ -355,7 +355,7 @@ export function useOrganizations() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Tidak terautentikasi')
+      if (!user) throw new Error('Not authenticated')
 
       // Check if already member - use maybeSingle to avoid 406 error
       const { data: existing } = await supabase
@@ -367,10 +367,10 @@ export function useOrganizations() {
 
       if (existing) {
         if (existing.status === 'APPROVED') {
-          throw new Error('Anda sudah menjadi anggota organisasi ini')
+          throw new Error('You are already a member of this organization')
         }
         if (existing.status === 'PENDING') {
-          throw new Error('Permintaan bergabung Anda sedang menunggu persetujuan')
+          throw new Error('Your join request is pending approval')
         }
         if (existing.status === 'REJECTED') {
           await supabase
@@ -388,11 +388,11 @@ export function useOrganizations() {
         .maybeSingle()
 
       if (org?.owner_id === user.id) {
-        throw new Error('Anda adalah pemilik organisasi ini')
+        throw new Error('You are the owner of this organization')
       }
 
       if (!org?.is_public) {
-        throw new Error('Organisasi ini bersifat privat. Anda memerlukan undangan untuk bergabung.')
+        throw new Error('This organization is private. You need an invitation to join.')
       }
 
       const status = org?.require_approval ? 'PENDING' : 'APPROVED'
@@ -423,7 +423,7 @@ export function useOrganizations() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Tidak terautentikasi')
+      if (!user) throw new Error('Not authenticated')
 
       const { data: org } = await supabase
         .from('organizations')
@@ -432,7 +432,7 @@ export function useOrganizations() {
         .maybeSingle()
 
       if (org?.owner_id === user.id) {
-        throw new Error('Pemilik tidak dapat keluar dari organisasi. Hapus organisasi jika ingin menutup.')
+        throw new Error('Owner cannot leave the organization. Delete the organization if you want to close it.')
       }
 
       const { error: deleteError } = await supabase
@@ -461,7 +461,7 @@ export function useOrganizations() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Tidak terautentikasi')
+      if (!user) throw new Error('Not authenticated')
 
       const updateData: any = {
         status,
@@ -538,11 +538,11 @@ export function useOrganizations() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Tidak terautentikasi')
+      if (!user) throw new Error('Not authenticated')
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(email)) {
-        throw new Error('Format email tidak valid')
+        throw new Error('Invalid email format')
       }
 
       // Get organization details for email
@@ -575,7 +575,7 @@ export function useOrganizations() {
           .maybeSingle()
 
         if (existingMember?.status === 'APPROVED') {
-          throw new Error('Pengguna dengan email ini sudah menjadi anggota')
+          throw new Error('User with this email is already a member')
         }
 
         if (existingMember?.status === 'PENDING' || existingMember?.status === 'REJECTED') {
@@ -605,7 +605,7 @@ export function useOrganizations() {
         .maybeSingle()
 
       if (existingInvite) {
-        throw new Error('Undangan untuk email ini sudah dikirim dan masih aktif')
+        throw new Error('An invitation has already been sent to this email')
       }
 
       // Delete old invitations
@@ -629,7 +629,7 @@ export function useOrganizations() {
 
       if (insertError) {
         if (insertError.message.includes('unique_pending_invitation')) {
-          throw new Error('Undangan untuk email ini sudah ada')
+          throw new Error('An invitation already exists for this email')
         }
         throw insertError
       }
@@ -701,7 +701,7 @@ export function useOrganizations() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Tidak terautentikasi')
+      if (!user) throw new Error('Not authenticated')
 
       const { data: invitation } = await supabase
         .from('organization_invitations')
@@ -712,7 +712,7 @@ export function useOrganizations() {
         .maybeSingle()
 
       if (!invitation) {
-        throw new Error('Tidak ada undangan yang valid untuk Anda')
+        throw new Error('No valid invitation found for you')
       }
 
       const { error: memberError } = await supabase

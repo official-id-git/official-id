@@ -11,11 +11,11 @@ interface SendMessageModalProps {
 }
 
 const PURPOSE_OPTIONS = [
-    { value: 'bermitra', label: 'Minat Bermitra' },
-    { value: 'produk', label: 'Minat Produk' },
-    { value: 'jasa', label: 'Minat Jasa' },
-    { value: 'investasi', label: 'Minat Berinvestasi' },
-    { value: 'lainnya', label: 'Lainnya' },
+    { value: 'bermitra', label: 'Partnership Interest' },
+    { value: 'produk', label: 'Product Interest' },
+    { value: 'jasa', label: 'Service Interest' },
+    { value: 'investasi', label: 'Investment Interest' },
+    { value: 'lainnya', label: 'Other' },
 ] as const
 
 export default function SendMessageModal({ isOpen, onClose, recipientId, recipientName }: SendMessageModalProps) {
@@ -42,19 +42,19 @@ export default function SendMessageModal({ isOpen, onClose, recipientId, recipie
 
         // Validation
         if (!formData.sender_name.trim()) {
-            setFormError('Nama wajib diisi')
+            setFormError('Name is required')
             return
         }
         if (!formData.sender_whatsapp.trim()) {
-            setFormError('Nomor WhatsApp wajib diisi')
+            setFormError('WhatsApp number is required')
             return
         }
         if (!formData.sender_email.trim()) {
-            setFormError('Email wajib diisi')
+            setFormError('Email is required')
             return
         }
         if (!formData.message.trim()) {
-            setFormError('Pesan wajib diisi')
+            setFormError('Message is required')
             return
         }
 
@@ -87,8 +87,8 @@ export default function SendMessageModal({ isOpen, onClose, recipientId, recipie
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900">Kirim Pesan</h2>
-                        <p className="text-sm text-gray-500 mt-1">Kepada: {recipientName}</p>
+                        <h2 className="text-xl font-bold text-gray-900">Send Message</h2>
+                        <p className="text-sm text-gray-500 mt-1">To: {recipientName}</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -108,8 +108,8 @@ export default function SendMessageModal({ isOpen, onClose, recipientId, recipie
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Pesan Terkirim!</h3>
-                        <p className="text-gray-500">Pesan Anda telah berhasil dikirim ke {recipientName}</p>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Message Sent!</h3>
+                        <p className="text-gray-500">Your message has been sent to {recipientName}</p>
                     </div>
                 ) : (
                     /* Form */
@@ -123,7 +123,7 @@ export default function SendMessageModal({ isOpen, onClose, recipientId, recipie
                         {/* Nama */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Nama Anda <span className="text-red-500">*</span>
+                                Your Name <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
@@ -131,7 +131,7 @@ export default function SendMessageModal({ isOpen, onClose, recipientId, recipie
                                 value={formData.sender_name}
                                 onChange={handleChange}
                                 className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Masukkan nama Anda"
+                                placeholder="Enter your name"
                             />
                         </div>
 
@@ -168,7 +168,7 @@ export default function SendMessageModal({ isOpen, onClose, recipientId, recipie
                         {/* Keperluan */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Keperluan <span className="text-red-500">*</span>
+                                Purpose <span className="text-red-500">*</span>
                             </label>
                             <select
                                 name="purpose"
@@ -187,7 +187,7 @@ export default function SendMessageModal({ isOpen, onClose, recipientId, recipie
                         {/* Pesan */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Pesan <span className="text-red-500">*</span>
+                                Message <span className="text-red-500">*</span>
                             </label>
                             <textarea
                                 name="message"
@@ -196,10 +196,10 @@ export default function SendMessageModal({ isOpen, onClose, recipientId, recipie
                                 rows={4}
                                 maxLength={250}
                                 className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                placeholder="Tulis pesan Anda..."
+                                placeholder="Write your message..."
                             />
                             <p className="text-xs text-gray-400 mt-1 text-right">
-                                {formData.message.length}/250 karakter
+                                {formData.message.length}/250 characters
                             </p>
                         </div>
 
@@ -209,7 +209,7 @@ export default function SendMessageModal({ isOpen, onClose, recipientId, recipie
                             disabled={loading}
                             className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                         >
-                            {loading ? 'Mengirim...' : 'Kirim Pesan'}
+                            {loading ? 'Sending...' : 'Send Message'}
                         </button>
                     </form>
                 )}

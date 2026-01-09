@@ -53,7 +53,7 @@ export default function SettingsPage() {
       <div className="max-w-md mx-auto px-4 py-6 space-y-6">
         {/* Account Section */}
         <div>
-          <h3 className="font-semibold text-gray-900 mb-3 px-1">Akun</h3>
+          <h3 className="font-semibold text-gray-900 mb-3 px-1">Account</h3>
           <div className="space-y-2">
             {/* Profile */}
             <Link
@@ -66,8 +66,8 @@ export default function SettingsPage() {
                 </svg>
               </div>
               <div className="flex-1">
-                <p className="font-medium text-gray-900">Profil Saya</p>
-                <p className="text-sm text-gray-500">Kelola informasi profil Anda</p>
+                <p className="font-medium text-gray-900">My Profile</p>
+                <p className="text-sm text-gray-500">Manage your profile information</p>
               </div>
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -85,8 +85,8 @@ export default function SettingsPage() {
                 </svg>
               </div>
               <div className="flex-1">
-                <p className="font-medium text-gray-900">Langganan Premium</p>
-                <p className="text-sm text-gray-500">Upgrade dan kelola langganan</p>
+                <p className="font-medium text-gray-900">Premium Subscription</p>
+                <p className="text-sm text-gray-500">Upgrade and manage subscription</p>
               </div>
               {user.role === 'PAID_USER' && (
                 <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full mr-2">
@@ -102,7 +102,7 @@ export default function SettingsPage() {
 
         {/* Legal Section */}
         <div>
-          <h3 className="font-semibold text-gray-900 mb-3 px-1">Tentang</h3>
+          <h3 className="font-semibold text-gray-900 mb-3 px-1">About</h3>
           <div className="space-y-2">
             {/* Privacy Policy */}
             <Link
@@ -115,8 +115,8 @@ export default function SettingsPage() {
                 </svg>
               </div>
               <div className="flex-1">
-                <p className="font-medium text-gray-900">Kebijakan Privasi</p>
-                <p className="text-sm text-gray-500">Baca kebijakan privasi kami</p>
+                <p className="font-medium text-gray-900">Privacy Policy</p>
+                <p className="text-sm text-gray-500">Read our privacy policy</p>
               </div>
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -134,8 +134,8 @@ export default function SettingsPage() {
                 </svg>
               </div>
               <div className="flex-1">
-                <p className="font-medium text-gray-900">Syarat & Ketentuan</p>
-                <p className="text-sm text-gray-500">Baca syarat dan ketentuan kami</p>
+                <p className="font-medium text-gray-900">Terms & Conditions</p>
+                <p className="text-sm text-gray-500">Read our terms and conditions</p>
               </div>
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -152,7 +152,7 @@ export default function SettingsPage() {
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
-          <span>Keluar</span>
+          <span>Sign Out</span>
         </button>
 
         {/* App Version */}

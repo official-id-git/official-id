@@ -43,7 +43,7 @@ export function useContacts() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Tidak terautentikasi')
+      if (!user) throw new Error('Not authenticated')
 
       const { data, error: fetchError } = await supabase
         .from('contacts')
@@ -68,7 +68,7 @@ export function useContacts() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Tidak terautentikasi')
+      if (!user) throw new Error('Not authenticated')
 
       const { data, error: insertError } = await supabase
         .from('contacts')
@@ -186,7 +186,7 @@ export function useContacts() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Tidak terautentikasi')
+      if (!user) throw new Error('Not authenticated')
 
       // Get contact info
       const { data: contactData } = await supabase
@@ -198,7 +198,7 @@ export function useContacts() {
       const contact = contactData as unknown as Contact
 
       if (!contact?.email) {
-        throw new Error('Kontak tidak memiliki email')
+        throw new Error('Contact does not have email')
       }
 
       // Get card info
@@ -210,7 +210,7 @@ export function useContacts() {
 
       const card = cardData as any
 
-      if (!card) throw new Error('Kartu tidak ditemukan')
+      if (!card) throw new Error('Card not found')
 
       // Get user info
       const { data: userDataResponse } = await supabase

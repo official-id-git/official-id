@@ -46,7 +46,7 @@ export default function BottomNavigation({
     </div>
   )
 
-  // Main navigation (Beranda)
+  // Main navigation (Home)
   if (variant === 'main') {
     return (
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 pb-safe z-50">
@@ -55,19 +55,19 @@ export default function BottomNavigation({
             <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
               <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
             </svg>
-            <span className="text-xs text-blue-600 font-medium">Beranda</span>
+            <span className="text-xs text-blue-600 font-medium">Home</span>
           </Link>
 
           <Link href="/dashboard/cards" className="flex flex-col items-center gap-1 py-2 px-2 min-w-[56px]">
             <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
-            <span className="text-xs text-gray-500">Kartu</span>
+            <span className="text-xs text-gray-500">Cards</span>
           </Link>
 
           <Link href="/dashboard/messages" className="flex flex-col items-center gap-1 py-2 px-2 min-w-[56px]">
             <MessagesIcon />
-            <span className="text-xs text-gray-500">Pesan</span>
+            <span className="text-xs text-gray-500">Messages</span>
           </Link>
 
           <Link href="/dashboard/organizations" className="flex flex-col items-center gap-1 py-2 px-2 min-w-[56px]">
@@ -94,19 +94,19 @@ export default function BottomNavigation({
             <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            <span className="text-xs text-gray-500">Kembali</span>
+            <span className="text-xs text-gray-500">Back</span>
           </button>
 
           <Link href="/dashboard" className="flex flex-col items-center gap-1 py-2 px-2 min-w-[56px]">
             <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
-            <span className="text-xs text-gray-500">Beranda</span>
+            <span className="text-xs text-gray-500">Home</span>
           </Link>
 
           <Link href="/dashboard/messages" className="flex flex-col items-center gap-1 py-2 px-2 min-w-[56px]">
             <MessagesIcon isActive />
-            <span className="text-xs text-blue-600 font-medium">Pesan</span>
+            <span className="text-xs text-blue-600 font-medium">Messages</span>
           </Link>
 
           <Link href="/dashboard/organizations" className="flex flex-col items-center gap-1 py-2 px-2 min-w-[56px]">
@@ -121,12 +121,12 @@ export default function BottomNavigation({
     )
   }
 
-  // Cards navigation (Kembali, Beranda, Circle, Kontak, Lainnya)
+  // Cards navigation (Back, Home, Circle, Contacts, More)
   if (variant === 'cards') {
     return (
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 pb-safe z-50">
         <div className="max-w-md mx-auto flex items-center justify-around py-2">
-          {/* Kembali */}
+          {/* Back */}
           <button
             onClick={() => router.back()}
             className="flex flex-col items-center gap-1 py-2 px-2 min-w-[56px]"
@@ -134,21 +134,21 @@ export default function BottomNavigation({
             <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            <span className="text-xs text-gray-500">Kembali</span>
+            <span className="text-xs text-gray-500">Back</span>
           </button>
 
-          {/* Beranda */}
+          {/* Home */}
           <Link href="/dashboard" className="flex flex-col items-center gap-1 py-2 px-2 min-w-[56px]">
             <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
-            <span className="text-xs text-gray-500">Beranda</span>
+            <span className="text-xs text-gray-500">Home</span>
           </Link>
 
-          {/* Pesan */}
+          {/* Messages */}
           <Link href="/dashboard/messages" className="flex flex-col items-center gap-1 py-2 px-2 min-w-[56px]">
             <MessagesIcon />
-            <span className="text-xs text-gray-500">Pesan</span>
+            <span className="text-xs text-gray-500">Messages</span>
           </Link>
 
           {/* Circle */}
@@ -164,7 +164,7 @@ export default function BottomNavigation({
     )
   }
 
-  // Organizations navigation (Kembali, Beranda, Kartu)
+  // Organizations navigation (Back, Home, Cards)
   if (variant === 'organizations') {
     return (
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 pb-safe z-50">
@@ -176,26 +176,26 @@ export default function BottomNavigation({
             <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            <span className="text-xs text-gray-500">Kembali</span>
+            <span className="text-xs text-gray-500">Back</span>
           </button>
 
           <Link href="/dashboard" className="flex flex-col items-center gap-1 py-2 px-3 min-w-[64px]">
             <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
-            <span className="text-xs text-gray-500">Beranda</span>
+            <span className="text-xs text-gray-500">Home</span>
           </Link>
 
           <Link href="/dashboard/messages" className="flex flex-col items-center gap-1 py-2 px-3 min-w-[64px]">
             <MessagesIcon />
-            <span className="text-xs text-gray-500">Pesan</span>
+            <span className="text-xs text-gray-500">Messages</span>
           </Link>
 
           <Link href="/dashboard/cards" className="flex flex-col items-center gap-1 py-2 px-3 min-w-[64px]">
             <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
-            <span className="text-xs text-gray-500">Kartu</span>
+            <span className="text-xs text-gray-500">Cards</span>
           </Link>
         </div>
       </div>

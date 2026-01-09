@@ -58,7 +58,7 @@ export default function DashboardPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat...</p>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     )
@@ -87,13 +87,13 @@ export default function DashboardPage() {
           )}
           <div>
             <h2 className="text-xl font-bold mb-1">
-              Halo, {user.full_name?.split(' ')[0]}! 👋
+              Hello, {user.full_name?.split(' ')[0]}! 👋
             </h2>
             <p className="text-blue-100 text-sm mb-2">{user.email}</p>
             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/20 backdrop-blur-md`}>
               {user.role === 'APP_ADMIN' && '👑 Administrator'}
               {user.role === 'PAID_USER' && '⭐ Member Pro'}
-              {user.role === 'FREE_USER' && '📦 Member Gratis'}
+              {user.role === 'FREE_USER' && '📦 Free Member'}
             </span>
           </div>
         </div>
@@ -107,7 +107,7 @@ export default function DashboardPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
           </div>
-          <p className="text-gray-500 text-xs">Kartu Bisnis</p>
+          <p className="text-gray-500 text-xs">Business Cards</p>
           <p className="text-2xl font-semibold text-gray-900">{statsLoading ? '...' : cards.length}</p>
         </div>
 
@@ -118,7 +118,7 @@ export default function DashboardPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
           </div>
-          <p className="text-gray-500 text-xs">Total Scan</p>
+          <p className="text-gray-500 text-xs">Total Scans</p>
           <p className="text-2xl font-semibold text-gray-900">{statsLoading ? '...' : totalScans}</p>
         </div>
 
@@ -128,7 +128,7 @@ export default function DashboardPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
-          <p className="text-gray-500 text-xs">Organisasi</p>
+          <p className="text-gray-500 text-xs">Organizations</p>
           <p className="text-2xl font-semibold text-gray-900">{statsLoading ? '...' : orgsCount}</p>
         </div>
       </div>
@@ -137,7 +137,7 @@ export default function DashboardPage() {
       {!statsLoading && selectedCard ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-gray-700">Kartu Bisnis Anda</h3>
+            <h3 className="text-sm font-medium text-gray-700">Your Business Card</h3>
             <span className="text-xs text-gray-500 capitalize bg-gray-100 px-2 py-1 rounded-full">
               {selectedCard.template || 'professional'}
             </span>
@@ -166,8 +166,8 @@ export default function DashboardPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Belum Ada Kartu Bisnis</h3>
-          <p className="text-gray-600 text-sm mb-4">Buat kartu bisnis digital pertama Anda!</p>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Business Cards Yet</h3>
+          <p className="text-gray-600 text-sm mb-4">Create your first digital business card!</p>
           <Link
             href="/dashboard/cards/new"
             className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
@@ -175,7 +175,7 @@ export default function DashboardPage() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Buat Kartu Sekarang
+            Create Card Now
           </Link>
         </div>
       ) : null}

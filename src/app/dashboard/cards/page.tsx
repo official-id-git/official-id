@@ -56,7 +56,7 @@ export default function CardsPage() {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Kartu Bisnis Saya</h1>
+              <h1 className="text-2xl font-bold text-gray-900">My Business Cards</h1>
             </div>
             <Link
               href="/dashboard/cards/new"
@@ -65,7 +65,7 @@ export default function CardsPage() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              <span>Buat Kartu Baru</span>
+              <span>Create New Card</span>
             </Link>
           </div>
         </div>
@@ -76,15 +76,15 @@ export default function CardsPage() {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="grid grid-cols-3 gap-6">
             <div>
-              <p className="text-gray-500 text-sm">Total Kartu</p>
+              <p className="text-gray-500 text-sm">Total Cards</p>
               <p className="text-3xl font-bold text-gray-900">{cardsLoading ? '...' : cards.length}</p>
             </div>
             <div>
-              <p className="text-gray-500 text-sm">Total Scan</p>
+              <p className="text-gray-500 text-sm">Total Scans</p>
               <p className="text-3xl font-bold text-gray-900">{cardsLoading ? '...' : totalScans}</p>
             </div>
             <div>
-              <p className="text-gray-500 text-sm">Kartu Publik</p>
+              <p className="text-gray-500 text-sm">Public Cards</p>
               <p className="text-3xl font-bold text-gray-900">{cardsLoading ? '...' : publicCards}</p>
             </div>
           </div>
@@ -104,8 +104,8 @@ export default function CardsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Belum ada kartu bisnis</h3>
-            <p className="text-gray-500 mb-6">Buat kartu bisnis digital pertama Anda</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No business cards yet</h3>
+            <p className="text-gray-500 mb-6">Create your first digital business card</p>
             <Link
               href="/dashboard/cards/new"
               className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
@@ -113,7 +113,7 @@ export default function CardsPage() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Buat Kartu
+              Create Card
             </Link>
           </div>
         ) : (
@@ -141,7 +141,7 @@ export default function CardsPage() {
                     <p className="text-gray-500 text-sm truncate">{card.job_title}</p>
                     <p className="text-gray-400 text-xs truncate">{card.company}</p>
                     <div className="mt-2 flex items-center gap-1 text-blue-600">
-                      <span className="text-xs font-medium">Lihat Detail</span>
+                      <span className="text-xs font-medium">View Details</span>
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
@@ -150,7 +150,7 @@ export default function CardsPage() {
                   <div className="text-right self-start">
                     <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${card.is_public ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                       }`}>
-                      {card.is_public ? 'Publik' : 'Privat'}
+                      {card.is_public ? 'Public' : 'Private'}
                     </span>
                     <p className="text-gray-400 text-xs mt-1">{card.scan_count} scan</p>
                   </div>

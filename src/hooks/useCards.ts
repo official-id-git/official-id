@@ -100,7 +100,7 @@ export function useCards() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Tidak terautentikasi')
+      if (!user) throw new Error('Not authenticated')
 
       const { data, error: fetchError } = await supabase
         .from('business_cards')
@@ -189,7 +189,7 @@ export function useCards() {
           // If not found by ID (if it was UUID), it might actually be a username that *looks* like a UUID? Unlikely.
           // But if we searched by username and failed... 
           // What if the user visits /c/[username]?
-          throw new Error('Kartu tidak ditemukan atau tidak publik')
+          throw new Error('Card not found or not public')
         }
 
         // If query failed because "invalid input syntax for type uuid" (e.g. searching username against ID column), 
@@ -214,7 +214,7 @@ export function useCards() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Tidak terautentikasi')
+      if (!user) throw new Error('Not authenticated')
 
       // IMPORTANT: Ensure user profile exists in database BEFORE creating card
       // This fixes the trigger that checks user role
@@ -283,7 +283,7 @@ export function useCards() {
 
         // Card limit error for FREE_USER
         if (errorMsg.includes('free_user') || insertError.code === '23514') {
-          throw new Error('Akun gratis hanya dapat membuat 1 kartu. Upgrade untuk membuat lebih banyak kartu.')
+          throw new Error('Free accounts can only create 1 card. Upgrade to create more cards.')
         }
 
         // Conflict - user already has a card (from trigger)
@@ -306,10 +306,10 @@ export function useCards() {
 
               if (!retryError2) return retryCard2
             }
-            throw new Error('Username sudah digunakan, silakan coba yang lain.')
+            throw new Error('Username already taken, please try another.')
           }
 
-          throw new Error('Akun gratis hanya dapat membuat 1 kartu. Upgrade untuk membuat lebih banyak kartu.')
+          throw new Error('Free accounts can only create 1 card. Upgrade to create more cards.')
         }
 
         // If template column doesn't exist, retry without it
@@ -323,7 +323,7 @@ export function useCards() {
 
           if (retryError) {
             if (retryError.message.toLowerCase().includes('free_user')) {
-              throw new Error('Akun gratis hanya dapat membuat 1 kartu. Upgrade untuk membuat lebih banyak kartu.')
+              throw new Error('Free accounts can only create 1 card. Upgrade to create more cards.')
             }
             throw retryError
           }
@@ -416,7 +416,7 @@ export function useCards() {
 
         // Handle unique constraint for username
         if (updateError.message.includes('username') || updateError.message.includes('business_cards_username_key')) {
-          throw new Error('Username sudah digunakan, silakan pilih yang lain.')
+          throw new Error('Username already taken, please choose another.')
         }
 
         throw updateError

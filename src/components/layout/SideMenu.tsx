@@ -13,7 +13,7 @@ interface SideMenuProps {
 
 const menuItems = [
     {
-        label: 'Pengaturan',
+        label: 'Settings',
         href: '/dashboard/settings',
         icon: (
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -23,7 +23,7 @@ const menuItems = [
         ),
     },
     {
-        label: 'Kontak Saya',
+        label: 'My Contacts',
         href: '/dashboard/contacts',
         icon: (
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -32,7 +32,7 @@ const menuItems = [
         ),
     },
     {
-        label: 'Upgrade ke Pro',
+        label: 'Upgrade to Pro',
         href: '/dashboard/upgrade',
         icon: (
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,7 +42,7 @@ const menuItems = [
         highlight: true,
     },
     {
-        label: 'Bantuan',
+        label: 'Help',
         href: '/dashboard/help',
         icon: (
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -170,7 +170,7 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                 </svg>
-                                <span className="font-medium">Keluar</span>
+                                <span className="font-medium">Sign Out</span>
                             </button>
                         </div>
 

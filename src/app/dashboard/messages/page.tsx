@@ -19,11 +19,11 @@ type Message = {
 }
 
 const PURPOSE_LABELS: Record<string, string> = {
-    bermitra: 'Minat Bermitra',
-    produk: 'Minat Produk',
-    jasa: 'Minat Jasa',
-    investasi: 'Minat Berinvestasi',
-    lainnya: 'Lainnya',
+    bermitra: 'Partnership Interest',
+    produk: 'Product Interest',
+    jasa: 'Service Interest',
+    investasi: 'Investment Interest',
+    lainnya: 'Other',
 }
 
 const PURPOSE_COLORS: Record<string, string> = {
@@ -42,12 +42,12 @@ function formatDate(dateString: string) {
     const diffHours = Math.floor(diffMs / 3600000)
     const diffDays = Math.floor(diffMs / 86400000)
 
-    if (diffMins < 1) return 'Baru saja'
-    if (diffMins < 60) return `${diffMins} menit lalu`
-    if (diffHours < 24) return `${diffHours} jam lalu`
-    if (diffDays < 7) return `${diffDays} hari lalu`
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins} minutes ago`
+    if (diffHours < 24) return `${diffHours} hours ago`
+    if (diffDays < 7) return `${diffDays} days ago`
 
-    return date.toLocaleDateString('id-ID', {
+    return date.toLocaleDateString('en-US', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
@@ -92,7 +92,7 @@ export default function MessagesPage() {
     }
 
     const handleDelete = async (messageId: string) => {
-        if (confirm('Hapus pesan ini?')) {
+        if (confirm('Delete this message?')) {
             await deleteMessage(messageId)
             setMessages(prev => prev.filter(m => m.id !== messageId))
             setSelectedMessage(null)
@@ -123,9 +123,9 @@ export default function MessagesPage() {
                 <div className="max-w-4xl mx-auto">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Pesan Masuk</h1>
+                            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Inbox</h1>
                             <p className="text-gray-500 text-sm mt-1">
-                                {unreadCount > 0 ? `${unreadCount} pesan baru` : 'Tidak ada pesan baru'}
+                                {unreadCount > 0 ? `${unreadCount} new messages` : 'No new messages'}
                             </p>
                         </div>
                         {unreadCount > 0 && (
@@ -133,7 +133,7 @@ export default function MessagesPage() {
                                 onClick={handleMarkAllAsRead}
                                 className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                             >
-                                Tandai semua dibaca
+                                Mark all as read
                             </button>
                         )}
                     </div>
@@ -153,8 +153,8 @@ export default function MessagesPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                             </svg>
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Belum ada pesan</h3>
-                        <p className="text-gray-500">Pesan dari Circle Network akan muncul di sini</p>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No messages yet</h3>
+                        <p className="text-gray-500">Messages from Circle Network will appear here</p>
                     </div>
                 ) : (
                     <div className="space-y-3">
@@ -204,7 +204,7 @@ export default function MessagesPage() {
                     <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
                         {/* Header */}
                         <div className="flex items-center justify-between p-6 border-b">
-                            <h2 className="text-xl font-bold text-gray-900">Detail Pesan</h2>
+                            <h2 className="text-xl font-bold text-gray-900">Message Details</h2>
                             <button
                                 onClick={() => setSelectedMessage(null)}
                                 className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -254,7 +254,7 @@ export default function MessagesPage() {
 
                             {/* Message */}
                             <div>
-                                <h4 className="font-medium text-gray-700 mb-2">Pesan:</h4>
+                                <h4 className="font-medium text-gray-700 mb-2">Message:</h4>
                                 <p className="text-gray-800 bg-gray-50 rounded-xl p-4 leading-relaxed">
                                     {selectedMessage.message}
                                 </p>
@@ -262,7 +262,7 @@ export default function MessagesPage() {
 
                             {/* Time */}
                             <p className="text-sm text-gray-400">
-                                Diterima: {new Date(selectedMessage.created_at).toLocaleString('id-ID')}
+                                Received: {new Date(selectedMessage.created_at).toLocaleString('en-US')}
                             </p>
 
                             {/* Actions */}
@@ -273,7 +273,7 @@ export default function MessagesPage() {
                                     rel="noopener noreferrer"
                                     className="flex-1 py-3 bg-green-600 text-white text-center rounded-xl font-medium hover:bg-green-700 transition-colors"
                                 >
-                                    Balas via WhatsApp
+                                    Reply via WhatsApp
                                 </a>
                                 <button
                                     onClick={() => handleDelete(selectedMessage.id)}

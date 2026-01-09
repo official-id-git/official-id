@@ -121,17 +121,17 @@ export default function OrganizationsPage() {
         setMembershipStatus(prev => ({ ...prev, [orgId]: membership.status || 'PENDING' }))
 
         if (membership.status === 'APPROVED') {
-          setJoinMessage({ type: 'success', text: 'Berhasil bergabung dengan Circle!' })
+          setJoinMessage({ type: 'success', text: 'Successfully joined Circle!' })
           setInvitedOrgs(prev => prev.filter(o => o.id !== orgId))
         } else {
-          setJoinMessage({ type: 'success', text: 'Permintaan bergabung telah dikirim.' })
+          setJoinMessage({ type: 'success', text: 'Join request has been sent.' })
         }
 
         const joined = await fetchJoinedOrganizations()
         setJoinedOrgs(joined.filter(j => !myOrgs.find(o => o.id === j.id)))
       }
     } catch (error: any) {
-      setJoinMessage({ type: 'error', text: error.message || 'Gagal bergabung' })
+      setJoinMessage({ type: 'error', text: error.message || 'Failed to join' })
     } finally {
       setJoiningOrgId(null)
       setTimeout(() => setJoinMessage(null), 3000)
@@ -158,7 +158,7 @@ export default function OrganizationsPage() {
             <div className="flex-1 min-w-0 mr-4">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">Circle</h1>
               <p className="text-gray-500 text-sm mt-1 truncate">
-                {isPaidUser ? 'Kelola dan jelajahi Circle' : 'Jelajahi Circle'}
+                {isPaidUser ? 'Manage and explore Circle' : 'Explore Circle'}
               </p>
             </div>
             {isPaidUser && (
@@ -169,7 +169,7 @@ export default function OrganizationsPage() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                <span>Buat Circle</span>
+                <span>Create Circle</span>
               </Link>
             )}
           </div>
@@ -192,20 +192,20 @@ export default function OrganizationsPage() {
             onClick={() => setActiveTab('my')}
             className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-colors ${activeTab === 'my' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'}`}
           >
-            Circle Saya ({allMyOrgs.length})
+            My Circle ({allMyOrgs.length})
           </button>
           <button
             onClick={() => setActiveTab('public')}
             className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-colors ${activeTab === 'public' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'}`}
           >
-            Publik ({publicOrgs.length})
+            Public ({publicOrgs.length})
           </button>
           {invitedOrgs.length > 0 && (
             <button
               onClick={() => setActiveTab('invited')}
               className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-colors ${activeTab === 'invited' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'}`}
             >
-              Undangan ({invitedOrgs.length})
+              Invitations ({invitedOrgs.length})
             </button>
           )}
         </div>
@@ -226,17 +226,17 @@ export default function OrganizationsPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Belum ada Circle</h3>
-              <p className="text-gray-500 mb-6">Anda belum memiliki atau bergabung dengan Circle</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Circle yet</h3>
+              <p className="text-gray-500 mb-6">You haven't owned or joined any Circle</p>
               <button onClick={() => setActiveTab('public')} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium">
-                Jelajahi Circle Publik
+                Explore Public Circle
               </button>
             </div>
           ) : (
             <div className="space-y-4">
               {myOrgs.length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-gray-700 mb-3">Circle yang Saya Kelola</h3>
+                  <h3 className="font-semibold text-gray-700 mb-3">Circle I Manage</h3>
                   <div className="grid gap-4">
                     {myOrgs.map((org) => (
                       <Link key={org.id} href={`/dashboard/organizations/${org.id}`} className="block bg-white rounded-2xl p-4 sm:p-5 shadow-sm border hover:shadow-md transition-shadow relative overflow-hidden group">
@@ -246,7 +246,7 @@ export default function OrganizationsPage() {
                             <div className="flex items-center gap-2 flex-wrap">
                               <h3 className="font-semibold text-gray-900 truncate max-w-full">{org.name}</h3>
                               <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${org.is_public ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
-                                {org.is_public ? 'Publik' : 'Privat'}
+                                {org.is_public ? 'Public' : 'Private'}
                               </span>
                             </div>
                             <p className="text-gray-500 text-sm truncate mt-1">{org.description}</p>
@@ -267,7 +267,7 @@ export default function OrganizationsPage() {
               )}
               {joinedOrgs.length > 0 && (
                 <div className="mt-6">
-                  <h3 className="font-semibold text-gray-700 mb-3">Circle yang Diikuti</h3>
+                  <h3 className="font-semibold text-gray-700 mb-3">Circle I Follow</h3>
                   <div className="grid gap-4">
                     {joinedOrgs.map((org) => (
                       <Link key={org.id} href={`/dashboard/organizations/${org.id}`} className="block bg-white rounded-2xl p-4 sm:p-5 shadow-sm border hover:shadow-md transition-shadow">
@@ -297,13 +297,13 @@ export default function OrganizationsPage() {
           // Invited Organizations (Private)
           invitedOrgs.length === 0 ? (
             <div className="bg-white rounded-2xl p-12 shadow-sm border text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Tidak ada undangan</h3>
-              <p className="text-gray-500">Anda belum memiliki undangan ke Circle privat</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No invitations</h3>
+              <p className="text-gray-500">You don't have any invitations to private Circle</p>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-4">
-                <p className="text-sm text-purple-800">Anda diundang untuk bergabung dengan Circle privat berikut.</p>
+                <p className="text-sm text-purple-800">You are invited to join the following private Circle.</p>
               </div>
               {invitedOrgs.map((org) => (
                 <div key={org.id} className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-purple-200">
@@ -314,7 +314,7 @@ export default function OrganizationsPage() {
                       <div className="flex-1 min-w-0 text-left">
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-gray-900 truncate">{org.name}</h3>
-                          <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full flex-shrink-0">Privat</span>
+                          <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full flex-shrink-0">Private</span>
                         </div>
                         <p className="text-gray-500 text-sm truncate mt-1">{org.description}</p>
                       </div>
@@ -325,7 +325,7 @@ export default function OrganizationsPage() {
                       disabled={joiningOrgId === org.id}
                       className="w-full sm:w-auto px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50 whitespace-nowrap"
                     >
-                      {joiningOrgId === org.id ? 'Memproses...' : 'Terima Undangan'}
+                      {joiningOrgId === org.id ? 'Processing...' : 'Accept Invitation'}
                     </button>
                   </div>
                 </div>
@@ -336,7 +336,7 @@ export default function OrganizationsPage() {
           // Public Organizations
           publicOrgs.length === 0 ? (
             <div className="bg-white rounded-2xl p-12 shadow-sm border text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Belum ada Circle publik</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No public Circle yet</h3>
             </div>
           ) : (
             <div className="grid gap-4">
@@ -354,7 +354,7 @@ export default function OrganizationsPage() {
                         <div className="flex-1 min-w-0 text-left">
                           <div className="flex items-center gap-2">
                             <h3 className="font-semibold text-gray-900 truncate">{org.name}</h3>
-                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full flex-shrink-0">Publik</span>
+                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full flex-shrink-0">Public</span>
                           </div>
                           <p className="text-gray-500 text-sm truncate mt-1">{org.description}</p>
                         </div>
@@ -362,18 +362,18 @@ export default function OrganizationsPage() {
 
                       <div className="w-full sm:w-auto flex flex-shrink-0 justify-end">
                         {status === 'OWNER' ? (
-                          <Link href={`/dashboard/organizations/${org.id}`} className="block w-full sm:w-auto text-center px-4 py-2 bg-blue-100 text-blue-700 text-sm font-medium rounded-xl">Kelola</Link>
+                          <Link href={`/dashboard/organizations/${org.id}`} className="block w-full sm:w-auto text-center px-4 py-2 bg-blue-100 text-blue-700 text-sm font-medium rounded-xl">Manage</Link>
                         ) : isJoined ? (
-                          <Link href={`/dashboard/organizations/${org.id}`} className="block w-full sm:w-auto text-center px-4 py-2 bg-green-100 text-green-700 text-sm font-medium rounded-xl">Lihat</Link>
+                          <Link href={`/dashboard/organizations/${org.id}`} className="block w-full sm:w-auto text-center px-4 py-2 bg-green-100 text-green-700 text-sm font-medium rounded-xl">View</Link>
                         ) : isPending ? (
-                          <span className="block w-full sm:w-auto text-center px-4 py-2 bg-yellow-100 text-yellow-700 text-sm font-medium rounded-xl">Menunggu</span>
+                          <span className="block w-full sm:w-auto text-center px-4 py-2 bg-yellow-100 text-yellow-700 text-sm font-medium rounded-xl">Pending</span>
                         ) : (
                           <button
                             onClick={() => handleJoinOrganization(org.id)}
                             disabled={joiningOrgId === org.id}
                             className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap"
                           >
-                            {joiningOrgId === org.id ? 'Memproses...' : 'Gabung'}
+                            {joiningOrgId === org.id ? 'Processing...' : 'Join'}
                           </button>
                         )}
                       </div>
@@ -396,8 +396,8 @@ export default function OrganizationsPage() {
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 mb-1">Ingin membuat Circle sendiri?</h3>
-                <p className="text-gray-600 text-sm mb-3">Upgrade ke Pro untuk membuat Circle publik maupun privat</p>
+                <h3 className="font-semibold text-gray-900 mb-1">Want to create your own Circle?</h3>
+                <p className="text-gray-600 text-sm mb-3">Upgrade to Pro to create public or private Circle</p>
                 <Link href="/dashboard/upgrade" className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-500 text-white text-sm font-medium rounded-xl">
                   Upgrade ke Pro
                 </Link>

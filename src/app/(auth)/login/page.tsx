@@ -26,7 +26,7 @@ export default function LoginPage() {
       await signIn(email, password)
       router.push('/dashboard')
     } catch (err: any) {
-      setError(err.message || 'Gagal masuk. Periksa email dan password Anda.')
+      setError(err.message || 'Failed to login. Check your email and password.')
     } finally {
       setIsLoading(false)
     }
@@ -36,7 +36,7 @@ export default function LoginPage() {
     try {
       await signInWithGoogle()
     } catch (err: any) {
-      setError(err.message || 'Gagal masuk dengan Google')
+      setError(err.message || 'Failed to login with Google')
     }
   }
 
@@ -63,7 +63,7 @@ export default function LoginPage() {
 
     } catch (err: any) {
       console.error('LinkedIn Login Error:', err)
-      setError(err.message || 'Gagal masuk dengan LinkedIn')
+      setError(err.message || 'Failed to login with LinkedIn')
       setIsLoading(false)
     }
   }
@@ -100,7 +100,7 @@ export default function LoginPage() {
             />
             <div>
               <h1 className="text-5xl mb-2 tracking-tight font-bold">Official ID</h1>
-              <p className="text-teal-100 text-lg">Ekosistem Digital untuk Profesional</p>
+              <p className="text-teal-100 text-lg">Digital Ecosystem for Professionals</p>
             </div>
           </div>
 
@@ -115,8 +115,8 @@ export default function LoginPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-xl mb-1 group-hover:text-white transition-colors font-semibold">Kartu Bisnis Digital</h3>
-                <p className="text-teal-100 group-hover:text-teal-50 transition-colors">Buat profil profesional yang mudah dibagikan</p>
+                <h3 className="text-xl mb-1 group-hover:text-white transition-colors font-semibold">Digital Business Card</h3>
+                <p className="text-teal-100 group-hover:text-teal-50 transition-colors">Create professional profiles that are easy to share</p>
               </div>
             </div>
 
@@ -130,8 +130,8 @@ export default function LoginPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-xl mb-1 group-hover:text-white transition-colors font-semibold">Networking Tanpa Batas</h3>
-                <p className="text-teal-100 group-hover:text-teal-50 transition-colors">Terhubung dengan ribuan profesional lainnya</p>
+                <h3 className="text-xl mb-1 group-hover:text-white transition-colors font-semibold">Unlimited Networking</h3>
+                <p className="text-teal-100 group-hover:text-teal-50 transition-colors">Connect with thousands of other professionals</p>
               </div>
             </div>
 
@@ -145,8 +145,8 @@ export default function LoginPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-xl mb-1 group-hover:text-white transition-colors font-semibold">Verifikasi & Kredibilitas</h3>
-                <p className="text-teal-100 group-hover:text-teal-50 transition-colors">Tingkatkan kepercayaan dengan profil terverifikasi</p>
+                <h3 className="text-xl mb-1 group-hover:text-white transition-colors font-semibold">Verification & Credibility</h3>
+                <p className="text-teal-100 group-hover:text-teal-50 transition-colors">Increase trust with verified profiles</p>
               </div>
             </div>
           </div>
@@ -157,21 +157,21 @@ export default function LoginPage() {
               style={{ backgroundColor: 'rgba(232, 188, 102, 0.15)' }}
             >
               <div className="text-3xl mb-1 font-bold">10K+</div>
-              <div className="text-teal-100 text-sm">Pengguna</div>
+              <div className="text-teal-100 text-sm">Users</div>
             </div>
             <div
               className="backdrop-blur-sm rounded-xl p-4 text-center cursor-pointer hover:scale-105 transition-transform"
               style={{ backgroundColor: 'rgba(122, 155, 110, 0.15)' }}
             >
               <div className="text-3xl mb-1 font-bold">50K+</div>
-              <div className="text-teal-100 text-sm">Koneksi</div>
+              <div className="text-teal-100 text-sm">Connections</div>
             </div>
             <div
               className="backdrop-blur-sm rounded-xl p-4 text-center cursor-pointer hover:scale-105 transition-transform"
               style={{ backgroundColor: 'rgba(209, 116, 107, 0.15)' }}
             >
               <div className="text-3xl mb-1 font-bold">500+</div>
-              <div className="text-teal-100 text-sm">Organisasi</div>
+              <div className="text-teal-100 text-sm">Organizations</div>
             </div>
           </div>
         </div>
@@ -189,8 +189,8 @@ export default function LoginPage() {
           </div>
 
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Selamat Datang!</h2>
-            <p className="text-gray-500">Masuk ke akun Official ID Anda</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome!</h2>
+            <p className="text-gray-500">Sign in to your Official ID account</p>
           </div>
 
           {error && (
@@ -228,7 +228,7 @@ export default function LoginPage() {
                   Password
                 </label>
                 <Link href="#" className="text-sm text-[#2D7C88] hover:underline">
-                  Lupa password?
+                  Forgot password?
                 </Link>
               </div>
               <div className="relative group">
@@ -280,21 +280,21 @@ export default function LoginPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Memproses...
+                  Processing...
                 </span>
               ) : (
-                'Masuk'
+                'Sign In'
               )}
             </button>
 
             <p className="text-xs text-center text-gray-500 mt-4 px-4">
-              Dengan melanjutkan, Anda menyetujui <Link href="/privacy-policy" className="text-[#2D7C88] hover:underline">Kebijakan Privasi</Link> dan <Link href="/terms" className="text-[#2D7C88] hover:underline">Syarat & Ketentuan</Link> kami.
+              By continuing, you agree to our <Link href="/privacy-policy" className="text-[#2D7C88] hover:underline">Privacy Policy</Link> and <Link href="/terms" className="text-[#2D7C88] hover:underline">Terms & Conditions</Link>.
             </p>
           </form>
 
           <div className="flex items-center my-6">
             <div className="flex-1 border-t border-gray-300"></div>
-            <span className="px-4 text-gray-500 text-sm">Atau lanjutkan dengan</span>
+            <span className="px-4 text-gray-500 text-sm">Or continue with</span>
             <div className="flex-1 border-t border-gray-300"></div>
           </div>
 
@@ -308,7 +308,7 @@ export default function LoginPage() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
-            <span className="group-hover:text-gray-900 transition font-medium">Lanjutkan dengan Google</span>
+            <span className="group-hover:text-gray-900 transition font-medium">Continue with Google</span>
           </button>
 
           <button
@@ -318,13 +318,13 @@ export default function LoginPage() {
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
             </svg>
-            <span className="transition font-medium group-hover:text-white">Lanjutkan dengan LinkedIn</span>
+            <span className="transition font-medium group-hover:text-white">Continue with LinkedIn</span>
           </button>
 
           <p className="text-center mt-8 text-gray-600">
-            Belum punya akun?{' '}
+            Don't have an account?{' '}
             <Link href="/register" className="text-[#2D7C88] hover:underline font-medium">
-              Daftar sekarang
+              Register now
             </Link>
           </p>
         </div>
