@@ -5,49 +5,49 @@ import { createClient } from '@supabase/supabase-js'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 const FROM_EMAIL = 'Official ID <info@official.id>'
 
 // Log email to database
 async function logEmail(data: {
-    recipient_email: string
-    subject: string
-    email_type: string
-    related_id?: string
-    status: string
-    resend_id?: string
-    error_message?: string
-    metadata?: Record<string, any>
+  recipient_email: string
+  subject: string
+  email_type: string
+  related_id?: string
+  status: string
+  resend_id?: string
+  error_message?: string
+  metadata?: Record<string, any>
 }) {
-    try {
-        await supabase.from('email_logs').insert({
-            recipient_email: data.recipient_email,
-            sender_email: 'info@official.id',
-            subject: data.subject,
-            email_type: data.email_type,
-            related_id: data.related_id,
-            status: data.status,
-            resend_id: data.resend_id,
-            error_message: data.error_message,
-            metadata: data.metadata,
-            sent_at: data.status === 'sent' ? new Date().toISOString() : null,
-        })
-    } catch (err) {
-        console.error('Failed to log email:', err)
-    }
+  try {
+    await supabase.from('email_logs').insert({
+      recipient_email: data.recipient_email,
+      sender_email: 'info@official.id',
+      subject: data.subject,
+      email_type: data.email_type,
+      related_id: data.related_id,
+      status: data.status,
+      resend_id: data.resend_id,
+      error_message: data.error_message,
+      metadata: data.metadata,
+      sent_at: data.status === 'sent' ? new Date().toISOString() : null,
+    })
+  } catch (err) {
+    console.error('Failed to log email:', err)
+  }
 }
 
 // HTML Template for Circle Message
 function getCircleMessageTemplate(params: {
-    recipientName: string
-    senderName: string
-    circleName: string
-    message: string
+  recipientName: string
+  senderName: string
+  circleName: string
+  message: string
 }) {
-    return `
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -101,12 +101,12 @@ function getCircleMessageTemplate(params: {
 
 // HTML Template for Broadcast
 function getCircleBroadcastTemplate(params: {
-    recipientName: string
-    circleName: string
-    adminName: string
-    message: string
+  recipientName: string
+  circleName: string
+  adminName: string
+  message: string
 }) {
-    return `
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -159,90 +159,105 @@ function getCircleBroadcastTemplate(params: {
 </html>`
 }
 
+// Helper function to add delay between emails (prevents rate limiting)
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// Rate limit: 150ms between emails (~6-7 emails per second, safe for Resend)
+const DELAY_BETWEEN_EMAILS_MS = 150
+
 export async function POST(request: NextRequest) {
-    try {
-        const body = await request.json()
-        const { type, recipients, circleName, senderName, message, relatedId } = body
+  try {
+    const body = await request.json()
+    const { type, recipients, circleName, senderName, message, relatedId } = body
 
-        if (!type || !recipients || !Array.isArray(recipients) || recipients.length === 0) {
-            return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
-        }
-
-        const results = []
-
-        for (const recipient of recipients) {
-            const subject = type === 'broadcast'
-                ? `[Broadcast] Pesan dari ${circleName}`
-                : `Pesan baru dari ${senderName} di Circle ${circleName}`
-
-            const html = type === 'broadcast'
-                ? getCircleBroadcastTemplate({
-                    recipientName: recipient.name || 'Member',
-                    circleName,
-                    adminName: senderName,
-                    message,
-                })
-                : getCircleMessageTemplate({
-                    recipientName: recipient.name || 'Member',
-                    senderName,
-                    circleName,
-                    message,
-                })
-
-            try {
-                const { data, error } = await resend.emails.send({
-                    from: FROM_EMAIL,
-                    to: recipient.email,
-                    subject,
-                    html,
-                })
-
-                if (error) {
-                    await logEmail({
-                        recipient_email: recipient.email,
-                        subject,
-                        email_type: type === 'broadcast' ? 'circle_broadcast' : 'circle_message',
-                        related_id: relatedId,
-                        status: 'failed',
-                        error_message: error.message,
-                        metadata: { circleName, senderName },
-                    })
-                    results.push({ email: recipient.email, success: false, error: error.message })
-                } else {
-                    await logEmail({
-                        recipient_email: recipient.email,
-                        subject,
-                        email_type: type === 'broadcast' ? 'circle_broadcast' : 'circle_message',
-                        related_id: relatedId,
-                        status: 'sent',
-                        resend_id: data?.id,
-                        metadata: { circleName, senderName },
-                    })
-                    results.push({ email: recipient.email, success: true })
-                }
-            } catch (err: any) {
-                await logEmail({
-                    recipient_email: recipient.email,
-                    subject,
-                    email_type: type === 'broadcast' ? 'circle_broadcast' : 'circle_message',
-                    related_id: relatedId,
-                    status: 'failed',
-                    error_message: err.message,
-                    metadata: { circleName, senderName },
-                })
-                results.push({ email: recipient.email, success: false, error: err.message })
-            }
-        }
-
-        const successCount = results.filter(r => r.success).length
-        return NextResponse.json({
-            success: true,
-            sent: successCount,
-            failed: results.length - successCount,
-            results
-        })
-    } catch (err: any) {
-        console.error('Email API error:', err)
-        return NextResponse.json({ error: err.message }, { status: 500 })
+    if (!type || !recipients || !Array.isArray(recipients) || recipients.length === 0) {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     }
+
+    const results = []
+
+    for (let i = 0; i < recipients.length; i++) {
+      const recipient = recipients[i]
+
+      // Add delay between emails (except for the first one)
+      if (i > 0) {
+        await sleep(DELAY_BETWEEN_EMAILS_MS)
+      }
+
+      const subject = type === 'broadcast'
+        ? `[Broadcast] Pesan dari ${circleName}`
+        : `Pesan baru dari ${senderName} di Circle ${circleName}`
+
+      const html = type === 'broadcast'
+        ? getCircleBroadcastTemplate({
+          recipientName: recipient.name || 'Member',
+          circleName,
+          adminName: senderName,
+          message,
+        })
+        : getCircleMessageTemplate({
+          recipientName: recipient.name || 'Member',
+          senderName,
+          circleName,
+          message,
+        })
+
+      try {
+        const { data, error } = await resend.emails.send({
+          from: FROM_EMAIL,
+          to: recipient.email,
+          subject,
+          html,
+        })
+
+        if (error) {
+          await logEmail({
+            recipient_email: recipient.email,
+            subject,
+            email_type: type === 'broadcast' ? 'circle_broadcast' : 'circle_message',
+            related_id: relatedId,
+            status: 'failed',
+            error_message: error.message,
+            metadata: { circleName, senderName },
+          })
+          results.push({ email: recipient.email, success: false, error: error.message })
+        } else {
+          await logEmail({
+            recipient_email: recipient.email,
+            subject,
+            email_type: type === 'broadcast' ? 'circle_broadcast' : 'circle_message',
+            related_id: relatedId,
+            status: 'sent',
+            resend_id: data?.id,
+            metadata: { circleName, senderName },
+          })
+          results.push({ email: recipient.email, success: true })
+        }
+      } catch (err: any) {
+        await logEmail({
+          recipient_email: recipient.email,
+          subject,
+          email_type: type === 'broadcast' ? 'circle_broadcast' : 'circle_message',
+          related_id: relatedId,
+          status: 'failed',
+          error_message: err.message,
+          metadata: { circleName, senderName },
+        })
+        results.push({ email: recipient.email, success: false, error: err.message })
+      }
+    }
+
+    const successCount = results.filter(r => r.success).length
+    return NextResponse.json({
+      success: true,
+      sent: successCount,
+      failed: results.length - successCount,
+      results
+    })
+  } catch (err: any) {
+    console.error('Email API error:', err)
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
 }
