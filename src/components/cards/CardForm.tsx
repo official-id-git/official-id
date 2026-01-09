@@ -323,7 +323,7 @@ export function CardForm({ card, mode }: CardFormProps) {
             <textarea
               name="business_description"
               value={(formData as any).business_description || ''}
-              onChange={handleChange}
+              onChange={handleTextChange}
               rows={4}
               maxLength={150}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
@@ -399,7 +399,7 @@ export function CardForm({ card, mode }: CardFormProps) {
               type="text"
               name="address"
               value={formData.address}
-              onChange={handleChange}
+              onChange={handleTextChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Contoh: Jl. Sudirman No. 123"
             />
@@ -414,7 +414,7 @@ export function CardForm({ card, mode }: CardFormProps) {
               type="text"
               name="city"
               value={formData.city}
-              onChange={handleChange}
+              onChange={handleTextChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Contoh: Jakarta"
             />
