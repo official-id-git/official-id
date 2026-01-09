@@ -800,6 +800,148 @@ export function useOrganizations() {
     }
   }, [supabase])
 
+  // ==========================================
+  // BROADCAST MESSAGE FUNCTION
+  // ==========================================
+
+  // Security patterns for XSS and SQLi detection
+  const detectMaliciousContent = (input: string): boolean => {
+    if (!input) return false
+
+    const maliciousPatterns = [
+      // SQL Injection
+      /(\%27)|(\')|(\-\-)|(\%23)|(#)/i,
+      /((\%3D)|(=))[^\n]*((\%27)|(\')|(\-\-)|(\%3B)|(;))/i,
+      /\w*((\%27)|(\'))(((\%6F)|o|(\%4F))(((\%72)|r|(\%52))))/i,
+      /((\%27)|(\'))union/i,
+      /exec(\s|\+)+(s|x)p\w+/i,
+      /UNION(\s|\+)+SELECT/i,
+      /DROP(\s|\+)+TABLE/i,
+      /INSERT(\s|\+)+INTO/i,
+      /UPDATE(\s|\+)+SET/i,
+      /DELETE(\s|\+)+FROM/i,
+      // XSS
+      /((\%3C)|<)((\%2F)|\/)*[a-z0-9\%]+((\%3E)|>)/i,
+      /((\%3C)|<)[^\n]+((\%3E)|>)/i,
+      /javascript:/i,
+      /onload=/i,
+      /onerror=/i,
+      /onclick=/i,
+      /onmouseover=/i,
+      /eval\(/i,
+      /alert\(/i,
+      /<script/i,
+      /<\/script/i,
+    ]
+
+    for (const pattern of maliciousPatterns) {
+      if (pattern.test(input)) return true
+    }
+    return false
+  }
+
+  const sendBroadcastMessage = useCallback(async (
+    orgId: string,
+    message: string,
+    orgName: string
+  ): Promise<{ success: boolean; recipientCount: number; error?: string }> => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      // Validate message is not empty
+      if (!message.trim()) {
+        return { success: false, recipientCount: 0, error: 'Message cannot be empty' }
+      }
+
+      // Count words (split by whitespace)
+      const wordCount = message.trim().split(/\s+/).length
+      if (wordCount > 250) {
+        return { success: false, recipientCount: 0, error: `Message exceeds 250 word limit (${wordCount} words)` }
+      }
+
+      // Security check - detect malicious content
+      if (detectMaliciousContent(message)) {
+        return { success: false, recipientCount: 0, error: 'Message contains potentially harmful content' }
+      }
+
+      // Check if user is admin of this org
+      const membership = await checkMembership(orgId)
+      if (!membership.isAdmin) {
+        return { success: false, recipientCount: 0, error: 'Only admins can send broadcast messages' }
+      }
+
+      // Get all approved members (excluding the sender)
+      const { data: members, error: membersError } = await supabase
+        .from('organization_members')
+        .select('user_id, users!organization_members_user_id_fkey(id, full_name, email)')
+        .eq('organization_id', orgId)
+        .eq('status', 'APPROVED')
+        .neq('user_id', user.id)
+
+      if (membersError) throw membersError
+
+      const approvedMembers = members || []
+
+      if (approvedMembers.length === 0) {
+        return { success: false, recipientCount: 0, error: 'No members to send message to' }
+      }
+
+      // Get sender info
+      const { data: sender } = await supabase
+        .from('users')
+        .select('full_name, email')
+        .eq('id', user.id)
+        .single()
+
+      // Store broadcast in circle_broadcasts table
+      const { error: broadcastError } = await supabase
+        .from('circle_broadcasts')
+        .insert({
+          organization_id: orgId,
+          sender_id: user.id,
+          message: message.trim(),
+          word_count: wordCount,
+          recipient_count: approvedMembers.length,
+        })
+
+      if (broadcastError) {
+        console.error('Failed to save broadcast:', broadcastError)
+        // Continue anyway - the messages will still be sent
+      }
+
+      // Send individual messages to each member
+      const messageInserts = approvedMembers.map(member => ({
+        recipient_id: member.user_id,
+        sender_name: `${orgName} (${sender?.full_name || 'Admin'})`,
+        sender_whatsapp: '-',
+        sender_email: sender?.email || '',
+        purpose: 'lainnya' as const,
+        message: `[Broadcast dari Circle ${orgName}]\n\n${message.trim()}`,
+        is_read: false,
+      }))
+
+      const { error: messagesError } = await supabase
+        .from('messages')
+        .insert(messageInserts)
+
+      if (messagesError) {
+        console.error('Failed to send messages:', messagesError)
+        throw new Error('Failed to deliver messages to members')
+      }
+
+      return { success: true, recipientCount: approvedMembers.length }
+    } catch (err: any) {
+      setError(err.message)
+      return { success: false, recipientCount: 0, error: err.message }
+    } finally {
+      setLoading(false)
+    }
+  }, [supabase, checkMembership])
+
   return {
     loading,
     error,
@@ -824,5 +966,6 @@ export function useOrganizations() {
     acceptInvitation,
     checkInvitation,
     removeMember,
+    sendBroadcastMessage,
   }
 }

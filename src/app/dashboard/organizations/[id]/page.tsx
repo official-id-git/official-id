@@ -31,6 +31,7 @@ export default function OrganizationDetailPage() {
     inviteMember,
     fetchInvitations,
     cancelInvitation,
+    sendBroadcastMessage,
     loading
   } = useOrganizations()
 
@@ -53,6 +54,13 @@ export default function OrganizationDetailPage() {
   const [inviteLoading, setInviteLoading] = useState(false)
   const [inviteError, setInviteError] = useState('')
   const [inviteSuccess, setInviteSuccess] = useState('')
+
+  // Broadcast modal state
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false)
+  const [broadcastMessage, setBroadcastMessage] = useState('')
+  const [broadcastLoading, setBroadcastLoading] = useState(false)
+  const [broadcastError, setBroadcastError] = useState('')
+  const [broadcastSuccess, setBroadcastSuccess] = useState('')
 
   const orgId = params.id as string
 
@@ -146,6 +154,38 @@ export default function OrganizationDetailPage() {
     const text = `Join Circle ${org.name} on Official ID!`
     window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank')
   }
+
+  // Broadcast message handler
+  const handleSendBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!org) return
+
+    setBroadcastError('')
+    setBroadcastSuccess('')
+    setBroadcastLoading(true)
+
+    try {
+      const result = await sendBroadcastMessage(orgId, broadcastMessage, org.name)
+
+      if (result.success) {
+        setBroadcastSuccess(`Message sent to ${result.recipientCount} members!`)
+        setBroadcastMessage('')
+        setTimeout(() => {
+          setShowBroadcastModal(false)
+          setBroadcastSuccess('')
+        }, 2000)
+      } else {
+        setBroadcastError(result.error || 'Failed to send message')
+      }
+    } catch (err: any) {
+      setBroadcastError(err.message || 'An error occurred')
+    } finally {
+      setBroadcastLoading(false)
+    }
+  }
+
+  // Count words in broadcast message
+  const wordCount = broadcastMessage.trim() ? broadcastMessage.trim().split(/\s+/).length : 0
 
   if (authLoading || loading || !org) {
     return (
@@ -353,6 +393,19 @@ export default function OrganizationDetailPage() {
                 Invite via Email
               </button>
             )}
+
+            {/* Send Broadcast Button (Admin only) */}
+            {membership.isAdmin && approvedCount > 1 && (
+              <button
+                onClick={() => setShowBroadcastModal(true)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                </svg>
+                Send Broadcast
+              </button>
+            )}
           </div>
 
           {/* Right Column - Members */}
@@ -482,6 +535,91 @@ export default function OrganizationDetailPage() {
                   className="flex-1 px-4 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {inviteLoading ? 'Sending...' : 'Send Invitation'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Broadcast Modal */}
+      {showBroadcastModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Send Broadcast</h2>
+                <p className="text-sm text-gray-500">Message will be sent to {approvedCount - 1} member{approvedCount - 1 !== 1 ? 's' : ''}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowBroadcastModal(false)
+                  setBroadcastMessage('')
+                  setBroadcastError('')
+                  setBroadcastSuccess('')
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {broadcastError && (
+              <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-xl border border-red-200">
+                {broadcastError}
+              </div>
+            )}
+
+            {broadcastSuccess && (
+              <div className="mb-4 p-3 bg-green-50 text-green-700 text-sm rounded-xl border border-green-200">
+                {broadcastSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleSendBroadcast}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Message
+                </label>
+                <textarea
+                  value={broadcastMessage}
+                  onChange={(e) => setBroadcastMessage(e.target.value)}
+                  placeholder="Write your message to all members..."
+                  rows={6}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  required
+                />
+                <div className="flex justify-between items-center mt-2">
+                  <p className="text-xs text-gray-500">
+                    Messages appear in each member's inbox
+                  </p>
+                  <p className={`text-xs font-medium ${wordCount > 250 ? 'text-red-600' : wordCount > 200 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {wordCount}/250 words
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBroadcastModal(false)
+                    setBroadcastMessage('')
+                    setBroadcastError('')
+                    setBroadcastSuccess('')
+                  }}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={broadcastLoading || !broadcastMessage.trim() || wordCount > 250}
+                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {broadcastLoading ? 'Sending...' : 'Send to All Members'}
                 </button>
               </div>
             </form>
