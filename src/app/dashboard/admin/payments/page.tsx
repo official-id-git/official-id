@@ -16,7 +16,7 @@ export default function PaymentVerificationPage() {
   const { user, loading: authLoading } = useAuth()
   const { fetchPayments, approvePayment, rejectPayment, loading } = useAdmin()
   const router = useRouter()
-  
+
   const [payments, setPayments] = useState<PaymentWithUser[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -130,13 +130,13 @@ export default function PaymentVerificationPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
               <Link href="/dashboard/admin" className="text-sm text-blue-600 hover:text-blue-700">
                 ← Kembali ke Admin
               </Link>
-              <h1 className="text-2xl font-bold text-gray-900 mt-1">Verifikasi Pembayaran</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">Verifikasi Pembayaran</h1>
             </div>
             <div className="text-sm text-gray-500">
               Total: {total} transaksi
@@ -154,8 +154,8 @@ export default function PaymentVerificationPage() {
         )}
 
         {/* Filter */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
-          <div className="flex gap-2">
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 mb-6">
+          <div className="flex gap-2 overflow-x-auto pb-2 -mb-2 scrollbar-hide">
             {(['PENDING', 'APPROVED', 'REJECTED', 'ALL'] as const).map((status) => (
               <button
                 key={status}
@@ -163,11 +163,10 @@ export default function PaymentVerificationPage() {
                   setStatusFilter(status)
                   setPage(1)
                 }}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                  statusFilter === status
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`px-3 sm:px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${statusFilter === status
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
               >
                 {status === 'ALL' ? 'Semua' : getStatusLabel(status as PaymentStatus)}
               </button>
@@ -190,9 +189,11 @@ export default function PaymentVerificationPage() {
             </div>
           ) : (
             payments.map((payment) => (
-              <div key={payment.id} className="bg-white rounded-2xl shadow-sm p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4">
+              <div key={payment.id} className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
+                {/* Mobile-first card layout */}
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                  {/* User Info Section */}
+                  <div className="flex items-start gap-3 sm:gap-4">
                     {/* User Avatar */}
                     {payment.users?.avatar_url ? (
                       <Image
@@ -200,21 +201,21 @@ export default function PaymentVerificationPage() {
                         alt={payment.users.full_name || ''}
                         width={48}
                         height={48}
-                        className="w-12 h-12 rounded-full object-cover"
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                        <span className="text-gray-600 font-medium text-lg">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-gray-600 font-medium text-base sm:text-lg">
                           {payment.users?.full_name?.charAt(0).toUpperCase() || '?'}
                         </span>
                       </div>
                     )}
-                    
-                    <div>
-                      <p className="font-semibold text-gray-900">{payment.users?.full_name || 'Unknown'}</p>
-                      <p className="text-sm text-gray-500">{payment.users?.email}</p>
-                      <div className="flex items-center gap-3 mt-2">
-                        <span className="text-lg font-bold text-gray-900">{formatCurrency(payment.amount)}</span>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-gray-900 truncate">{payment.users?.full_name || 'Unknown'}</p>
+                      <p className="text-sm text-gray-500 truncate">{payment.users?.email}</p>
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        <span className="text-base sm:text-lg font-bold text-gray-900">{formatCurrency(payment.amount)}</span>
                         <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusBadge(payment.status)}`}>
                           {getStatusLabel(payment.status)}
                         </span>
@@ -225,15 +226,16 @@ export default function PaymentVerificationPage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-end gap-2">
-                    {/* Proof Image */}
+                  {/* Actions Section - Full width on mobile */}
+                  <div className="flex flex-col gap-3 sm:items-end w-full sm:w-auto">
+                    {/* Proof Image Button */}
                     {payment.proof_url && (
                       <button
                         onClick={() => {
                           setSelectedPayment(payment)
                           setShowProofModal(true)
                         }}
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        className="w-full sm:w-auto text-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium rounded-xl text-sm transition-colors"
                       >
                         Lihat Bukti →
                       </button>
@@ -241,16 +243,16 @@ export default function PaymentVerificationPage() {
 
                     {/* Action Buttons */}
                     {payment.status === 'PENDING' && (
-                      <div className="flex gap-2 mt-2">
+                      <div className="flex gap-2 w-full sm:w-auto">
                         <button
                           onClick={() => openActionModal(payment, 'approve')}
-                          className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700"
+                          className="flex-1 sm:flex-none px-4 py-2.5 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 transition-colors"
                         >
                           Setujui
                         </button>
                         <button
                           onClick={() => openActionModal(payment, 'reject')}
-                          className="px-4 py-2 border border-red-300 text-red-600 text-sm font-medium rounded-xl hover:bg-red-50"
+                          className="flex-1 sm:flex-none px-4 py-2.5 border border-red-300 text-red-600 text-sm font-medium rounded-xl hover:bg-red-50 transition-colors"
                         >
                           Tolak
                         </button>
@@ -303,7 +305,7 @@ export default function PaymentVerificationPage() {
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               {modalAction === 'approve' ? 'Setujui Pembayaran?' : 'Tolak Pembayaran?'}
             </h3>
-            
+
             {modalAction === 'approve' ? (
               <p className="text-gray-600 mb-6">
                 Pembayaran dari <strong>{selectedPayment.users?.full_name}</strong> sebesar{' '}
@@ -338,9 +340,8 @@ export default function PaymentVerificationPage() {
               <button
                 onClick={modalAction === 'approve' ? handleApprove : handleReject}
                 disabled={processing}
-                className={`flex-1 px-4 py-2 text-white rounded-xl disabled:opacity-50 ${
-                  modalAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
-                }`}
+                className={`flex-1 px-4 py-2 text-white rounded-xl disabled:opacity-50 ${modalAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                  }`}
               >
                 {processing ? 'Memproses...' : modalAction === 'approve' ? 'Setujui' : 'Tolak'}
               </button>
