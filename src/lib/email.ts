@@ -2,13 +2,22 @@
 // You need to set RESEND_API_KEY in environment variables
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY
-const FROM_EMAIL = process.env.FROM_EMAIL || 'Official ID <noreply@officialid.app>'
 const APP_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'
+
+// Email sender addresses by type
+export const EMAIL_SENDERS = {
+  card: 'Official ID <card@official.id>',
+  circle: 'Official ID <circle@official.id>',
+  payment: 'Official ID <payment@official.id>',
+  info: 'Official ID <info@official.id>',
+  default: 'Official ID <card@official.id>'
+}
 
 interface EmailOptions {
   to: string
   subject: string
   html: string
+  from?: string
 }
 
 export async function sendEmail(options: EmailOptions): Promise<{ success: boolean; error?: string }> {
@@ -25,7 +34,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: FROM_EMAIL,
+        from: options.from || EMAIL_SENDERS.default,
         to: options.to,
         subject: options.subject,
         html: options.html,
@@ -135,7 +144,7 @@ export function getOrganizationInviteEmailTemplate(data: {
   }
 }
 
-// Share Card via Email Template
+// Share Card via Email Template - Professional Design with Registration CTA
 export function getShareCardEmailTemplate(data: {
   senderName: string
   senderEmail: string
@@ -144,11 +153,14 @@ export function getShareCardEmailTemplate(data: {
   cardName: string
   cardTitle?: string
   cardCompany?: string
+  cardPhotoUrl?: string
   cardUrl: string
   message?: string
 }): { subject: string; html: string } {
+  const year = new Date().getFullYear()
+
   return {
-    subject: `${data.senderName} membagikan kartu bisnis digital`,
+    subject: `📇 ${data.senderName} membagikan kartu bisnis digital kepada Anda`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -160,69 +172,115 @@ export function getShareCardEmailTemplate(data: {
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5; padding: 40px 20px;">
           <tr>
             <td align="center">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 500px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.08);">
                 
-                <!-- Header -->
+                <!-- Header with Logo -->
                 <tr>
-                  <td style="background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%); padding: 40px 30px; text-align: center;">
-                    <div style="width: 70px; height: 70px; margin: 0 auto 16px; background: rgba(255,255,255,0.15); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
-                      <span style="font-size: 32px;">💼</span>
-                    </div>
-                    <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">Kartu Bisnis Digital</h1>
+                  <td style="background: linear-gradient(135deg, #2D7C88 0%, #1A5A66 100%); padding: 35px 30px; text-align: center;">
+                    <img src="https://res.cloudinary.com/dhr9kt7r5/image/upload/v1766548116/official-id/circles/dopjzc11o9fpqdfde63b.png" alt="Official ID" width="50" height="50" style="margin-bottom: 12px;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">Kartu Bisnis Digital</h1>
+                    <p style="margin: 8px 0 0; color: rgba(255,255,255,0.85); font-size: 14px;">dari Official ID</p>
                   </td>
                 </tr>
                 
-                <!-- Content -->
+                <!-- Greeting -->
                 <tr>
-                  <td style="padding: 40px 30px;">
-                    <p style="margin: 0 0 20px; color: #666666; font-size: 15px; line-height: 1.6;">
-                      Halo${data.recipientName ? ` <strong>${data.recipientName}</strong>` : ''},
+                  <td style="padding: 35px 30px 0;">
+                    <p style="margin: 0 0 16px; color: #374151; font-size: 16px; line-height: 1.6;">
+                      Halo${data.recipientName ? ` <strong>${data.recipientName}</strong>` : ''} 👋
                     </p>
-                    
-                    <p style="margin: 0 0 20px; color: #666666; font-size: 15px; line-height: 1.6;">
-                      <strong>${data.senderName}</strong> ingin berbagi kartu bisnis digital dengan Anda:
+                    <p style="margin: 0; color: #374151; font-size: 16px; line-height: 1.6;">
+                      <strong style="color: #1e3a5f;">${data.senderName}</strong> ingin berbagi kartu bisnis digital dengan Anda untuk terhubung secara profesional.
                     </p>
-                    
-                    <!-- Card Preview -->
-                    <div style="background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%); border-radius: 12px; padding: 20px; margin: 20px 0; border: 1px solid #e5e5e5;">
-                      <p style="margin: 0 0 4px; color: #1a1a1a; font-size: 18px; font-weight: 600;">${data.cardName}</p>
-                      ${data.cardTitle ? `<p style="margin: 0 0 4px; color: #666; font-size: 14px;">${data.cardTitle}</p>` : ''}
-                      ${data.cardCompany ? `<p style="margin: 0; color: #888; font-size: 14px;">${data.cardCompany}</p>` : ''}
-                    </div>
-                    
-                    ${data.message ? `
-                    <div style="background: #faf5ff; border-radius: 12px; padding: 16px; margin: 20px 0; border-left: 4px solid #8B5CF6;">
-                      <p style="margin: 0; color: #666; font-style: italic;">"${data.message}"</p>
-                    </div>
-                    ` : ''}
-                    
-                    <!-- CTA Button -->
-                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                  </td>
+                </tr>
+                
+                <!-- Card Preview Box -->
+                <tr>
+                  <td style="padding: 25px 30px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden;">
                       <tr>
-                        <td align="center" style="padding: 20px 0;">
-                          <a href="${data.cardUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%); color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 16px 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
-                            Lihat Kartu Bisnis
+                        <td style="padding: 24px; text-align: center;">
+                          <!-- Profile Photo -->
+                          ${data.cardPhotoUrl ? `
+                          <img src="${data.cardPhotoUrl}" alt="${data.cardName}" width="80" height="80" style="border-radius: 50%; object-fit: cover; margin-bottom: 16px; border: 4px solid #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                          ` : `
+                          <div style="width: 80px; height: 80px; margin: 0 auto 16px; background: linear-gradient(135deg, #2D7C88, #1A5A66); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 4px solid #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                            <span style="font-size: 32px; color: #ffffff; font-weight: 700;">${data.cardName.charAt(0).toUpperCase()}</span>
+                          </div>
+                          `}
+                          
+                          <h2 style="margin: 0 0 6px; color: #111827; font-size: 20px; font-weight: 700;">${data.cardName}</h2>
+                          ${data.cardTitle ? `<p style="margin: 0 0 4px; color: #4b5563; font-size: 15px; font-weight: 500;">${data.cardTitle}</p>` : ''}
+                          ${data.cardCompany ? `<p style="margin: 0 0 16px; color: #6b7280; font-size: 14px;">🏢 ${data.cardCompany}</p>` : '<div style="margin-bottom: 16px;"></div>'}
+                          
+                          <!-- View Button -->
+                          <a href="${data.cardUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #2D7C88 0%, #1A5A66 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 14px 32px; border-radius: 12px; box-shadow: 0 4px 15px rgba(45, 124, 136, 0.35);">
+                            📱 Lihat & Simpan Kontak
                           </a>
                         </td>
                       </tr>
                     </table>
-                    
-                    <p style="margin: 20px 0 0; color: #999999; font-size: 13px; text-align: center;">
-                      Dengan Official ID, Anda juga bisa membuat kartu bisnis digital sendiri secara gratis!
-                    </p>
+                  </td>
+                </tr>
+                
+                <!-- Personal Message -->
+                ${data.message ? `
+                <tr>
+                  <td style="padding: 0 30px 25px;">
+                    <div style="background: #eff6ff; border-radius: 12px; padding: 18px 20px; border-left: 4px solid #2D7C88;">
+                      <p style="margin: 0 0 6px; color: #1e40af; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Pesan dari ${data.senderName}</p>
+                      <p style="margin: 0; color: #374151; font-size: 15px; line-height: 1.6; font-style: italic;">"${data.message}"</p>
+                    </div>
+                  </td>
+                </tr>
+                ` : ''}
+                
+                <!-- Divider -->
+                <tr>
+                  <td style="padding: 0 30px;">
+                    <hr style="margin: 0; border: none; border-top: 1px solid #e5e7eb;">
+                  </td>
+                </tr>
+                
+                <!-- CTA Section - Registration Invite -->
+                <tr>
+                  <td style="padding: 30px; background: linear-gradient(135deg, #faf5ff 0%, #f5f3ff 100%);">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="text-align: center;">
+                          <p style="margin: 0 0 8px; font-size: 18px;">✨</p>
+                          <h3 style="margin: 0 0 10px; color: #1e3a5f; font-size: 17px; font-weight: 700;">Ingin punya kartu bisnis digital sendiri?</h3>
+                          <p style="margin: 0 0 20px; color: #6b7280; font-size: 14px; line-height: 1.6;">
+                            Buat kartu bisnis digital profesional Anda dalam hitungan detik. Gratis dan mudah dibagikan!
+                          </p>
+                          <a href="https://official.id/register" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 12px 24px; border-radius: 10px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.25);">
+                            🚀 Buat Kartu Gratis Sekarang
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
                 
                 <!-- Footer -->
                 <tr>
-                  <td style="background: #f8f8f8; padding: 25px 30px; text-align: center; border-top: 1px solid #e5e5e5;">
-                    <p style="margin: 0 0 8px; color: #999999; font-size: 12px;">
-                      © 2025 Official ID. All rights reserved.
+                  <td style="background: #f9fafb; padding: 25px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                    <p style="margin: 0 0 8px;">
+                      <a href="https://official.id" style="color: #2D7C88; text-decoration: none; font-weight: 600; font-size: 14px;">official.id</a>
+                    </p>
+                    <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                      © ${year} Official ID. Kartu Bisnis Digital Indonesia.
                     </p>
                   </td>
                 </tr>
                 
               </table>
+              
+              <!-- Email Footer Note -->
+              <p style="margin: 20px 0 0; color: #9ca3af; font-size: 11px; text-align: center;">
+                Email ini dikirim atas nama ${data.senderName} melalui Official ID
+              </p>
             </td>
           </tr>
         </table>

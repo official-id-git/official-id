@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import {
   sendEmail,
+  EMAIL_SENDERS,
   getCardScannedEmailTemplate,
   getPaymentVerifiedEmailTemplate,
   getContactCardShareEmailTemplate,
@@ -71,7 +72,8 @@ export async function POST(request: NextRequest) {
         emailResult = await sendEmail({
           to: data.userEmail,
           subject: template.subject,
-          html: template.html
+          html: template.html,
+          from: EMAIL_SENDERS.payment
         })
         break
       }
@@ -113,7 +115,8 @@ export async function POST(request: NextRequest) {
         emailResult = await sendEmail({
           to: data.recipientEmail,
           subject: template.subject,
-          html: template.html
+          html: template.html,
+          from: EMAIL_SENDERS.circle
         })
         break
       }
@@ -127,6 +130,7 @@ export async function POST(request: NextRequest) {
           cardName: data.cardName,
           cardTitle: data.cardTitle,
           cardCompany: data.cardCompany,
+          cardPhotoUrl: data.cardPhotoUrl,
           cardUrl: data.cardUrl,
           message: data.message
         })

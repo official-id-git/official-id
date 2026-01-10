@@ -57,22 +57,31 @@ export default function CardDetailPage() {
     setShareResult(null)
 
     try {
-      // Use EmailJS directly from client
-      const { sendShareCardEmail } = await import('@/lib/emailjs')
-
-      const result = await sendShareCardEmail({
-        recipientEmail: shareEmail,
-        senderName: user.full_name || 'Seseorang',
-        senderEmail: user.email,
-        cardName: card.full_name,
-        cardTitle: card.job_title,
-        cardCompany: card.company,
-        cardUrl: getPublicCardUrl(card.id, card.username),
-        message: shareMessage || undefined
+      // Use Resend API route for more reliable email delivery
+      const response = await fetch('/api/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'share_card',
+          data: {
+            senderName: user.full_name || card.full_name || 'Someone',
+            senderEmail: user.email,
+            recipientEmail: shareEmail,
+            recipientName: '',
+            cardName: card.full_name,
+            cardTitle: card.job_title,
+            cardCompany: card.company,
+            cardPhotoUrl: card.profile_photo_url,
+            cardUrl: getPublicCardUrl(card.id, card.username),
+            message: shareMessage || undefined
+          }
+        })
       })
 
+      const result = await response.json()
+
       if (result.success) {
-        setShareResult({ success: true, message: 'Email sent successfully!' })
+        setShareResult({ success: true, message: 'Email berhasil dikirim!' })
         setShareEmail('')
         setShareMessage('')
         setTimeout(() => {
@@ -80,10 +89,10 @@ export default function CardDetailPage() {
           setShareResult(null)
         }, 2000)
       } else {
-        setShareResult({ success: false, message: result.error || 'Failed to send email' })
+        setShareResult({ success: false, message: result.error || 'Gagal mengirim email' })
       }
     } catch (error: any) {
-      setShareResult({ success: false, message: error.message || 'An error occurred' })
+      setShareResult({ success: false, message: error.message || 'Terjadi kesalahan' })
     } finally {
       setSending(false)
     }
