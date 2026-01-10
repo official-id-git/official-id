@@ -7,18 +7,20 @@ import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
 import { useAdmin } from '@/hooks/useAdmin'
 import type { User, UserRole } from '@/types'
+import { UserDebug } from '@/components/debug/UserDebug'
 
 export default function UserManagementPage() {
   const { user, loading: authLoading } = useAuth()
   const { fetchUsers, updateUserRole, deleteUser, loading } = useAdmin()
   const router = useRouter()
-  
+
   const [users, setUsers] = useState<User[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<UserRole | 'ALL'>('ALL')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [debugUser, setDebugUser] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -234,6 +236,13 @@ export default function UserManagementPage() {
                         <div className="flex items-center justify-end gap-2">
                           {u.id !== user.id && u.role !== 'APP_ADMIN' && (
                             <>
+                              <button
+                                onClick={() => setDebugUser(u.id)}
+                                className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg mr-1"
+                                title="Debug User Data"
+                              >
+                                🕵️‍♂️
+                              </button>
                               <select
                                 value={u.role}
                                 onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
@@ -305,7 +314,7 @@ export default function UserManagementPage() {
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Hapus User?</h3>
             <p className="text-gray-600 mb-6">
-              Yakin ingin menghapus <strong>{selectedUser.full_name}</strong>? 
+              Yakin ingin menghapus <strong>{selectedUser.full_name}</strong>?
               Semua data termasuk kartu bisnis akan dihapus permanen.
             </p>
             <div className="flex gap-3">
@@ -328,6 +337,9 @@ export default function UserManagementPage() {
             </div>
           </div>
         </div>
+      )}
+      {debugUser && (
+        <UserDebug userId={debugUser} onClose={() => setDebugUser(null)} />
       )}
     </div>
   )

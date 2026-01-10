@@ -10,7 +10,6 @@ import { useOrganizations } from '@/hooks/useOrganizations'
 import type { BusinessCard } from '@/types'
 import FluidBackground from '@/components/ui/FluidBackground'
 import { CardPreview } from '@/components/cards/CardPreview'
-import { UserDebug } from '@/components/debug/UserDebug'
 
 export default function DashboardPage() {
   const { user, loading } = useAuth()
@@ -71,7 +70,6 @@ export default function DashboardPage() {
 
   return (
     <div className="px-4 space-y-6 -mt-4">
-      <UserDebug />
       {/* Welcome Section */}
       <div className="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-blue-600 to-purple-600 shadow-lg text-white mb-6">
         <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
