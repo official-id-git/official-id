@@ -265,6 +265,109 @@ export function CardForm({ card, mode }: CardFormProps) {
     const index = TEMPLATES.findIndex(t => t.id === formData.template)
     return index >= 0 ? index : 0
   })
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null)
+  const [inlinePinInput, setInlinePinInput] = useState('')
+  const [pinError, setPinError] = useState<string | null>(null)
+  const [pinVerifying, setPinVerifying] = useState(false)
+
+  // Navigate to template (for viewing) - no restrictions on viewing
+  const navigateToTemplate = (index: number, direction: 'left' | 'right') => {
+    setSlideDirection(direction)
+    setTimeout(() => {
+      setCurrentTemplateIndex(index)
+      setInlinePinInput('')
+      setPinError(null)
+      setTimeout(() => setSlideDirection(null), 50)
+    }, 150)
+  }
+
+  // Select template for use (with access check)
+  const selectTemplate = async (templateId: string) => {
+    const setting = templateSettings[templateId]
+
+    // Free templates
+    if (!setting || setting.access_type === 'free') {
+      setFormData(prev => ({ ...prev, template: templateId }))
+      return true
+    }
+
+    // Pro templates
+    if (setting.access_type === 'pro') {
+      if (user?.role === 'PAID_USER' || user?.role === 'APP_ADMIN') {
+        setFormData(prev => ({ ...prev, template: templateId }))
+        return true
+      }
+      return false
+    }
+
+    // PIN templates - check if already unlocked
+    if (setting.access_type === 'pin') {
+      if (unlockedTemplates.has(templateId) || user?.role === 'APP_ADMIN') {
+        setFormData(prev => ({ ...prev, template: templateId }))
+        return true
+      }
+      return false
+    }
+
+    return false
+  }
+
+  // Verify PIN inline
+  const verifyInlinePin = async () => {
+    const templateId = TEMPLATES[currentTemplateIndex].id
+    if (!inlinePinInput.trim()) {
+      setPinError('Masukkan PIN')
+      return
+    }
+
+    setPinVerifying(true)
+    setPinError(null)
+
+    try {
+      const res = await fetch('/api/templates/verify-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId, pin: inlinePinInput })
+      })
+      const data = await res.json()
+
+      if (data.valid) {
+        setUnlockedTemplates(prev => new Set([...prev, templateId]))
+        setFormData(prev => ({ ...prev, template: templateId }))
+        setInlinePinInput('')
+        setPinError(null)
+      } else {
+        setPinError('PIN tidak valid')
+      }
+    } catch (err) {
+      setPinError('Terjadi kesalahan')
+    } finally {
+      setPinVerifying(false)
+    }
+  }
+
+  // Get current template access info
+  const getCurrentTemplateAccess = () => {
+    const templateId = TEMPLATES[currentTemplateIndex].id
+    const setting = templateSettings[templateId]
+    const isSelected = formData.template === templateId
+    const isUnlocked = unlockedTemplates.has(templateId)
+    const isPro = user?.role === 'PAID_USER' || user?.role === 'APP_ADMIN'
+
+    if (!setting || setting.access_type === 'free') {
+      return { type: 'free', canUse: true, isSelected }
+    }
+
+    if (setting.access_type === 'pro') {
+      return { type: 'pro', canUse: isPro, isSelected, isPro }
+    }
+
+    if (setting.access_type === 'pin') {
+      return { type: 'pin', canUse: isUnlocked || user?.role === 'APP_ADMIN', isSelected, isUnlocked }
+    }
+
+    return { type: 'free', canUse: true, isSelected }
+  }
 
   // Synchronous handler for display fields - no race conditions
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -593,108 +696,306 @@ export function CardForm({ card, mode }: CardFormProps) {
           <p className="text-sm text-gray-500 mb-6">Pilih template yang sesuai dengan gaya Anda</p>
 
           <div className="flex flex-col items-center">
-            {/* Swipeable Carousel */}
-            <div
-              className="w-full touch-pan-y select-none cursor-grab active:cursor-grabbing"
-              onTouchStart={(e) => {
-                const touch = e.touches[0]
-                  ; (e.currentTarget as any).touchStartX = touch.clientX
-                  ; (e.currentTarget as any).touchStartY = touch.clientY
-              }}
-              onTouchEnd={(e) => {
-                const startX = (e.currentTarget as any).touchStartX
-                const startY = (e.currentTarget as any).touchStartY
-                const touch = e.changedTouches[0]
-                const diffX = touch.clientX - startX
-                const diffY = touch.clientY - startY
+            {/* Navigation Arrows + Carousel */}
+            <div className="w-full flex items-center gap-2">
+              {/* Left Arrow */}
+              <button
+                type="button"
+                onClick={() => currentTemplateIndex > 0 && navigateToTemplate(currentTemplateIndex - 1, 'right')}
+                disabled={currentTemplateIndex === 0}
+                className={`p-2 rounded-full transition-all ${currentTemplateIndex === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
 
-                // Only swipe if horizontal movement is greater than vertical
-                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
-                  if (diffX < 0 && currentTemplateIndex < TEMPLATES.length - 1) {
-                    // Swipe left - next template
-                    const newIndex = currentTemplateIndex + 1
-                    setCurrentTemplateIndex(newIndex)
-                    setFormData(prev => ({ ...prev, template: TEMPLATES[newIndex].id }))
-                  } else if (diffX > 0 && currentTemplateIndex > 0) {
-                    // Swipe right - previous template
-                    const newIndex = currentTemplateIndex - 1
-                    setCurrentTemplateIndex(newIndex)
-                    setFormData(prev => ({ ...prev, template: TEMPLATES[newIndex].id }))
+              {/* Swipeable Carousel with Animation */}
+              <div
+                className="flex-1 touch-pan-y select-none cursor-grab active:cursor-grabbing overflow-hidden"
+                onTouchStart={(e) => {
+                  const touch = e.touches[0]
+                    ; (e.currentTarget as any).touchStartX = touch.clientX
+                    ; (e.currentTarget as any).touchStartY = touch.clientY
+                }}
+                onTouchEnd={(e) => {
+                  const startX = (e.currentTarget as any).touchStartX
+                  const startY = (e.currentTarget as any).touchStartY
+                  const touch = e.changedTouches[0]
+                  const diffX = touch.clientX - startX
+                  const diffY = touch.clientY - startY
+
+                  if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                    if (diffX < 0 && currentTemplateIndex < TEMPLATES.length - 1) {
+                      navigateToTemplate(currentTemplateIndex + 1, 'left')
+                    } else if (diffX > 0 && currentTemplateIndex > 0) {
+                      navigateToTemplate(currentTemplateIndex - 1, 'right')
+                    }
                   }
-                }
-              }}
-              onMouseDown={(e) => {
-                ; (e.currentTarget as any).mouseStartX = e.clientX
-                  ; (e.currentTarget as any).isDragging = true
-              }}
-              onMouseUp={(e) => {
-                if (!(e.currentTarget as any).isDragging) return
+                }}
+                onMouseDown={(e) => {
+                  ; (e.currentTarget as any).mouseStartX = e.clientX
+                    ; (e.currentTarget as any).isDragging = true
+                }}
+                onMouseUp={(e) => {
+                  if (!(e.currentTarget as any).isDragging) return
+                    ; (e.currentTarget as any).isDragging = false
+                  const startX = (e.currentTarget as any).mouseStartX
+                  const diffX = e.clientX - startX
+
+                  if (Math.abs(diffX) > 50) {
+                    if (diffX < 0 && currentTemplateIndex < TEMPLATES.length - 1) {
+                      navigateToTemplate(currentTemplateIndex + 1, 'left')
+                    } else if (diffX > 0 && currentTemplateIndex > 0) {
+                      navigateToTemplate(currentTemplateIndex - 1, 'right')
+                    }
+                  }
+                }}
+                onMouseLeave={(e) => {
                   ; (e.currentTarget as any).isDragging = false
-                const startX = (e.currentTarget as any).mouseStartX
-                const diffX = e.clientX - startX
-
-                if (Math.abs(diffX) > 50) {
-                  if (diffX < 0 && currentTemplateIndex < TEMPLATES.length - 1) {
-                    const newIndex = currentTemplateIndex + 1
-                    setCurrentTemplateIndex(newIndex)
-                    setFormData(prev => ({ ...prev, template: TEMPLATES[newIndex].id }))
-                  } else if (diffX > 0 && currentTemplateIndex > 0) {
-                    const newIndex = currentTemplateIndex - 1
-                    setCurrentTemplateIndex(newIndex)
-                    setFormData(prev => ({ ...prev, template: TEMPLATES[newIndex].id }))
-                  }
-                }
-              }}
-              onMouseLeave={(e) => {
-                ; (e.currentTarget as any).isDragging = false
-              }}
-            >
-              <div className="overflow-hidden relative flex items-center justify-center py-4">
-                {/* Live Preview */}
-                <div className="w-full max-w-sm transform scale-100 transition-transform">
-                  <CardPreview
-                    card={{
-                      id: 'preview',
-                      user_id: 'preview',
-                      created_at: new Date().toISOString(),
-                      updated_at: new Date().toISOString(),
-                      qr_code_url: '',
-                      scan_count: 0,
-                      ...formData,
-                      social_links: formData.social_links,
-                      business_description: (formData as any).business_description || '',
-                      show_business_description: (formData as any).visible_fields?.business_description ?? true
-                    }}
-                    readonly={true}
-                  />
+                }}
+              >
+                <div className="relative py-4">
+                  {/* Animated Card Container */}
+                  <div
+                    className={`w-full max-w-sm mx-auto transition-all duration-200 ease-out ${slideDirection === 'left'
+                        ? 'opacity-0 -translate-x-8'
+                        : slideDirection === 'right'
+                          ? 'opacity-0 translate-x-8'
+                          : 'opacity-100 translate-x-0'
+                      }`}
+                  >
+                    <CardPreview
+                      card={{
+                        id: 'preview',
+                        user_id: 'preview',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                        qr_code_url: '',
+                        scan_count: 0,
+                        ...formData,
+                        template: TEMPLATES[currentTemplateIndex].id,
+                        social_links: formData.social_links,
+                        business_description: (formData as any).business_description || '',
+                        show_business_description: (formData as any).visible_fields?.business_description ?? true
+                      }}
+                      readonly={true}
+                    />
+                  </div>
                 </div>
               </div>
+
+              {/* Right Arrow */}
+              <button
+                type="button"
+                onClick={() => currentTemplateIndex < TEMPLATES.length - 1 && navigateToTemplate(currentTemplateIndex + 1, 'left')}
+                disabled={currentTemplateIndex === TEMPLATES.length - 1}
+                className={`p-2 rounded-full transition-all ${currentTemplateIndex === TEMPLATES.length - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
             </div>
 
             {/* Template Info */}
-            <div className="text-center mt-6">
+            <div className="text-center mt-4">
               <div className="flex items-center justify-center gap-2">
                 <h4 className="text-xl font-bold text-gray-900">
                   {TEMPLATES[currentTemplateIndex].name}
                 </h4>
                 {getAccessIcon(TEMPLATES[currentTemplateIndex].id)}
               </div>
-              <p className="text-gray-500 mt-1">
+              <p className="text-gray-500 mt-1 text-sm">
                 {TEMPLATES[currentTemplateIndex].description}
               </p>
-              <p className="text-xs text-gray-400 mt-2">Swipe to change template</p>
-              <div className="flex gap-2 justify-center mt-4 flex-wrap">
-                {TEMPLATES.map((t, idx) => (
+              <p className="text-xs text-gray-400 mt-1">{currentTemplateIndex + 1} / {TEMPLATES.length} • Swipe atau gunakan panah</p>
+            </div>
+
+            {/* Access Info Panel - Inline */}
+            {(() => {
+              const access = getCurrentTemplateAccess()
+              const templateId = TEMPLATES[currentTemplateIndex].id
+
+              // Free template
+              if (access.type === 'free') {
+                return (
+                  <div className="mt-4 w-full">
+                    {access.isSelected ? (
+                      <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-center gap-2">
+                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span className="text-green-700 font-medium">Template terpilih</span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => selectTemplate(templateId)}
+                        className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                      >
+                        Pilih Template Ini
+                      </button>
+                    )}
+                  </div>
+                )
+              }
+
+              // Pro template
+              if (access.type === 'pro') {
+                if (access.canUse) {
+                  // User is Pro
+                  return (
+                    <div className="mt-4 w-full">
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-2 mb-2 flex items-center justify-center gap-2">
+                        <Crown className="w-4 h-4 text-yellow-600" />
+                        <span className="text-yellow-700 text-sm">Template Pro</span>
+                      </div>
+                      {access.isSelected ? (
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-center gap-2">
+                          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-green-700 font-medium">Template terpilih</span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => selectTemplate(templateId)}
+                          className="w-full py-3 bg-yellow-500 text-white rounded-xl font-medium hover:bg-yellow-600 transition-colors"
+                        >
+                          Pilih Template Ini
+                        </button>
+                      )}
+                    </div>
+                  )
+                } else {
+                  // User is Free
+                  return (
+                    <div className="mt-4 w-full">
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <Crown className="w-5 h-5 text-yellow-600" />
+                          <span className="text-yellow-800 font-semibold">Template untuk Pengguna Pro</span>
+                        </div>
+                        <p className="text-yellow-700 text-sm text-center mb-3">
+                          Upgrade ke Pro untuk menggunakan template premium ini
+                        </p>
+                        <a
+                          href="/dashboard/upgrade"
+                          className="block w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl font-medium text-center hover:from-yellow-600 hover:to-orange-600 transition-all"
+                        >
+                          Upgrade ke Pro
+                        </a>
+                      </div>
+                    </div>
+                  )
+                }
+              }
+
+              // PIN template
+              if (access.type === 'pin') {
+                if (access.canUse) {
+                  // Already unlocked
+                  return (
+                    <div className="mt-4 w-full">
+                      <div className="bg-purple-50 border border-purple-200 rounded-xl p-2 mb-2 flex items-center justify-center gap-2">
+                        <Key className="w-4 h-4 text-purple-600" />
+                        <span className="text-purple-700 text-sm">Template Khusus (Terbuka)</span>
+                      </div>
+                      {access.isSelected ? (
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-center gap-2">
+                          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-green-700 font-medium">Template terpilih</span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => selectTemplate(templateId)}
+                          className="w-full py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors"
+                        >
+                          Pilih Template Ini
+                        </button>
+                      )}
+                    </div>
+                  )
+                } else {
+                  // Need PIN
+                  return (
+                    <div className="mt-4 w-full">
+                      <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <Key className="w-5 h-5 text-purple-600" />
+                          <span className="text-purple-800 font-semibold">Template Khusus</span>
+                        </div>
+                        <p className="text-purple-700 text-sm text-center mb-3">
+                          Masukkan PIN untuk menggunakan template ini
+                        </p>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={inlinePinInput}
+                            onChange={(e) => {
+                              setInlinePinInput(e.target.value.toUpperCase())
+                              setPinError(null)
+                            }}
+                            placeholder="Masukkan PIN"
+                            className="flex-1 px-4 py-2 border border-purple-300 rounded-xl text-center font-mono tracking-widest focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                            maxLength={10}
+                          />
+                          <button
+                            type="button"
+                            onClick={verifyInlinePin}
+                            disabled={pinVerifying}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors disabled:opacity-50"
+                          >
+                            {pinVerifying ? '...' : 'Buka'}
+                          </button>
+                        </div>
+                        {pinError && (
+                          <p className="text-red-500 text-sm text-center mt-2">{pinError}</p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                }
+              }
+
+              return null
+            })()}
+
+            {/* Dot Indicators */}
+            <div className="flex gap-1.5 justify-center mt-4 flex-wrap max-w-xs">
+              {TEMPLATES.map((t, idx) => {
+                const setting = templateSettings[t.id]
+                const accessType = setting?.access_type || 'free'
+                const isSelected = formData.template === t.id
+                const isCurrent = idx === currentTemplateIndex
+
+                return (
                   <button
                     key={t.id}
                     type="button"
-                    onClick={() => handleTemplateSelect(t.id, idx)}
-                    className={`w-2 h-2 rounded-full transition-all focus:outline-none relative ${idx === currentTemplateIndex ? 'bg-blue-600 w-4' : 'bg-gray-300 hover:bg-gray-400'
+                    onClick={() => {
+                      if (idx !== currentTemplateIndex) {
+                        navigateToTemplate(idx, idx > currentTemplateIndex ? 'left' : 'right')
+                      }
+                    }}
+                    className={`w-2.5 h-2.5 rounded-full transition-all focus:outline-none ${isCurrent
+                        ? accessType === 'pro' ? 'bg-yellow-500 w-4'
+                          : accessType === 'pin' ? 'bg-purple-500 w-4'
+                            : 'bg-blue-600 w-4'
+                        : isSelected ? 'bg-green-500'
+                          : accessType === 'pro' ? 'bg-yellow-200 hover:bg-yellow-300'
+                            : accessType === 'pin' ? 'bg-purple-200 hover:bg-purple-300'
+                              : 'bg-gray-300 hover:bg-gray-400'
                       }`}
-                    aria-label={`Select template ${t.name}`}
+                    aria-label={`Template ${t.name}`}
                   />
-                ))}
-              </div>
+                )
+              })}
             </div>
           </div>
         </div>
