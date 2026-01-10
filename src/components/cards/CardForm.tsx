@@ -91,14 +91,14 @@ const TEMPLATES = [
     description: 'Yellow & black energik dengan efek terminal',
   },
   {
-    id: 'masterudang',
-    name: 'Master Udang',
-    description: 'Seafood theme dengan light rays animasi',
+    id: 'mickey',
+    name: 'Mickey',
+    description: 'Disney vintage dengan grayscale dan GIF animasi',
   },
   {
-    id: 'hellokitty',
-    name: 'Hello Kitty',
-    description: 'Pink dengan animasi liquid background',
+    id: 'bettyboop',
+    name: 'Betty Boop',
+    description: 'Vintage cartoon pink dengan light rays',
   },
   {
     id: 'felix',

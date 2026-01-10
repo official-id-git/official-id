@@ -18,14 +18,14 @@ import {
 import {
   MMBatch8Card,
   KabayanGroupCard,
-  MasterUdangCard,
-  HelloKittyCard,
+  MickeyCard,
+  BettyBoopCard,
   FelixTheCatCard
 } from './templates/NewCardTemplates'
 
 interface CardPreviewProps {
   card: BusinessCard
-  template?: 'professional' | 'modern' | 'minimal' | 'modern_dark' | 'creative' | 'minimal_white' | 'elegant' | 'corporate' | 'tech' | 'artistic' | 'luxury' | 'vibrant' | 'mmb8' | 'kabayan' | 'masterudang' | 'hellokitty' | 'felix'
+  template?: 'professional' | 'modern' | 'minimal' | 'modern_dark' | 'creative' | 'minimal_white' | 'elegant' | 'corporate' | 'tech' | 'artistic' | 'luxury' | 'vibrant' | 'mmb8' | 'kabayan' | 'mickey' | 'bettyboop' | 'felix'
   readonly?: boolean
 }
 
@@ -579,8 +579,8 @@ export function CardPreview({ card, template = 'professional', readonly = false 
           readonly={readonly}
         />
       )}
-      {activeTemplate === 'masterudang' && (
-        <MasterUdangCard
+      {activeTemplate === 'mickey' && (
+        <MickeyCard
           card={card}
           visibleFields={visibleFields}
           socialLinks={socialLinks}
@@ -588,8 +588,8 @@ export function CardPreview({ card, template = 'professional', readonly = false 
           readonly={readonly}
         />
       )}
-      {activeTemplate === 'hellokitty' && (
-        <HelloKittyCard
+      {activeTemplate === 'bettyboop' && (
+        <BettyBoopCard
           card={card}
           visibleFields={visibleFields}
           socialLinks={socialLinks}

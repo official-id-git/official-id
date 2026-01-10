@@ -8,7 +8,6 @@ import PixelBlast from '@/components/effects/PixelBlast'
 import FaultyTerminal from '@/components/effects/FaultyTerminal'
 import LightRays from '@/components/effects/LightRays'
 import Dither from '@/components/effects/Dither'
-import { LiquidBackground } from '@/components/effects/LiquidBackground'
 
 interface TemplateProps {
     card: BusinessCard
@@ -248,34 +247,40 @@ export const KabayanGroupCard = ({ card, visibleFields, socialLinks, onGenerateV
     </div>
 )
 
-// Template 3: Master Udang - Seafood Theme dengan LightRays
-export const MasterUdangCard = ({ card, visibleFields, socialLinks, onGenerateVCard, readonly }: TemplateProps) => (
-    <div className="bg-gradient-to-b from-sky-100 to-blue-200 rounded-2xl shadow-2xl overflow-hidden font-sans max-w-md mx-auto relative">
-        {/* LightRays Background */}
-        <div className="absolute inset-0 z-0 overflow-hidden rounded-2xl">
-            <LightRays raysColor="#0ea5e9" raysSpeed={0.5} lightSpread={1.5} rayLength={0.8} />
-        </div>
-
-        {/* Header with Mickey Boat */}
-        <div className="relative h-40 z-10">
-            <div className="relative p-6 flex items-center justify-between">
-                <div className="w-24 h-24 bg-white/90 rounded-2xl p-2 shadow-lg backdrop-blur-sm">
-                    <Image src="/brand/mickey_boat.png" alt="Master Udang" width={96} height={96} className="w-full h-full object-contain" />
+// Template 3: Mickey - Disney Vintage dengan Grayscale
+export const MickeyCard = ({ card, visibleFields, socialLinks, onGenerateVCard, readonly }: TemplateProps) => (
+    <div className="bg-gray-50 rounded-2xl shadow-2xl overflow-hidden font-sans max-w-md mx-auto">
+        {/* Header with Animated GIF Background */}
+        <div className="relative h-40 overflow-hidden bg-gray-900">
+            <div className="absolute inset-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                    src="https://media1.tenor.com/m/BRyhETxvQg8AAAAd/ungodlyhottie.gif"
+                    alt="Background Animation"
+                    className="w-full h-full object-cover grayscale"
+                    style={{ opacity: 0.3 }}
+                />
+            </div>
+            <div className="relative z-10 p-6 flex items-start">
+                <div className="w-20 h-20 bg-white rounded-full p-2 shadow-xl">
+                    <Image src="/brand/mickey_boat.png" alt="Mickey Mouse" width={80} height={80} className="w-full h-full object-contain" />
                 </div>
             </div>
         </div>
 
-        {/* Avatar with wave effect */}
-        <div className="relative -mt-12 flex justify-center z-20">
+        {/* Avatar with rounded square and gray glow pulse */}
+        <div className="relative -mt-16 flex justify-center z-20">
             <div className="relative">
-                <div className="absolute -inset-3 bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400 rounded-full blur-lg animate-pulse" />
+                {/* Animated glow effect - abu-abu muda */}
+                <div className="absolute -inset-3 bg-gradient-to-r from-gray-300 via-gray-400 to-gray-300 rounded-3xl blur-lg animate-pulse" />
 
+                {/* Static inner content */}
                 {card.profile_photo_url ? (
-                    <div className="relative w-32 h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white">
+                    <div className="relative w-32 h-32 rounded-3xl border-4 border-white shadow-xl overflow-hidden bg-white">
                         <Image src={card.profile_photo_url} alt={card.full_name} width={128} height={128} className="w-full h-full object-cover" />
                     </div>
                 ) : (
-                    <div className="relative w-32 h-32 rounded-full border-4 border-white shadow-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                    <div className="relative w-32 h-32 rounded-3xl border-4 border-white shadow-xl bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center">
                         <span className="text-5xl text-white font-bold">{card.full_name.charAt(0).toUpperCase()}</span>
                     </div>
                 )}
@@ -283,30 +288,30 @@ export const MasterUdangCard = ({ card, visibleFields, socialLinks, onGenerateVC
         </div>
 
         {/* Body */}
-        <div className="relative px-6 pt-4 pb-6 z-10">
-            <h1 className="text-2xl text-center font-bold text-blue-900 break-words">{card.full_name}</h1>
-            {card.job_title && <p className="text-center text-cyan-700 font-semibold mt-1">{card.job_title}</p>}
-            {card.company && <p className="text-center text-blue-700 text-sm mt-1">{card.company}</p>}
+        <div className="px-6 pt-4 pb-6 bg-gray-50">
+            <h1 className="text-2xl text-center font-bold text-gray-900 break-words">{card.full_name}</h1>
+            {card.job_title && <p className="text-center text-red-600 font-semibold mt-1">{card.job_title}</p>}
+            {card.company && <p className="text-center text-gray-600 text-sm mt-1">{card.company}</p>}
             {(card as any).show_business_description !== false && (card as any).business_description && (
-                <p className="text-blue-800 text-center mt-3 text-sm italic px-4">{(card as any).business_description}</p>
+                <p className="text-gray-700 text-center mt-3 text-sm italic px-4">{(card as any).business_description}</p>
             )}
 
             <div className="mt-6 space-y-3">
                 {visibleFields.email && (
-                    <a href={`mailto:${card.email}`} className="flex items-center gap-3 px-4 py-3 bg-white/80 backdrop-blur-sm rounded-lg text-blue-900 hover:bg-white transition-all border border-cyan-300 shadow-sm">
-                        <Mail className="w-5 h-5 text-cyan-600" />
+                    <a href={`mailto:${card.email}`} className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg text-gray-900 hover:bg-gray-100 transition-all border border-gray-300 shadow-sm">
+                        <Mail className="w-5 h-5 text-gray-700" />
                         <span className="break-all text-sm">{card.email}</span>
                     </a>
                 )}
                 {visibleFields.phone && card.phone && (
-                    <a href={`tel:${card.phone}`} className="flex items-center gap-3 px-4 py-3 bg-white/80 backdrop-blur-sm rounded-lg text-blue-900 hover:bg-white transition-all border border-cyan-300 shadow-sm">
-                        <Phone className="w-5 h-5 text-cyan-600" />
+                    <a href={`tel:${card.phone}`} className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg text-gray-900 hover:bg-gray-100 transition-all border border-gray-300 shadow-sm">
+                        <Phone className="w-5 h-5 text-gray-700" />
                         <span className="text-sm">{card.phone}</span>
                     </a>
                 )}
                 {visibleFields.website && card.website && (
-                    <a href={card.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-3 bg-white/80 backdrop-blur-sm rounded-lg text-blue-900 hover:bg-white transition-all border border-cyan-300 shadow-sm">
-                        <Globe className="w-5 h-5 text-cyan-600" />
+                    <a href={card.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg text-gray-900 hover:bg-gray-100 transition-all border border-gray-300 shadow-sm">
+                        <Globe className="w-5 h-5 text-gray-700" />
                         <span className="break-all text-sm">{card.website}</span>
                     </a>
                 )}
@@ -314,11 +319,11 @@ export const MasterUdangCard = ({ card, visibleFields, socialLinks, onGenerateVC
                     const loc = getLocationDisplay(card, visibleFields)
                     if (!loc.hasAny) return null
                     return (
-                        <div className="flex items-center gap-3 px-4 py-3 bg-white/80 backdrop-blur-sm rounded-lg text-blue-900 border border-cyan-300 shadow-sm">
-                            <MapPin className="w-5 h-5 text-red-500 shrink-0" />
+                        <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg text-gray-900 border border-gray-300 shadow-sm">
+                            <MapPin className="w-5 h-5 text-red-600 shrink-0" />
                             <div className="flex flex-col">
                                 {loc.showAddress && <span className="break-words text-sm">{loc.address}</span>}
-                                {loc.showCity && <span className="text-cyan-600 text-xs">{loc.city}</span>}
+                                {loc.showCity && <span className="text-gray-500 text-xs">{loc.city}</span>}
                             </div>
                         </div>
                     )
@@ -331,7 +336,7 @@ export const MasterUdangCard = ({ card, visibleFields, socialLinks, onGenerateVC
                         if (!url) return null
                         return (
                             <a key={platform} href={url} target="_blank" rel="noopener noreferrer"
-                                className="w-11 h-11 bg-white/80 backdrop-blur-sm rounded-lg flex items-center justify-center text-cyan-600 hover:bg-cyan-500 hover:text-white transition-all border border-cyan-300 shadow-sm">
+                                className="w-11 h-11 bg-white rounded-lg flex items-center justify-center text-gray-700 hover:bg-gray-800 hover:text-white transition-all border border-gray-300 shadow-sm">
                                 {getSocialIcon(platform)}
                             </a>
                         )
@@ -342,9 +347,9 @@ export const MasterUdangCard = ({ card, visibleFields, socialLinks, onGenerateVC
 
         {/* Footer */}
         {!readonly && (
-            <div className="relative px-6 pb-6 z-10">
+            <div className="px-6 pb-6 bg-gray-50">
                 <button onClick={onGenerateVCard}
-                    className="w-full py-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-cyan-500/50">
+                    className="w-full py-4 bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-lg font-semibold hover:from-gray-700 hover:to-gray-800 transition-all shadow-lg hover:shadow-gray-700/50 transform hover:scale-105">
                     Simpan Kontak
                 </button>
             </div>
@@ -352,32 +357,55 @@ export const MasterUdangCard = ({ card, visibleFields, socialLinks, onGenerateVC
     </div>
 )
 
-// Template 4: Hello Kitty - Cute Pink dengan Liquid Background
-export const HelloKittyCard = ({ card, visibleFields, socialLinks, onGenerateVCard, readonly }: TemplateProps) => (
-    <div className="bg-gradient-to-b from-pink-100 to-pink-200 rounded-2xl shadow-2xl overflow-hidden font-sans max-w-md mx-auto relative">
-        {/* Liquid Background */}
-        <LiquidBackground colors={['#f472b6', '#ec4899', '#db2777']} className="opacity-40" />
-
-        {/* Header with Betty Boop image */}
-        <div className="relative h-40 z-10">
-            <div className="relative p-6 flex items-center">
-                <div className="w-20 h-20 bg-white rounded-full p-2 shadow-lg border-2 border-pink-400">
-                    <Image src="/brand/betty_boop.png" alt="Hello Kitty" width={80} height={80} className="w-full h-full object-contain" />
-                </div>
-            </div>
+// Template 4: Betty Boop - Vintage Cartoon dengan Pink, Red & Peach
+export const BettyBoopCard = ({ card, visibleFields, socialLinks, onGenerateVCard, readonly }: TemplateProps) => (
+    <div className="bg-pink-50 rounded-2xl shadow-2xl overflow-hidden font-sans max-w-md mx-auto relative">
+        {/* LightRays Background - jangkauan diperpanjang sampai body */}
+        <div className="absolute inset-0 z-0 overflow-hidden rounded-2xl">
+            <LightRays
+                raysOrigin="top-center"
+                raysColor="#ec4899"
+                raysSpeed={0.7}
+                lightSpread={1.5}
+                rayLength={5}
+                pulsating={true}
+                fadeDistance={3}
+                saturation={2}
+                followMouse={false}
+                mouseInfluence={0}
+                noiseAmount={0.05}
+                distortion={0.15}
+                className=""
+            />
         </div>
 
-        {/* Avatar with heart-shaped glow */}
-        <div className="relative -mt-16 flex justify-center z-20">
-            <div className="relative">
-                <div className="absolute -inset-3 bg-gradient-to-r from-pink-400 via-rose-400 to-pink-400 rounded-full blur-lg animate-pulse" />
+        {/* Header - empty for spacing */}
+        <div className="relative h-32 z-10"></div>
 
+        {/* Betty Boop Character Image - posisi tetap */}
+        <div className="relative flex justify-start z-20 pl-5" style={{ marginTop: '-5rem' }}>
+            <Image
+                src="/brand/betty_boop.png"
+                alt="Betty Boop"
+                width={112}
+                height={112}
+                className="h-28 w-auto object-contain drop-shadow-2xl"
+            />
+        </div>
+
+        {/* Avatar with spinning pink animation - posisi diturunkan setengah */}
+        <div className="relative flex justify-center z-20" style={{ marginTop: '-4rem' }}>
+            <div className="relative">
+                {/* Animated spinning glow effect - pink */}
+                <div className="absolute -inset-2 bg-gradient-to-r from-pink-400 via-rose-400 to-pink-400 rounded-full opacity-50 blur-sm animate-spin-slow" />
+
+                {/* Static inner content - border merah tua */}
                 {card.profile_photo_url ? (
-                    <div className="relative w-32 h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white">
+                    <div className="relative w-32 h-32 rounded-full border-4 border-red-700 shadow-xl overflow-hidden bg-white">
                         <Image src={card.profile_photo_url} alt={card.full_name} width={128} height={128} className="w-full h-full object-cover" />
                     </div>
                 ) : (
-                    <div className="relative w-32 h-32 rounded-full border-4 border-white shadow-xl bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center">
+                    <div className="relative w-32 h-32 rounded-full border-4 border-red-700 shadow-xl bg-gradient-to-br from-pink-400 to-red-500 flex items-center justify-center">
                         <span className="text-5xl text-white font-bold">{card.full_name.charAt(0).toUpperCase()}</span>
                     </div>
                 )}
@@ -387,10 +415,10 @@ export const HelloKittyCard = ({ card, visibleFields, socialLinks, onGenerateVCa
         {/* Body */}
         <div className="relative px-6 pt-4 pb-6 z-10">
             <h1 className="text-2xl text-center font-bold text-pink-900 break-words">{card.full_name}</h1>
-            {card.job_title && <p className="text-center text-rose-600 font-semibold mt-1">{card.job_title}</p>}
-            {card.company && <p className="text-center text-pink-700 text-sm mt-1">{card.company}</p>}
+            {card.job_title && <p className="text-center text-red-600 font-semibold mt-1">{card.job_title}</p>}
+            {card.company && <p className="text-center text-gray-700 text-sm mt-1">{card.company}</p>}
             {(card as any).show_business_description !== false && (card as any).business_description && (
-                <p className="text-pink-800 text-center mt-3 text-sm italic px-4">{(card as any).business_description}</p>
+                <p className="text-gray-700 text-center mt-3 text-sm italic px-4">{(card as any).business_description}</p>
             )}
 
             <div className="mt-6 space-y-3">
@@ -442,7 +470,7 @@ export const HelloKittyCard = ({ card, visibleFields, socialLinks, onGenerateVCa
             )}
         </div>
 
-        {/* Footer */}
+        {/* Footer - padding yang manis */}
         {!readonly && (
             <div className="relative px-8 py-6 bg-pink-200 z-10">
                 <button onClick={onGenerateVCard}
@@ -457,7 +485,7 @@ export const HelloKittyCard = ({ card, visibleFields, socialLinks, onGenerateVCa
 // Template 5: Felix The Cat - Classic Black & White dengan Red Accent
 export const FelixTheCatCard = ({ card, visibleFields, socialLinks, onGenerateVCard, readonly }: TemplateProps) => (
     <div className="bg-gray-100 rounded-2xl shadow-2xl overflow-hidden font-sans max-w-md mx-auto relative">
-        {/* Dither Background */}
+        {/* Dither Background - covers header and body - ukuran diperbesar 30% */}
         <div className="absolute inset-0 z-0 overflow-hidden rounded-2xl">
             <Dither
                 waveColor={[0.2, 0.2, 0.2]}
@@ -483,8 +511,10 @@ export const FelixTheCatCard = ({ card, visibleFields, socialLinks, onGenerateVC
         {/* Avatar with rounded square and pulse animation */}
         <div className="relative -mt-16 flex justify-center z-20">
             <div className="relative">
+                {/* Animated pulse glow effect - black & white gradient */}
                 <div className="absolute -inset-3 bg-gradient-to-r from-gray-700 via-gray-900 to-red-600 rounded-3xl blur-lg animate-pulse" />
 
+                {/* Static inner content */}
                 {card.profile_photo_url ? (
                     <div className="relative w-32 h-32 rounded-3xl border-4 border-red-600 shadow-xl overflow-hidden bg-white">
                         <Image src={card.profile_photo_url} alt={card.full_name} width={128} height={128} className="w-full h-full object-cover" />
