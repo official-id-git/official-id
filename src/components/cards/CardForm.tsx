@@ -1,9 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCards } from '@/hooks/useCards'
+import { useAuth } from '@/hooks/useAuth'
 import { ImageUpload } from '@/components/ui/ImageUpload'
+import { PinInputModal } from '@/components/ui/PinInputModal'
+import { Lock, Crown, Key } from 'lucide-react'
 import type { BusinessCard } from '@/types'
 
 interface CardFormProps {
@@ -138,15 +141,129 @@ export function CardForm({ card, mode }: CardFormProps) {
     },
   })
 
+  // Template access control state
+  const { user } = useAuth()
+  const [templateSettings, setTemplateSettings] = useState<Record<string, { access_type: string; name: string }>>({})
+  const [unlockedTemplates, setUnlockedTemplates] = useState<Set<string>>(new Set())
+  const [pinModalOpen, setPinModalOpen] = useState(false)
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null)
+
+  // Fetch template settings on mount
+  useEffect(() => {
+    const fetchTemplateSettings = async () => {
+      try {
+        const res = await fetch('/api/templates')
+        const data = await res.json()
+        if (data.success && data.data) {
+          const settings: Record<string, { access_type: string; name: string }> = {}
+          data.data.forEach((t: any) => {
+            settings[t.template_id] = { access_type: t.access_type, name: t.template_name }
+          })
+          setTemplateSettings(settings)
+        }
+      } catch (err) {
+        console.error('Failed to fetch template settings:', err)
+      }
+    }
+    fetchTemplateSettings()
+  }, [])
+
+  // Check if user can use a template
+  const canUseTemplate = (templateId: string): boolean => {
+    const setting = templateSettings[templateId]
+    if (!setting) return true // Default allow if no setting
+
+    if (setting.access_type === 'free') return true
+    if (setting.access_type === 'pro') {
+      return user?.role === 'PAID_USER' || user?.role === 'APP_ADMIN'
+    }
+    if (setting.access_type === 'pin') {
+      return unlockedTemplates.has(templateId) || user?.role === 'APP_ADMIN'
+    }
+    return true
+  }
+
+  // Get access icon for template
+  const getAccessIcon = (templateId: string) => {
+    const setting = templateSettings[templateId]
+    if (!setting) return null
+
+    if (setting.access_type === 'pro' && user?.role !== 'PAID_USER' && user?.role !== 'APP_ADMIN') {
+      return <Crown className="w-4 h-4 text-yellow-500" />
+    }
+    if (setting.access_type === 'pin' && !unlockedTemplates.has(templateId) && user?.role !== 'APP_ADMIN') {
+      return <Key className="w-4 h-4 text-purple-500" />
+    }
+    return null
+  }
+
+  // Handle template selection with access check
+  const handleTemplateSelect = (templateId: string, index: number) => {
+    const setting = templateSettings[templateId]
+
+    // If no setting or free, allow directly
+    if (!setting || setting.access_type === 'free') {
+      setCurrentTemplateIndex(index)
+      setFormData(prev => ({ ...prev, template: templateId }))
+      return
+    }
+
+    // If pro template
+    if (setting.access_type === 'pro') {
+      if (user?.role === 'PAID_USER' || user?.role === 'APP_ADMIN') {
+        setCurrentTemplateIndex(index)
+        setFormData(prev => ({ ...prev, template: templateId }))
+      } else {
+        setFormError('Template ini hanya tersedia untuk pengguna Pro. Silakan upgrade akun Anda.')
+      }
+      return
+    }
+
+    // If PIN template
+    if (setting.access_type === 'pin') {
+      if (unlockedTemplates.has(templateId) || user?.role === 'APP_ADMIN') {
+        setCurrentTemplateIndex(index)
+        setFormData(prev => ({ ...prev, template: templateId }))
+      } else {
+        setPendingTemplateId(templateId)
+        setPinModalOpen(true)
+      }
+      return
+    }
+  }
+
+  // Verify PIN for template
+  const verifyTemplatePin = async (pin: string): Promise<boolean> => {
+    if (!pendingTemplateId) return false
+
+    try {
+      const res = await fetch('/api/templates/verify-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId: pendingTemplateId, pin })
+      })
+      const data = await res.json()
+
+      if (data.valid) {
+        setUnlockedTemplates(prev => new Set([...prev, pendingTemplateId!]))
+        const index = TEMPLATES.findIndex(t => t.id === pendingTemplateId)
+        if (index >= 0) {
+          setCurrentTemplateIndex(index)
+          setFormData(prev => ({ ...prev, template: pendingTemplateId! }))
+        }
+        setPendingTemplateId(null)
+        return true
+      }
+      return false
+    } catch (err) {
+      return false
+    }
+  }
+
   const [formError, setFormError] = useState<string | null>(null)
-
-  // Carousel State
-  const [currentTemplateIndex, setCurrentTemplateIndex] = useState(0)
-
-  // Initialize current index based on selected template
-  useState(() => {
+  const [currentTemplateIndex, setCurrentTemplateIndex] = useState(() => {
     const index = TEMPLATES.findIndex(t => t.id === formData.template)
-    if (index >= 0) setCurrentTemplateIndex(index)
+    return index >= 0 ? index : 0
   })
 
   // Synchronous handler for display fields - no race conditions
@@ -244,406 +361,419 @@ export function CardForm({ card, mode }: CardFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Error Display */}
-      {(formError || error) && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {formError || error}
-        </div>
-      )}
-
-      {/* Profile Photo Upload */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Foto Profil</h3>
-        <ImageUpload
-          value={formData.profile_photo_url}
-          onChange={handlePhotoChange}
-          label="Upload foto profil Anda"
-        />
-      </div>
-
-      {/* Basic Information */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Dasar</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Full Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nama Lengkap <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.full_name}
-              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-              placeholder="Contoh: Budi Santoso"
-            />
+    <>
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Error Display */}
+        {(formError || error) && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            {formError || error}
           </div>
+        )}
 
-          {/* Username */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Username / Link Kartu <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">
-                official.id/c/
-              </div>
+        {/* Profile Photo Upload */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Foto Profil</h3>
+          <ImageUpload
+            value={formData.profile_photo_url}
+            onChange={handlePhotoChange}
+            label="Upload foto profil Anda"
+          />
+        </div>
+
+        {/* Basic Information */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Dasar</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Full Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nama Lengkap <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
                 required
-                value={formData.username || ''}
-                onChange={async (e) => {
-                  const val = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '');
-                  setFormData({ ...formData, username: val });
-
-                  // Simple validation feedback logic could be added here or onBlur
-                  // For now just updating state. Uniqueness check happens on submit or we could add a check button.
-                }}
-                className="w-full pl-24 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-mono text-sm"
-                placeholder="username"
-                minLength={3}
+                value={formData.full_name}
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                placeholder="Contoh: Budi Santoso"
               />
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Kombinasi huruf dan angka, tanpa spasi/simbol. Minimal 3 karakter.
-            </p>
-          </div>
 
-          {/* Job Title */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Jabatan / Posisi
-            </label>
-            <input
-              type="text"
-              value={formData.job_title}
-              onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-              placeholder="Contoh: CEO & Founder"
-            />
-          </div>
+            {/* Username */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Username / Link Kartu <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">
+                  official.id/c/
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={formData.username || ''}
+                  onChange={async (e) => {
+                    const val = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    setFormData({ ...formData, username: val });
 
-          {/* Company */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nama Perusahaan / Bisnis
-            </label>
-            <input
-              type="text"
-              value={formData.company}
-              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-              placeholder="Contoh: PT Teknologi Maju"
-            />
-          </div>
-
-          {/* Business Description */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Deskripsi Usaha/Produk/Jasa
-            </label>
-            <textarea
-              name="business_description"
-              value={(formData as any).business_description || ''}
-              onChange={handleTextChange}
-              rows={4}
-              maxLength={150}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-              placeholder="Ceritakan tentang bisnis, produk, atau layanan Anda..."
-            />
-            <div className="flex justify-between mt-1">
-              <p className="text-xs text-gray-500">
-                Akan ditampilkan di kartu digital dan profil Circle Anda.
-              </p>
-              <p className={`text-xs ${((formData as any).business_description?.length || 0) >= 150 ? 'text-red-500' : 'text-gray-400'}`}>
-                {((formData as any).business_description?.length || 0)}/150
+                    // Simple validation feedback logic could be added here or onBlur
+                    // For now just updating state. Uniqueness check happens on submit or we could add a check button.
+                  }}
+                  className="w-full pl-24 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-mono text-sm"
+                  placeholder="username"
+                  minLength={3}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Kombinasi huruf dan angka, tanpa spasi/simbol. Minimal 3 karakter.
               </p>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Contact Information */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Kontak</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="john@example.com"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nomor Telepon <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="+62812345678"
-              required
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Website
-            </label>
-            <input
-              type="url"
-              name="website"
-              value={formData.website}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="https://www.example.com"
-            />
-          </div>
-
-          {/* Address Field */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Alamat
-            </label>
-            <input
-              type="text"
-              name="address"
-              value={formData.address}
-              onChange={handleTextChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Contoh: Jl. Sudirman No. 123"
-            />
-          </div>
-
-          {/* City Field */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Kota
-            </label>
-            <input
-              type="text"
-              name="city"
-              value={formData.city}
-              onChange={handleTextChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Contoh: Jakarta"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Social Links */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Media Sosial</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {SOCIAL_PLATFORMS.map(platform => (
-            <div key={platform.key}>
+            {/* Job Title */}
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {platform.label}
+                Jabatan / Posisi
               </label>
               <input
-                type="url"
-                value={formData.social_links[platform.key] || ''}
-                onChange={(e) => handleSocialLinkChange(platform.key, e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder={platform.placeholder}
+                type="text"
+                value={formData.job_title}
+                onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                placeholder="Contoh: CEO & Founder"
               />
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Template Selection Carousel */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Pilih Template Kartu</h3>
-        <p className="text-sm text-gray-500 mb-6">Pilih template yang sesuai dengan gaya Anda</p>
+            {/* Company */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nama Perusahaan / Bisnis
+              </label>
+              <input
+                type="text"
+                value={formData.company}
+                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                placeholder="Contoh: PT Teknologi Maju"
+              />
+            </div>
 
-        <div className="flex flex-col items-center">
-          {/* Swipeable Carousel */}
-          <div
-            className="w-full touch-pan-y select-none cursor-grab active:cursor-grabbing"
-            onTouchStart={(e) => {
-              const touch = e.touches[0]
-                ; (e.currentTarget as any).touchStartX = touch.clientX
-                ; (e.currentTarget as any).touchStartY = touch.clientY
-            }}
-            onTouchEnd={(e) => {
-              const startX = (e.currentTarget as any).touchStartX
-              const startY = (e.currentTarget as any).touchStartY
-              const touch = e.changedTouches[0]
-              const diffX = touch.clientX - startX
-              const diffY = touch.clientY - startY
-
-              // Only swipe if horizontal movement is greater than vertical
-              if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
-                if (diffX < 0 && currentTemplateIndex < TEMPLATES.length - 1) {
-                  // Swipe left - next template
-                  const newIndex = currentTemplateIndex + 1
-                  setCurrentTemplateIndex(newIndex)
-                  setFormData(prev => ({ ...prev, template: TEMPLATES[newIndex].id }))
-                } else if (diffX > 0 && currentTemplateIndex > 0) {
-                  // Swipe right - previous template
-                  const newIndex = currentTemplateIndex - 1
-                  setCurrentTemplateIndex(newIndex)
-                  setFormData(prev => ({ ...prev, template: TEMPLATES[newIndex].id }))
-                }
-              }
-            }}
-            onMouseDown={(e) => {
-              ; (e.currentTarget as any).mouseStartX = e.clientX
-                ; (e.currentTarget as any).isDragging = true
-            }}
-            onMouseUp={(e) => {
-              if (!(e.currentTarget as any).isDragging) return
-                ; (e.currentTarget as any).isDragging = false
-              const startX = (e.currentTarget as any).mouseStartX
-              const diffX = e.clientX - startX
-
-              if (Math.abs(diffX) > 50) {
-                if (diffX < 0 && currentTemplateIndex < TEMPLATES.length - 1) {
-                  const newIndex = currentTemplateIndex + 1
-                  setCurrentTemplateIndex(newIndex)
-                  setFormData(prev => ({ ...prev, template: TEMPLATES[newIndex].id }))
-                } else if (diffX > 0 && currentTemplateIndex > 0) {
-                  const newIndex = currentTemplateIndex - 1
-                  setCurrentTemplateIndex(newIndex)
-                  setFormData(prev => ({ ...prev, template: TEMPLATES[newIndex].id }))
-                }
-              }
-            }}
-            onMouseLeave={(e) => {
-              ; (e.currentTarget as any).isDragging = false
-            }}
-          >
-            <div className="overflow-hidden relative flex items-center justify-center py-4">
-              {/* Live Preview */}
-              <div className="w-full max-w-sm transform scale-100 transition-transform">
-                <CardPreview
-                  card={{
-                    id: 'preview',
-                    user_id: 'preview',
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                    qr_code_url: '',
-                    scan_count: 0,
-                    ...formData,
-                    social_links: formData.social_links,
-                    business_description: (formData as any).business_description || '',
-                    show_business_description: (formData as any).visible_fields?.business_description ?? true
-                  }}
-                  readonly={true}
-                />
+            {/* Business Description */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Deskripsi Usaha/Produk/Jasa
+              </label>
+              <textarea
+                name="business_description"
+                value={(formData as any).business_description || ''}
+                onChange={handleTextChange}
+                rows={4}
+                maxLength={150}
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                placeholder="Ceritakan tentang bisnis, produk, atau layanan Anda..."
+              />
+              <div className="flex justify-between mt-1">
+                <p className="text-xs text-gray-500">
+                  Akan ditampilkan di kartu digital dan profil Circle Anda.
+                </p>
+                <p className={`text-xs ${((formData as any).business_description?.length || 0) >= 150 ? 'text-red-500' : 'text-gray-400'}`}>
+                  {((formData as any).business_description?.length || 0)}/150
+                </p>
               </div>
             </div>
           </div>
-
-          {/* Template Info */}
-          <div className="text-center mt-6">
-            <h4 className="text-xl font-bold text-gray-900">
-              {TEMPLATES[currentTemplateIndex].name}
-            </h4>
-            <p className="text-gray-500 mt-1">
-              {TEMPLATES[currentTemplateIndex].description}
-            </p>
-            <p className="text-xs text-gray-400 mt-2">Swipe to change template</p>
-            <div className="flex gap-2 justify-center mt-4">
-              {TEMPLATES.map((t, idx) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => {
-                    setCurrentTemplateIndex(idx)
-                    setFormData(prev => ({ ...prev, template: TEMPLATES[idx].id }))
-                  }}
-                  className={`w-2 h-2 rounded-full transition-all focus:outline-none ${idx === currentTemplateIndex ? 'bg-blue-600 w-4' : 'bg-gray-300 hover:bg-gray-400'
-                    }`}
-                  aria-label={`Select template ${t.name}`}
-                />
-              ))}
-            </div>
-          </div>
         </div>
-      </div>
 
-      {/* Privacy Settings */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Pengaturan Privasi</h3>
+        {/* Contact Information */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Kontak</h3>
 
-        <div className="space-y-4">
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              name="is_public"
-              checked={formData.is_public}
-              onChange={handleChange}
-              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <span className="font-medium text-gray-900">Kartu Publik</span>
-              <p className="text-sm text-gray-500">Kartu dapat dilihat oleh siapa saja dengan link</p>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="john@example.com"
+                required
+              />
             </div>
-          </label>
 
-          <div className="border-t pt-4">
-            <p className="text-sm font-medium text-gray-700 mb-3">Tampilkan field berikut di kartu publik:</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { key: 'email', label: 'Email' },
-                { key: 'phone', label: 'Telepon' },
-                { key: 'website', label: 'Website' },
-                { key: 'social_links', label: 'Sosial Media' },
-                { key: 'address', label: 'Alamat' },
-                { key: 'city', label: 'Kota' },
-                { key: 'business_description', label: 'Deskripsi Bisnis' },
-              ].map(field => (
-                <label key={field.key} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.visible_fields[field.key] ?? true}
-                    onChange={(e) => handleVisibleFieldChange(field.key, e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">{field.label}</span>
-                </label>
-              ))}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nomor Telepon <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="+62812345678"
+                required
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Website
+              </label>
+              <input
+                type="url"
+                name="website"
+                value={formData.website}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="https://www.example.com"
+              />
+            </div>
+
+            {/* Address Field */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Alamat
+              </label>
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleTextChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Contoh: Jl. Sudirman No. 123"
+              />
+            </div>
+
+            {/* City Field */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Kota
+              </label>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleTextChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Contoh: Jakarta"
+              />
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Submit Buttons */}
-      <div className="flex gap-4 justify-end">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-        >
-          Batal
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Menyimpan...' : mode === 'create' ? 'Buat Kartu' : 'Simpan Perubahan'}
-        </button>
-      </div>
-    </form>
+        {/* Social Links */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Media Sosial</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {SOCIAL_PLATFORMS.map(platform => (
+              <div key={platform.key}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {platform.label}
+                </label>
+                <input
+                  type="url"
+                  value={formData.social_links[platform.key] || ''}
+                  onChange={(e) => handleSocialLinkChange(platform.key, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={platform.placeholder}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Template Selection Carousel */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Pilih Template Kartu</h3>
+          <p className="text-sm text-gray-500 mb-6">Pilih template yang sesuai dengan gaya Anda</p>
+
+          <div className="flex flex-col items-center">
+            {/* Swipeable Carousel */}
+            <div
+              className="w-full touch-pan-y select-none cursor-grab active:cursor-grabbing"
+              onTouchStart={(e) => {
+                const touch = e.touches[0]
+                  ; (e.currentTarget as any).touchStartX = touch.clientX
+                  ; (e.currentTarget as any).touchStartY = touch.clientY
+              }}
+              onTouchEnd={(e) => {
+                const startX = (e.currentTarget as any).touchStartX
+                const startY = (e.currentTarget as any).touchStartY
+                const touch = e.changedTouches[0]
+                const diffX = touch.clientX - startX
+                const diffY = touch.clientY - startY
+
+                // Only swipe if horizontal movement is greater than vertical
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                  if (diffX < 0 && currentTemplateIndex < TEMPLATES.length - 1) {
+                    // Swipe left - next template
+                    const newIndex = currentTemplateIndex + 1
+                    setCurrentTemplateIndex(newIndex)
+                    setFormData(prev => ({ ...prev, template: TEMPLATES[newIndex].id }))
+                  } else if (diffX > 0 && currentTemplateIndex > 0) {
+                    // Swipe right - previous template
+                    const newIndex = currentTemplateIndex - 1
+                    setCurrentTemplateIndex(newIndex)
+                    setFormData(prev => ({ ...prev, template: TEMPLATES[newIndex].id }))
+                  }
+                }
+              }}
+              onMouseDown={(e) => {
+                ; (e.currentTarget as any).mouseStartX = e.clientX
+                  ; (e.currentTarget as any).isDragging = true
+              }}
+              onMouseUp={(e) => {
+                if (!(e.currentTarget as any).isDragging) return
+                  ; (e.currentTarget as any).isDragging = false
+                const startX = (e.currentTarget as any).mouseStartX
+                const diffX = e.clientX - startX
+
+                if (Math.abs(diffX) > 50) {
+                  if (diffX < 0 && currentTemplateIndex < TEMPLATES.length - 1) {
+                    const newIndex = currentTemplateIndex + 1
+                    setCurrentTemplateIndex(newIndex)
+                    setFormData(prev => ({ ...prev, template: TEMPLATES[newIndex].id }))
+                  } else if (diffX > 0 && currentTemplateIndex > 0) {
+                    const newIndex = currentTemplateIndex - 1
+                    setCurrentTemplateIndex(newIndex)
+                    setFormData(prev => ({ ...prev, template: TEMPLATES[newIndex].id }))
+                  }
+                }
+              }}
+              onMouseLeave={(e) => {
+                ; (e.currentTarget as any).isDragging = false
+              }}
+            >
+              <div className="overflow-hidden relative flex items-center justify-center py-4">
+                {/* Live Preview */}
+                <div className="w-full max-w-sm transform scale-100 transition-transform">
+                  <CardPreview
+                    card={{
+                      id: 'preview',
+                      user_id: 'preview',
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString(),
+                      qr_code_url: '',
+                      scan_count: 0,
+                      ...formData,
+                      social_links: formData.social_links,
+                      business_description: (formData as any).business_description || '',
+                      show_business_description: (formData as any).visible_fields?.business_description ?? true
+                    }}
+                    readonly={true}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Template Info */}
+            <div className="text-center mt-6">
+              <div className="flex items-center justify-center gap-2">
+                <h4 className="text-xl font-bold text-gray-900">
+                  {TEMPLATES[currentTemplateIndex].name}
+                </h4>
+                {getAccessIcon(TEMPLATES[currentTemplateIndex].id)}
+              </div>
+              <p className="text-gray-500 mt-1">
+                {TEMPLATES[currentTemplateIndex].description}
+              </p>
+              <p className="text-xs text-gray-400 mt-2">Swipe to change template</p>
+              <div className="flex gap-2 justify-center mt-4 flex-wrap">
+                {TEMPLATES.map((t, idx) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => handleTemplateSelect(t.id, idx)}
+                    className={`w-2 h-2 rounded-full transition-all focus:outline-none relative ${idx === currentTemplateIndex ? 'bg-blue-600 w-4' : 'bg-gray-300 hover:bg-gray-400'
+                      }`}
+                    aria-label={`Select template ${t.name}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Privacy Settings */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Pengaturan Privasi</h3>
+
+          <div className="space-y-4">
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                name="is_public"
+                checked={formData.is_public}
+                onChange={handleChange}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+              />
+              <div>
+                <span className="font-medium text-gray-900">Kartu Publik</span>
+                <p className="text-sm text-gray-500">Kartu dapat dilihat oleh siapa saja dengan link</p>
+              </div>
+            </label>
+
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium text-gray-700 mb-3">Tampilkan field berikut di kartu publik:</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { key: 'email', label: 'Email' },
+                  { key: 'phone', label: 'Telepon' },
+                  { key: 'website', label: 'Website' },
+                  { key: 'social_links', label: 'Sosial Media' },
+                  { key: 'address', label: 'Alamat' },
+                  { key: 'city', label: 'Kota' },
+                  { key: 'business_description', label: 'Deskripsi Bisnis' },
+                ].map(field => (
+                  <label key={field.key} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.visible_fields[field.key] ?? true}
+                      onChange={(e) => handleVisibleFieldChange(field.key, e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{field.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Submit Buttons */}
+        <div className="flex gap-4 justify-end">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Menyimpan...' : mode === 'create' ? 'Buat Kartu' : 'Simpan Perubahan'}
+          </button>
+        </div>
+      </form>
+
+      {/* PIN Input Modal for protected templates */}
+      <PinInputModal
+        isOpen={pinModalOpen}
+        templateName={pendingTemplateId ? (templateSettings[pendingTemplateId]?.name || TEMPLATES.find(t => t.id === pendingTemplateId)?.name || 'Template') : 'Template'}
+        onClose={() => {
+          setPinModalOpen(false)
+          setPendingTemplateId(null)
+        }}
+        onVerify={verifyTemplatePin}
+      />
+    </>
   )
 }
