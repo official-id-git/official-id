@@ -439,7 +439,7 @@ export function getContactCardShareEmailTemplate(data: {
   message?: string
 }): { subject: string; html: string } {
   return {
-    subject: `${data.senderName} membagikan kartu bisnis digital kepada Anda`,
+    subject: `👋 ${data.senderName} ingin terhubung dengan Anda di Official ID`,
     html: `
       <!DOCTYPE html>
       <html>

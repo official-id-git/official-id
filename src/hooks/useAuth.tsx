@@ -107,12 +107,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle()
 
       if (error) {
-        console.warn('useAuth: Database error, using fallback:', error.message)
+        console.error('useAuth: Database fetch error:', error)
+        // Check if error is RLS related
+        if (error.code === '42501') {
+          console.error('useAuth: RLS Permission denied to fetch user profile')
+        }
         return fallbackUser
       }
 
       if (data) {
-        // console.log('useAuth: Profile fetched:', data)
+        console.log('useAuth: Profile fetched successfully. Role:', (data as any).role)
         // Merge avatar_url from Google if not in DB
         if (!data.avatar_url && fallbackUser.avatar_url) {
           data.avatar_url = fallbackUser.avatar_url
