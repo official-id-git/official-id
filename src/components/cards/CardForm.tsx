@@ -80,6 +80,31 @@ const TEMPLATES = [
     name: 'Vibrant',
     description: 'Penuh warna dan berenergi',
   },
+  {
+    id: 'mmb8',
+    name: 'MM Batch 8',
+    description: 'Navy blue profesional dengan aksen gold dan efek pixel',
+  },
+  {
+    id: 'kabayan',
+    name: 'Kabayan Group',
+    description: 'Yellow & black energik dengan efek terminal',
+  },
+  {
+    id: 'masterudang',
+    name: 'Master Udang',
+    description: 'Seafood theme dengan light rays animasi',
+  },
+  {
+    id: 'hellokitty',
+    name: 'Hello Kitty',
+    description: 'Pink dengan animasi liquid background',
+  },
+  {
+    id: 'felix',
+    name: 'Felix The Cat',
+    description: 'Hitam putih klasik dengan dither effect',
+  },
 ]
 
 import { useSecurity } from '@/hooks/useSecurity'

@@ -15,10 +15,17 @@ import {
   LuxuryCard,
   VibrantCard
 } from './templates/CardTemplates'
+import {
+  MMBatch8Card,
+  KabayanGroupCard,
+  MasterUdangCard,
+  HelloKittyCard,
+  FelixTheCatCard
+} from './templates/NewCardTemplates'
 
 interface CardPreviewProps {
   card: BusinessCard
-  template?: 'professional' | 'modern' | 'minimal' | 'modern_dark' | 'creative' | 'minimal_white' | 'elegant' | 'corporate' | 'tech' | 'artistic' | 'luxury' | 'vibrant'
+  template?: 'professional' | 'modern' | 'minimal' | 'modern_dark' | 'creative' | 'minimal_white' | 'elegant' | 'corporate' | 'tech' | 'artistic' | 'luxury' | 'vibrant' | 'mmb8' | 'kabayan' | 'masterudang' | 'hellokitty' | 'felix'
   readonly?: boolean
 }
 
@@ -545,6 +552,53 @@ export function CardPreview({ card, template = 'professional', readonly = false 
       )}
       {activeTemplate === 'vibrant' && (
         <VibrantCard
+          card={card}
+          visibleFields={visibleFields}
+          socialLinks={socialLinks}
+          onGenerateVCard={generateVCard}
+          readonly={readonly}
+        />
+      )}
+
+      {/* New Templates */}
+      {activeTemplate === 'mmb8' && (
+        <MMBatch8Card
+          card={card}
+          visibleFields={visibleFields}
+          socialLinks={socialLinks}
+          onGenerateVCard={generateVCard}
+          readonly={readonly}
+        />
+      )}
+      {activeTemplate === 'kabayan' && (
+        <KabayanGroupCard
+          card={card}
+          visibleFields={visibleFields}
+          socialLinks={socialLinks}
+          onGenerateVCard={generateVCard}
+          readonly={readonly}
+        />
+      )}
+      {activeTemplate === 'masterudang' && (
+        <MasterUdangCard
+          card={card}
+          visibleFields={visibleFields}
+          socialLinks={socialLinks}
+          onGenerateVCard={generateVCard}
+          readonly={readonly}
+        />
+      )}
+      {activeTemplate === 'hellokitty' && (
+        <HelloKittyCard
+          card={card}
+          visibleFields={visibleFields}
+          socialLinks={socialLinks}
+          onGenerateVCard={generateVCard}
+          readonly={readonly}
+        />
+      )}
+      {activeTemplate === 'felix' && (
+        <FelixTheCatCard
           card={card}
           visibleFields={visibleFields}
           socialLinks={socialLinks}
