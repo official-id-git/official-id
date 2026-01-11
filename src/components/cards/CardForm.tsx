@@ -696,20 +696,8 @@ export function CardForm({ card, mode }: CardFormProps) {
           <p className="text-sm text-gray-500 mb-6">Pilih template yang sesuai dengan gaya Anda</p>
 
           <div className="flex flex-col items-center">
-            {/* Navigation Arrows + Carousel */}
-            <div className="w-full flex items-center gap-2">
-              {/* Left Arrow */}
-              <button
-                type="button"
-                onClick={() => currentTemplateIndex > 0 && navigateToTemplate(currentTemplateIndex - 1, 'right')}
-                disabled={currentTemplateIndex === 0}
-                className={`p-2 rounded-full transition-all ${currentTemplateIndex === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-
+            {/* Navigation Arrows Removed - Swipe Only */}
+            <div className="w-full">
               {/* Swipeable Carousel with Animation */}
               <div
                 className="flex-1 touch-pan-y select-none cursor-grab active:cursor-grabbing overflow-hidden"
@@ -759,10 +747,10 @@ export function CardForm({ card, mode }: CardFormProps) {
                   {/* Animated Card Container */}
                   <div
                     className={`w-full max-w-sm mx-auto transition-all duration-200 ease-out ${slideDirection === 'left'
-                        ? 'opacity-0 -translate-x-8'
-                        : slideDirection === 'right'
-                          ? 'opacity-0 translate-x-8'
-                          : 'opacity-100 translate-x-0'
+                      ? 'opacity-0 -translate-x-8'
+                      : slideDirection === 'right'
+                        ? 'opacity-0 translate-x-8'
+                        : 'opacity-100 translate-x-0'
                       }`}
                   >
                     <CardPreview
@@ -784,18 +772,6 @@ export function CardForm({ card, mode }: CardFormProps) {
                   </div>
                 </div>
               </div>
-
-              {/* Right Arrow */}
-              <button
-                type="button"
-                onClick={() => currentTemplateIndex < TEMPLATES.length - 1 && navigateToTemplate(currentTemplateIndex + 1, 'left')}
-                disabled={currentTemplateIndex === TEMPLATES.length - 1}
-                className={`p-2 rounded-full transition-all ${currentTemplateIndex === TEMPLATES.length - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
             </div>
 
             {/* Template Info */}
@@ -984,13 +960,13 @@ export function CardForm({ card, mode }: CardFormProps) {
                       }
                     }}
                     className={`w-2.5 h-2.5 rounded-full transition-all focus:outline-none ${isCurrent
-                        ? accessType === 'pro' ? 'bg-yellow-500 w-4'
-                          : accessType === 'pin' ? 'bg-purple-500 w-4'
-                            : 'bg-blue-600 w-4'
-                        : isSelected ? 'bg-green-500'
-                          : accessType === 'pro' ? 'bg-yellow-200 hover:bg-yellow-300'
-                            : accessType === 'pin' ? 'bg-purple-200 hover:bg-purple-300'
-                              : 'bg-gray-300 hover:bg-gray-400'
+                      ? accessType === 'pro' ? 'bg-yellow-500 w-4'
+                        : accessType === 'pin' ? 'bg-purple-500 w-4'
+                          : 'bg-blue-600 w-4'
+                      : isSelected ? 'bg-green-500'
+                        : accessType === 'pro' ? 'bg-yellow-200 hover:bg-yellow-300'
+                          : accessType === 'pin' ? 'bg-purple-200 hover:bg-purple-300'
+                            : 'bg-gray-300 hover:bg-gray-400'
                       }`}
                     aria-label={`Template ${t.name}`}
                   />
