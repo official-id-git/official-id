@@ -252,12 +252,9 @@ export default function OrganizationsPage() {
                             <p className="text-gray-500 text-sm truncate mt-1">{org.description}</p>
                           </div>
 
-                          {/* Desktop: Owner Badge, Mobile: Chevron */}
+                          {/* Desktop: Owner Badge, Mobile: Chevron Removed */}
                           <div className="flex-shrink-0 flex items-center">
                             <span className="hidden sm:inline-block px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">Owner</span>
-                            <svg className="w-5 h-5 text-gray-400 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
                           </div>
                         </div>
                       </Link>
@@ -278,12 +275,9 @@ export default function OrganizationsPage() {
                             <p className="text-gray-500 text-sm truncate mt-1">{org.description}</p>
                           </div>
 
-                          {/* Desktop: Member Badge, Mobile: Chevron */}
+                          {/* Desktop: Member Badge, Mobile: Chevron Removed */}
                           <div className="flex-shrink-0 flex items-center">
                             <span className="hidden sm:inline-block px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">Member</span>
-                            <svg className="w-5 h-5 text-gray-400 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
                           </div>
                         </div>
                       </Link>

@@ -69,7 +69,7 @@ export default function DashboardPage() {
   const totalScans = cards.reduce((sum, card) => sum + (card.scan_count || 0), 0)
 
   return (
-    <div className="px-4 space-y-6 -mt-4">
+    <div className="px-2 space-y-6 -mt-4">
       {/* Welcome Section */}
       <div className="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-blue-600 to-purple-600 shadow-lg text-white mb-6">
         <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>

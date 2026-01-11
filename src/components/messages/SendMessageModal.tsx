@@ -1,7 +1,7 @@
-'use client'
-
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMessages, SendMessageData } from '@/hooks/useMessages'
+import { useAuth } from '@/hooks/useAuth'
+import { createClient } from '@/lib/supabase/client'
 
 interface SendMessageModalProps {
     isOpen: boolean
@@ -19,6 +19,7 @@ const PURPOSE_OPTIONS = [
 ] as const
 
 export default function SendMessageModal({ isOpen, onClose, recipientId, recipientName }: SendMessageModalProps) {
+    const { user } = useAuth()
     const { sendMessage, loading, error } = useMessages()
     const [formData, setFormData] = useState({
         sender_name: '',
@@ -29,6 +30,41 @@ export default function SendMessageModal({ isOpen, onClose, recipientId, recipie
     })
     const [success, setSuccess] = useState(false)
     const [formError, setFormError] = useState<string | null>(null)
+    const [isPhoneLoading, setIsPhoneLoading] = useState(false)
+
+    // Effect to auto-populate data for logged-in users
+    useEffect(() => {
+        if (user) {
+            setFormData(prev => ({
+                ...prev,
+                sender_name: user.full_name || '',
+                sender_email: user.email || '',
+            }))
+
+            // Fetch phone from business cards
+            const fetchPhone = async () => {
+                setIsPhoneLoading(true)
+                try {
+                    const supabase = createClient()
+                    const { data } = await supabase
+                        .from('business_cards')
+                        .select('phone')
+                        .eq('user_id', user.id)
+                        .limit(1)
+                        .maybeSingle()
+
+                    if (data && (data as any).phone) {
+                        setFormData(prev => ({ ...prev, sender_whatsapp: (data as any).phone }))
+                    }
+                } catch (err) {
+                    console.error('Error fetching phone:', err)
+                } finally {
+                    setIsPhoneLoading(false)
+                }
+            }
+            fetchPhone()
+        }
+    }, [user, isOpen]) // Re-run when modal opens to ensure fresh data
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target
@@ -68,18 +104,28 @@ export default function SendMessageModal({ isOpen, onClose, recipientId, recipie
             setTimeout(() => {
                 onClose()
                 setSuccess(false)
-                setFormData({
-                    sender_name: '',
-                    sender_whatsapp: '',
-                    sender_email: '',
+                // Reset form but keep user data if logged in
+                setFormData(prev => ({
+                    ...prev,
                     purpose: 'bermitra',
                     message: '',
-                })
+                    // Keep sender info if user is logged in, otherwise clear
+                    sender_name: user ? prev.sender_name : '',
+                    sender_whatsapp: user ? prev.sender_whatsapp : '',
+                    sender_email: user ? prev.sender_email : '',
+                }))
             }, 2000)
         }
     }
 
     if (!isOpen) return null
+
+    // Determine visibility of fields
+    // Hide Name & Email if we have them from user
+    // Hide WhatsApp only if we have it populated (fetched)
+    const showName = !user?.full_name
+    const showEmail = !user?.email
+    const showWhatsapp = !user || (!formData.sender_whatsapp && !isPhoneLoading)
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -120,50 +166,56 @@ export default function SendMessageModal({ isOpen, onClose, recipientId, recipie
                             </div>
                         )}
 
-                        {/* Nama */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Your Name <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                name="sender_name"
-                                value={formData.sender_name}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Enter your name"
-                            />
-                        </div>
+                        {/* Nama - Shown only if not auto-populated */}
+                        {showName && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Your Name <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    name="sender_name"
+                                    value={formData.sender_name}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="Enter your name"
+                                />
+                            </div>
+                        )}
 
-                        {/* WhatsApp */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                WhatsApp <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="tel"
-                                name="sender_whatsapp"
-                                value={formData.sender_whatsapp}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="+62812345678"
-                            />
-                        </div>
+                        {/* WhatsApp - Shown only if not auto-populated */}
+                        {showWhatsapp && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    WhatsApp <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="tel"
+                                    name="sender_whatsapp"
+                                    value={formData.sender_whatsapp}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="+62812345678"
+                                />
+                            </div>
+                        )}
 
-                        {/* Email */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Email <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="email"
-                                name="sender_email"
-                                value={formData.sender_email}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="email@example.com"
-                            />
-                        </div>
+                        {/* Email - Shown only if not auto-populated */}
+                        {showEmail && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Email <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="email"
+                                    name="sender_email"
+                                    value={formData.sender_email}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="email@example.com"
+                                />
+                            </div>
+                        )}
 
                         {/* Keperluan */}
                         <div>
@@ -206,10 +258,10 @@ export default function SendMessageModal({ isOpen, onClose, recipientId, recipie
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || isPhoneLoading}
                             className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                         >
-                            {loading ? 'Sending...' : 'Send Message'}
+                            {loading || isPhoneLoading ? 'Sending...' : 'Send Message'}
                         </button>
                     </form>
                 )}

@@ -490,7 +490,7 @@ function MemberToCardCarousel({ cards, userId }: { cards: any[], userId: string 
                     const socialLinks = typeof card.social_links === 'object' ? card.social_links : {}
 
                     return (
-                        <div key={card.id} className="w-full flex-shrink-0 snap-center px-4 pt-4">
+                        <div key={card.id} className="w-full flex-shrink-0 snap-center px-2 pt-4">
                             <div className="transform scale-[0.85] origin-top-center -mb-12 sm:scale-95 sm:mb-0 transition-transform">
                                 <Link href={`/c/${userId}?card=${card.id}`} className="block hover:opacity-95 transition-opacity">
                                     <div className="pointer-events-none"> {/* Disable interaction within carousel preview to allow clicking the whole card to view detail */}
