@@ -98,8 +98,8 @@ export default function WelcomePage() {
               <motion.div
                 key={index}
                 className={`h-2 rounded-full transition-all duration-300 ${index === currentSlide
-                    ? "bg-teal-600 w-8"
-                    : "bg-gray-300 w-2"
+                  ? "bg-teal-600 w-8"
+                  : "bg-gray-300 w-2"
                   }`}
                 whileHover={{ scale: 1.2 }}
                 onClick={() => setCurrentSlide(index)}
@@ -149,6 +149,33 @@ export default function WelcomePage() {
           <ChevronRight className="w-4 h-4" />
         </Button>
       </motion.div>
+
+      {/* Footer with Privacy Policy Link */}
+      <motion.footer
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="pb-4 px-6 text-center"
+      >
+        <div className="flex justify-center gap-4 text-sm text-gray-500">
+          <Link
+            href="/privacy-policy"
+            className="hover:text-teal-600 transition-colors underline"
+          >
+            Privacy Policy
+          </Link>
+          <span>•</span>
+          <Link
+            href="/terms"
+            className="hover:text-teal-600 transition-colors underline"
+          >
+            Terms of Service
+          </Link>
+        </div>
+        <p className="text-xs text-gray-400 mt-2">
+          © {new Date().getFullYear()} Official.id. All rights reserved.
+        </p>
+      </motion.footer>
     </div>
   );
 }
