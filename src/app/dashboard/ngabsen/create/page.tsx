@@ -14,8 +14,7 @@ export default function CreateNgabsenPage() {
 
     const [formData, setFormData] = useState({
         nama_acara: '',
-        tempat_acara: '',
-        tanggal_acara: ''
+        deskripsi_acara: ''
     })
     const [success, setSuccess] = useState<{
         pendaftaran: string
@@ -26,7 +25,10 @@ export default function CreateNgabsenPage() {
         e.preventDefault()
         clearError()
 
-        const result = await createNgabsen(formData)
+        const result = await createNgabsen({
+            nama_acara: formData.nama_acara,
+            deskripsi_acara: formData.deskripsi_acara || null
+        })
 
         if (result && result.link_ngabsen) {
             const baseUrl = window.location.origin
@@ -37,7 +39,7 @@ export default function CreateNgabsenPage() {
         }
     }
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData(prev => ({
             ...prev,
             [e.target.name]: e.target.value
@@ -163,7 +165,7 @@ export default function CreateNgabsenPage() {
                             <button
                                 onClick={() => {
                                     setSuccess(null)
-                                    setFormData({ nama_acara: '', tempat_acara: '', tanggal_acara: '' })
+                                    setFormData({ nama_acara: '', deskripsi_acara: '' })
                                 }}
                                 className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all"
                             >
@@ -232,36 +234,19 @@ export default function CreateNgabsenPage() {
                             />
                         </div>
 
-                        {/* Tempat Acara */}
+                        {/* Deskripsi Acara */}
                         <div>
-                            <label htmlFor="tempat_acara" className="block text-sm font-medium text-gray-700 mb-2">
-                                Tempat Acara <span className="text-red-500">*</span>
+                            <label htmlFor="deskripsi_acara" className="block text-sm font-medium text-gray-700 mb-2">
+                                Deskripsi Acara <span className="text-gray-400">(opsional)</span>
                             </label>
-                            <input
-                                type="text"
-                                id="tempat_acara"
-                                name="tempat_acara"
-                                value={formData.tempat_acara}
+                            <textarea
+                                id="deskripsi_acara"
+                                name="deskripsi_acara"
+                                value={formData.deskripsi_acara}
                                 onChange={handleChange}
-                                required
-                                placeholder="Contoh: Aula Kantor Lantai 3"
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                            />
-                        </div>
-
-                        {/* Tanggal Acara */}
-                        <div>
-                            <label htmlFor="tanggal_acara" className="block text-sm font-medium text-gray-700 mb-2">
-                                Tanggal Acara <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="date"
-                                id="tanggal_acara"
-                                name="tanggal_acara"
-                                value={formData.tanggal_acara}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                rows={4}
+                                placeholder="Tambahkan informasi tempat, waktu, atau keterangan lainnya"
+                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
                             />
                         </div>
                     </div>
@@ -269,7 +254,7 @@ export default function CreateNgabsenPage() {
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        disabled={loading || !formData.nama_acara || !formData.tempat_acara || !formData.tanggal_acara}
+                        disabled={loading || !formData.nama_acara}
                         className="w-full mt-6 px-4 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold rounded-xl hover:from-purple-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                     >
                         {loading ? (

@@ -46,16 +46,6 @@ export default function NgabsenPage() {
         }
     }
 
-    // Format date
-    const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString('id-ID', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        })
-    }
-
     if (authLoading || loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -156,23 +146,15 @@ export default function NgabsenPage() {
                                 <div className="p-5">
                                     {/* Event Info */}
                                     <div className="flex items-start justify-between mb-4">
-                                        <div>
+                                        <div className="flex-1 min-w-0">
                                             <h3 className="text-lg font-semibold text-gray-900">{ngabsen.nama_acara}</h3>
-                                            <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                </svg>
-                                                {ngabsen.tempat_acara}
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                </svg>
-                                                {formatDate(ngabsen.tanggal_acara)}
-                                            </div>
+                                            {ngabsen.deskripsi_acara && (
+                                                <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                                                    {ngabsen.deskripsi_acara}
+                                                </p>
+                                            )}
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 ml-4">
                                             <Link
                                                 href={`/dashboard/ngabsen/${ngabsen.id}`}
                                                 className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
@@ -211,8 +193,8 @@ export default function NgabsenPage() {
                                                     <button
                                                         onClick={() => copyToClipboard(links.pendaftaran!, 'pendaftaran-' + ngabsen.id)}
                                                         className={`p-2 rounded-lg transition-colors ${copiedLink === 'pendaftaran-' + ngabsen.id
-                                                                ? 'bg-green-100 text-green-600'
-                                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                            ? 'bg-green-100 text-green-600'
+                                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                             }`}
                                                         title="Salin Link"
                                                     >
@@ -253,8 +235,8 @@ export default function NgabsenPage() {
                                                     <button
                                                         onClick={() => copyToClipboard(links.daftarPeserta!, 'peserta-' + ngabsen.id)}
                                                         className={`p-2 rounded-lg transition-colors ${copiedLink === 'peserta-' + ngabsen.id
-                                                                ? 'bg-green-100 text-green-600'
-                                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                            ? 'bg-green-100 text-green-600'
+                                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                             }`}
                                                         title="Salin Link"
                                                     >

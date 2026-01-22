@@ -15,12 +15,11 @@ export const createNgabsenSchema = z.object({
         .min(3, 'Nama acara minimal 3 karakter')
         .max(200, 'Nama acara maksimal 200 karakter')
         .transform(sanitizeText),
-    tempat_acara: z.string()
-        .min(3, 'Tempat acara minimal 3 karakter')
-        .max(300, 'Tempat acara maksimal 300 karakter')
-        .transform(sanitizeText),
-    tanggal_acara: z.string()
-        .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD')
+    deskripsi_acara: z.string()
+        .max(1000, 'Deskripsi maksimal 1000 karakter')
+        .transform(sanitizeText)
+        .optional()
+        .nullable()
 })
 
 // Schema for updating ngabsen event
@@ -30,14 +29,11 @@ export const updateNgabsenSchema = z.object({
         .max(200, 'Nama acara maksimal 200 karakter')
         .transform(sanitizeText)
         .optional(),
-    tempat_acara: z.string()
-        .min(3, 'Tempat acara minimal 3 karakter')
-        .max(300, 'Tempat acara maksimal 300 karakter')
+    deskripsi_acara: z.string()
+        .max(1000, 'Deskripsi maksimal 1000 karakter')
         .transform(sanitizeText)
-        .optional(),
-    tanggal_acara: z.string()
-        .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD')
         .optional()
+        .nullable()
 })
 
 // Schema for public registration (no auth required - extra strict validation)

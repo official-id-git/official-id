@@ -41,8 +41,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         ngabsen:ngabsen_id (
           id,
           nama_acara,
-          tempat_acara,
-          tanggal_acara
+          deskripsi_acara
         )
       `)
             .eq('link_daftar_peserta', linkId)

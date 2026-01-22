@@ -9,8 +9,7 @@ export interface Ngabsen {
     id: string
     user_id: string
     nama_acara: string
-    tempat_acara: string
-    tanggal_acara: string
+    deskripsi_acara: string | null
     created_at: string
     updated_at: string
     link_ngabsen?: {
@@ -32,14 +31,12 @@ export interface Pendaftaran {
 
 export interface CreateNgabsenData {
     nama_acara: string
-    tempat_acara: string
-    tanggal_acara: string
+    deskripsi_acara?: string | null
 }
 
 export interface UpdateNgabsenData {
     nama_acara?: string
-    tempat_acara?: string
-    tanggal_acara?: string
+    deskripsi_acara?: string | null
 }
 
 export function useNgabsen() {

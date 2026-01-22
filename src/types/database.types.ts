@@ -324,8 +324,7 @@ export type Database = {
           id: string
           user_id: string
           nama_acara: string
-          tempat_acara: string
-          tanggal_acara: string
+          deskripsi_acara: string | null
           created_at: string
           updated_at: string
         }
@@ -333,8 +332,7 @@ export type Database = {
           id?: string
           user_id: string
           nama_acara: string
-          tempat_acara: string
-          tanggal_acara: string
+          deskripsi_acara?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -342,8 +340,7 @@ export type Database = {
           id?: string
           user_id?: string
           nama_acara?: string
-          tempat_acara?: string
-          tanggal_acara?: string
+          deskripsi_acara?: string | null
           created_at?: string
           updated_at?: string
         }

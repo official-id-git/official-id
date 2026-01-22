@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        const { nama_acara, tempat_acara, tanggal_acara } = validationResult.data
+        const { nama_acara, deskripsi_acara } = validationResult.data
 
         // Create ngabsen event using type assertion
         const { data: ngabsen, error: ngabsenError } = await (supabase as any)
@@ -110,8 +110,7 @@ export async function POST(request: NextRequest) {
             .insert({
                 user_id: user.id,
                 nama_acara,
-                tempat_acara,
-                tanggal_acara
+                deskripsi_acara: deskripsi_acara || null
             })
             .select()
             .single()
