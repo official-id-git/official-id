@@ -40,6 +40,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       business_cards: {
         Row: {
@@ -108,6 +109,7 @@ export type Database = {
           business_description?: string | null
           show_business_description?: boolean
         }
+        Relationships: []
       }
       organizations: {
         Row: {
@@ -149,6 +151,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       organization_members: {
         Row: {
@@ -184,6 +187,7 @@ export type Database = {
           approved_by?: string | null
           approved_at?: string | null
         }
+
       }
       user_relationships: {
         Row: {
@@ -210,6 +214,7 @@ export type Database = {
           scanned_at?: string
           notes?: string | null
         }
+        Relationships: []
       }
       payment_transactions: {
         Row: {
@@ -248,6 +253,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       seo_settings: {
         Row: {
@@ -283,6 +289,7 @@ export type Database = {
           og_image_linkedin?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -318,6 +325,7 @@ export type Database = {
           is_read?: boolean
           created_at?: string
         }
+        Relationships: []
       }
       ngabsen: {
         Row: {
@@ -344,6 +352,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       pendaftaran_ngabsen: {
         Row: {
@@ -373,6 +382,7 @@ export type Database = {
           no_whatsapp?: string
           created_at?: string
         }
+        Relationships: []
       }
       link_ngabsen: {
         Row: {
@@ -399,6 +409,148 @@ export type Database = {
           link_daftar_peserta?: string
           created_at?: string
         }
+        Relationships: []
+      }
+      organization_invitations: {
+        Row: {
+          id: string
+          organization_id: string
+          email: string
+          invited_by: string
+          status: 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'CANCELLED'
+          token: string
+          expires_at: string
+          accepted_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          email: string
+          invited_by: string
+          status?: 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'CANCELLED'
+          token?: string
+          expires_at?: string
+          accepted_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          email?: string
+          invited_by?: string
+          status?: 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'CANCELLED'
+          token?: string
+          expires_at?: string
+          accepted_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      template_settings: {
+        Row: {
+          id: string
+          template_id: string
+          template_name: string
+          access_type: 'free' | 'pro' | 'pin'
+          pin_code: string | null
+          is_active: boolean
+          display_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          template_id: string
+          template_name: string
+          access_type?: 'free' | 'pro' | 'pin'
+          pin_code?: string | null
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          template_id?: string
+          template_name?: string
+          access_type?: 'free' | 'pro' | 'pin'
+          pin_code?: string | null
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      xploit_potential_log: {
+        Row: {
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          payload: string | null
+          event_type: string
+          path: string | null
+          user_id: string | null
+          severity: 'low' | 'medium' | 'high' | 'critical'
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          payload?: string | null
+          event_type: string
+          path?: string | null
+          user_id?: string | null
+          severity?: 'low' | 'medium' | 'high' | 'critical'
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          payload?: string | null
+          event_type?: string
+          path?: string | null
+          user_id?: string | null
+          severity?: 'low' | 'medium' | 'high' | 'critical'
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
+      circle_broadcasts: {
+        Row: {
+          id: string
+          organization_id: string
+          sender_id: string
+          message: string
+          word_count: number
+          recipient_count: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          sender_id: string
+          message: string
+          word_count: number
+          recipient_count: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          sender_id?: string
+          message?: string
+          word_count?: number
+          recipient_count?: number
+          created_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -411,6 +563,10 @@ export type Database = {
       user_role: 'FREE_USER' | 'PAID_USER' | 'APP_ADMIN'
       payment_status: 'PENDING' | 'APPROVED' | 'REJECTED'
       membership_status: 'PENDING' | 'APPROVED' | 'REJECTED'
+      invitation_status: 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'CANCELLED'
+    }
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }
