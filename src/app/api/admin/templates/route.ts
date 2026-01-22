@@ -21,7 +21,7 @@ export async function GET() {
             .eq('id', user.id)
             .single()
 
-        if (userError || userData?.role !== 'APP_ADMIN') {
+        if (userError || !userData || userData.role !== 'APP_ADMIN') {
             return NextResponse.json(
                 { success: false, error: 'Admin access required' },
                 { status: 403 }

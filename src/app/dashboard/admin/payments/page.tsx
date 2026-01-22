@@ -261,10 +261,10 @@ export default function PaymentVerificationPage() {
                   </div>
                 </div>
 
-                {/* Notes */}
-                {payment.notes && (
+                {/* Notes/Rejection Reason */}
+                {payment.rejection_reason && (
                   <div className="mt-4 p-3 bg-gray-50 rounded-xl">
-                    <p className="text-sm text-gray-600">{payment.notes}</p>
+                    <p className="text-sm text-gray-600">{payment.rejection_reason}</p>
                   </div>
                 )}
               </div>

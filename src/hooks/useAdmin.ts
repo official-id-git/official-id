@@ -248,8 +248,8 @@ export function useAdmin() {
         .from('payment_transactions')
         .update({
           status: 'APPROVED',
-          verified_by: adminId,
-          verified_at: new Date().toISOString(),
+          reviewed_by: adminId,
+          reviewed_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('id', paymentId)
@@ -290,9 +290,10 @@ export function useAdmin() {
         .from('payment_transactions')
         .update({
           status: 'REJECTED',
-          verified_by: adminId,
-          verified_at: new Date().toISOString(),
-          notes: reason || 'Pembayaran ditolak',
+          status: 'REJECTED',
+          reviewed_by: adminId,
+          reviewed_at: new Date().toISOString(),
+          rejection_reason: reason || 'Pembayaran ditolak',
           updated_at: new Date().toISOString()
         })
         .eq('id', paymentId)
