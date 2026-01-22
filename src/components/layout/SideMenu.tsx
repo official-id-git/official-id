@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
@@ -11,7 +11,17 @@ interface SideMenuProps {
     onClose: () => void
 }
 
-const menuItems = [
+interface MenuItem {
+    label: string
+    href: string
+    icon: React.ReactNode
+    highlight?: boolean
+    requiresPro?: boolean
+    proFeature?: boolean
+}
+
+// Base menu items available to all users
+const baseMenuItems: MenuItem[] = [
     {
         label: 'Settings',
         href: '/dashboard/settings',
@@ -31,30 +41,70 @@ const menuItems = [
             </svg>
         ),
     },
+]
+
+// Pro-only menu items
+const proMenuItems: MenuItem[] = [
     {
-        label: 'Upgrade to Pro',
-        href: '/dashboard/upgrade',
+        label: 'Ngabsen',
+        href: '/dashboard/ngabsen',
         icon: (
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
         ),
-        highlight: true,
-    },
-    {
-        label: 'Help',
-        href: '/dashboard/help',
-        icon: (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        ),
+        proFeature: true,
     },
 ]
+
+// Upgrade menu item for free users
+const upgradeMenuItem: MenuItem = {
+    label: 'Upgrade to Pro',
+    href: '/dashboard/upgrade',
+    icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+        </svg>
+    ),
+    highlight: true,
+}
+
+const helpMenuItem: MenuItem = {
+    label: 'Help',
+    href: '/dashboard/help',
+    icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+    ),
+}
 
 export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
     const router = useRouter()
     const { user, signOut } = useAuth()
+
+    // Check if user is pro
+    const isPro = user?.role === 'PAID_USER' || user?.role === 'APP_ADMIN'
+
+    // Build menu items based on user role
+    const menuItems = useMemo(() => {
+        const items: MenuItem[] = [...baseMenuItems]
+
+        // Add pro features for pro users
+        if (isPro) {
+            items.push(...proMenuItems)
+        }
+
+        // Add upgrade button for free users
+        if (!isPro) {
+            items.push(upgradeMenuItem)
+        }
+
+        // Always add help at the end
+        items.push(helpMenuItem)
+
+        return items
+    }, [isPro])
 
     // Prevent body scroll when menu is open
     useEffect(() => {
@@ -127,6 +177,11 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
                                             {user.full_name || 'User'}
                                         </p>
                                         <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                                        {isPro && (
+                                            <span className="inline-flex items-center px-2 py-0.5 mt-1 rounded-full text-xs font-medium bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+                                                ⭐ PRO
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -140,15 +195,28 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
                                     onClick={() => handleNavigation(item.href)}
                                     className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${item.highlight
                                         ? 'bg-gradient-to-r from-yellow-50 to-orange-50 text-yellow-700 hover:from-yellow-100 hover:to-orange-100'
-                                        : 'text-gray-700 hover:bg-gray-100'
+                                        : item.proFeature
+                                            ? 'bg-gradient-to-r from-purple-50 to-blue-50 text-purple-700 hover:from-purple-100 hover:to-blue-100'
+                                            : 'text-gray-700 hover:bg-gray-100'
                                         }`}
                                 >
-                                    <span className={item.highlight ? 'text-yellow-600' : 'text-gray-500'}>
+                                    <span className={
+                                        item.highlight
+                                            ? 'text-yellow-600'
+                                            : item.proFeature
+                                                ? 'text-purple-600'
+                                                : 'text-gray-500'
+                                    }>
                                         {item.icon}
                                     </span>
                                     <span className="font-medium">{item.label}</span>
                                     {item.highlight && (
                                         <span className="ml-auto px-2 py-0.5 bg-yellow-200 text-yellow-800 text-xs font-medium rounded-full">
+                                            PRO
+                                        </span>
+                                    )}
+                                    {item.proFeature && (
+                                        <span className="ml-auto px-2 py-0.5 bg-purple-200 text-purple-800 text-xs font-medium rounded-full">
                                             PRO
                                         </span>
                                     )}

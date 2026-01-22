@@ -319,6 +319,90 @@ export type Database = {
           created_at?: string
         }
       }
+      ngabsen: {
+        Row: {
+          id: string
+          user_id: string
+          nama_acara: string
+          tempat_acara: string
+          tanggal_acara: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          nama_acara: string
+          tempat_acara: string
+          tanggal_acara: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          nama_acara?: string
+          tempat_acara?: string
+          tanggal_acara?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      pendaftaran_ngabsen: {
+        Row: {
+          id: string
+          ngabsen_id: string
+          nama_peserta: string
+          deskripsi: string | null
+          email: string
+          no_whatsapp: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          ngabsen_id: string
+          nama_peserta: string
+          deskripsi?: string | null
+          email: string
+          no_whatsapp: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          ngabsen_id?: string
+          nama_peserta?: string
+          deskripsi?: string | null
+          email?: string
+          no_whatsapp?: string
+          created_at?: string
+        }
+      }
+      link_ngabsen: {
+        Row: {
+          id: string
+          ngabsen_id: string
+          user_id: string
+          link_pendaftaran: string
+          link_daftar_peserta: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          ngabsen_id: string
+          user_id: string
+          link_pendaftaran: string
+          link_daftar_peserta: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          ngabsen_id?: string
+          user_id?: string
+          link_pendaftaran?: string
+          link_daftar_peserta?: string
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
