@@ -220,6 +220,27 @@ export default function AdminDashboard() {
             </div>
           </Link>
 
+          {/* Blog Management */}
+          <Link href="/dashboard/admin/blogs" className="block">
+            <div className="bg-white rounded-2xl shadow-sm p-6 hover:shadow-md transition-shadow border-2 border-transparent hover:border-pink-500">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-14 h-14 bg-pink-100 rounded-2xl flex items-center justify-center">
+                  <svg className="w-7 h-7 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Blog & Artikel</h3>
+                  <p className="text-gray-500 text-sm">Kelola konten blog dan artikel</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500">Buat dan edit artikel</span>
+                <span className="text-pink-600 font-medium">Kelola →</span>
+              </div>
+            </div>
+          </Link>
+
           {/* Template Management */}
           <Link href="/dashboard/admin/templates" className="block">
             <div className="bg-white rounded-2xl shadow-sm p-6 hover:shadow-md transition-shadow border-2 border-transparent hover:border-indigo-500">
