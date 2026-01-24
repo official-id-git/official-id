@@ -46,7 +46,7 @@ export async function middleware(request: NextRequest) {
 
   // Admin route protection
   if (isAdminRoute && user) {
-    const supabase = await createClient()
+    const supabase = await createClient() as any
     const { data: userData } = await supabase
       .from('users')
       .select('role')

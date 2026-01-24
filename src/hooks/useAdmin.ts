@@ -22,7 +22,7 @@ interface UserWithCards extends User {
 export function useAdmin() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
+  const supabase = createClient() as any
 
   // Fetch admin dashboard stats
   const fetchStats = useCallback(async (): Promise<AdminStats | null> => {
@@ -289,7 +289,6 @@ export function useAdmin() {
       const { error: updateError } = await supabase
         .from('payment_transactions')
         .update({
-          status: 'REJECTED',
           status: 'REJECTED',
           reviewed_by: adminId,
           reviewed_at: new Date().toISOString(),

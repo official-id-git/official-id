@@ -11,8 +11,8 @@ import BottomNavigation from '@/components/layout/BottomNavigation'
 export default function UpgradePage() {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const supabase = createClient()
-  
+  const supabase = createClient() as any
+
   const [proofUrl, setProofUrl] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -29,7 +29,7 @@ export default function UpgradePage() {
     // Check if user already has pending payment
     const checkPendingPayment = async () => {
       if (!user) return
-      
+
       const { data } = await supabase
         .from('payment_transactions')
         .select('*')
@@ -132,7 +132,7 @@ export default function UpgradePage() {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Menunggu Verifikasi</h2>
             <p className="text-gray-600 mb-6">
-              Bukti pembayaran Anda sedang diverifikasi oleh admin. 
+              Bukti pembayaran Anda sedang diverifikasi oleh admin.
               Proses biasanya memakan waktu 1x24 jam.
             </p>
             <Link
@@ -240,7 +240,7 @@ export default function UpgradePage() {
         {/* Upload Form */}
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-6">
           <h3 className="font-semibold text-gray-900 mb-4">Upload Bukti Pembayaran</h3>
-          
+
           {error && (
             <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xl text-sm">
               {error}

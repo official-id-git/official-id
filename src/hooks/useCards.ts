@@ -29,7 +29,7 @@ interface UpdateCardData extends Partial<CreateCardData> {
 export function useCards() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
+  const supabase = createClient() as any
 
   // Helper to generate random 7-char username
   const generateRandomUsername = () => {

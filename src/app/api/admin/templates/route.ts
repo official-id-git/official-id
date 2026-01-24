@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 // GET /api/admin/templates - Fetch all template settings with PINs (admin only)
 export async function GET() {
     try {
-        const supabase = await createClient()
+        const supabase = await createClient() as any
 
         // Check if user is admin
         const { data: { user } } = await supabase.auth.getUser()
@@ -55,7 +55,7 @@ export async function GET() {
 // PUT /api/admin/templates - Update template settings (admin only)
 export async function PUT(request: NextRequest) {
     try {
-        const supabase = await createClient()
+        const supabase = await createClient() as any
 
         // Check if user is admin
         const { data: { user } } = await supabase.auth.getUser()

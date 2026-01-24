@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  const supabase = useMemo(() => createClient(), [])
+  const supabase = useMemo(() => createClient() as any, [])
 
   // Track fetch state
   const fetchPromiseRef = useRef<Promise<User> | null>(null)

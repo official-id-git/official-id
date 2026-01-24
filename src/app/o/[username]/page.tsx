@@ -9,7 +9,7 @@ interface PageProps {
 // Generate dynamic metadata for Open Graph
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { username } = await params
-    const supabase = await createClient()
+    const supabase = await createClient() as any
 
     // Check if username is UUID or actual username
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(username)

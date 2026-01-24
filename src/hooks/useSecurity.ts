@@ -12,7 +12,7 @@ export interface ThreatLog {
 }
 
 export const useSecurity = () => {
-    const supabase = createClient()
+    const supabase = createClient() as any
     const { user } = useAuth()
     const [isBlocking, setIsBlocking] = useState(false)
 

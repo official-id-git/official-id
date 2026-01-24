@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        const supabase = await createClient()
+        const supabase = await createClient() as any
 
         // Fetch the template with its PIN
         const { data, error } = await supabase

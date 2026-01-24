@@ -33,7 +33,7 @@ interface OrganizationInvitation {
 export function useOrganizations() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
+  const supabase = createClient() as any
 
   // Helper to generate random 7-char username
   const generateRandomUsername = useCallback((): string => {
@@ -682,7 +682,7 @@ export function useOrganizations() {
     try {
       const { error: updateError } = await supabase
         .from('organization_invitations')
-        .update({ status: 'CANCELLED' })
+        .update({ status: 'CANCELLED' } as any)
         .eq('id', invitationId)
 
       if (updateError) throw updateError
@@ -722,7 +722,7 @@ export function useOrganizations() {
           user_id: user.id,
           status: 'APPROVED',
           joined_at: new Date().toISOString(),
-        })
+        } as any)
 
       if (memberError && !memberError.message.includes('duplicate')) {
         throw memberError
@@ -730,7 +730,7 @@ export function useOrganizations() {
 
       await supabase
         .from('organization_invitations')
-        .update({ status: 'ACCEPTED', accepted_at: new Date().toISOString() })
+        .update({ status: 'ACCEPTED', accepted_at: new Date().toISOString() } as any)
         .eq('id', invitation.id)
 
       return true
@@ -773,7 +773,7 @@ export function useOrganizations() {
         .eq('status', 'PENDING')
 
       if (fetchError) throw fetchError
-      return data?.map(d => d.organizations as unknown as Organization) || []
+      return data?.map(d => (d.organizations as unknown) as Organization) || []
     } catch (err: any) {
       console.error('Error fetching invited organizations:', err)
       return []
@@ -916,9 +916,9 @@ export function useOrganizations() {
       // Send individual messages to each member
       const messageInserts = approvedMembers.map(member => ({
         recipient_id: member.user_id,
-        sender_name: `${orgName} (${sender?.full_name || 'Admin'})`,
+        sender_name: `${orgName} (${(sender as any)?.full_name || 'Admin'})`,
         sender_whatsapp: '-',
-        sender_email: sender?.email || '',
+        sender_email: (sender as any)?.email || '',
         purpose: 'lainnya' as const,
         message: `[Broadcast dari Circle ${orgName}]\n\n${message.trim()}`,
         is_read: false,
@@ -926,7 +926,7 @@ export function useOrganizations() {
 
       const { error: messagesError } = await supabase
         .from('messages')
-        .insert(messageInserts)
+        .insert(messageInserts as any)
 
       if (messagesError) {
         console.error('Failed to send messages:', messagesError)
@@ -951,7 +951,7 @@ export function useOrganizations() {
               type: 'broadcast',
               recipients: emailRecipients,
               circleName: orgName,
-              senderName: sender?.full_name || 'Admin',
+              senderName: (sender as any)?.full_name || 'Admin',
               message: message.trim(),
             }),
           })

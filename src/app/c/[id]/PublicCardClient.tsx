@@ -21,7 +21,7 @@ export default function PublicCardClient({ cardId }: Props) {
       setError(null)
 
       try {
-        const supabase = createClient()
+        const supabase = createClient() as any
 
         // Fetch public card
         // Check if cardId is UUID or Username

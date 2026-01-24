@@ -35,7 +35,7 @@ export async function getSeoSettings(): Promise<SeoSettings | null> {
 }
 
 export async function updateSeoSettings(data: Partial<SeoSettings>) {
-    const supabase = await createClient()
+    const supabase = await createClient() as any
 
     // Verify admin access
     const { data: { user }, error: authError } = await supabase.auth.getUser()

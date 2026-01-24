@@ -34,7 +34,7 @@ export interface ContactInsert {
 export function useContacts() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
+  const supabase = createClient() as any
 
   // Fetch all contacts
   const fetchContacts = useCallback(async (): Promise<Contact[]> => {

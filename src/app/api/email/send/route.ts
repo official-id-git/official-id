@@ -12,7 +12,7 @@ import {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = await createClient() as any
     const { data: { user } } = await supabase.auth.getUser()
 
     const body = await request.json()
