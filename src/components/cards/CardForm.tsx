@@ -529,7 +529,7 @@ export function CardForm({ card, mode }: CardFormProps) {
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Kombinasi huruf dan angka, tanpa spasi/simbol. Minimal 3 karakter.
+                username boleh terdiri dari angka atau huruf, tanpa spasi/simbol. Maksimal 1 kata
               </p>
             </div>
 
