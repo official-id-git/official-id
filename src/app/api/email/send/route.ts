@@ -7,7 +7,10 @@ import {
   getPaymentVerifiedEmailTemplate,
   getContactCardShareEmailTemplate,
   getOrganizationInviteEmailTemplate,
-  getShareCardEmailTemplate
+  getShareCardEmailTemplate,
+  getCircleRequestAdminNotificationTemplate,
+  getCircleRequestApprovedTemplate,
+  getCircleRequestRejectedTemplate
 } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
@@ -142,6 +145,63 @@ export async function POST(request: NextRequest) {
           to: data.recipientEmail,
           subject: template.subject,
           html: template.html
+        })
+        break
+      }
+
+      case 'circle_request_admin_notification': {
+        const template = getCircleRequestAdminNotificationTemplate({
+          adminName: data.adminName,
+          organizationName: data.organizationName,
+          requesterEmail: data.requesterEmail,
+          requesterMessage: data.requesterMessage
+        })
+
+        logData.recipient_email = data.recipientEmail
+        logData.subject = template.subject
+
+        emailResult = await sendEmail({
+          to: data.recipientEmail,
+          subject: template.subject,
+          html: template.html,
+          from: EMAIL_SENDERS.circle
+        })
+        break
+      }
+
+      case 'circle_request_approved': {
+        const template = getCircleRequestApprovedTemplate({
+          organizationName: data.organizationName,
+          organizationLogo: data.organizationLogo,
+          recipientEmail: data.recipientEmail
+        })
+
+        logData.recipient_email = data.recipientEmail
+        logData.subject = template.subject
+
+        emailResult = await sendEmail({
+          to: data.recipientEmail,
+          subject: template.subject,
+          html: template.html,
+          from: EMAIL_SENDERS.circle
+        })
+        break
+      }
+
+      case 'circle_request_rejected': {
+        const template = getCircleRequestRejectedTemplate({
+          organizationName: data.organizationName,
+          organizationLogo: data.organizationLogo
+        })
+
+        logData.recipient_email = data.recipientEmail
+        logData.subject = template.subject
+
+        emailResult = await sendEmail({
+          to: data.recipientEmail,
+          subject: template.subject,
+          html: template.html,
+          from: EMAIL_SENDERS.circle
         })
         break
       }

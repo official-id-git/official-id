@@ -7,7 +7,8 @@ import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
 import { useOrganizations } from '@/hooks/useOrganizations'
 import { MemberList } from '@/components/organizations/MemberList'
-import type { Organization, OrganizationMember } from '@/types'
+import { OrganizationRequests } from '@/components/organizations/OrganizationRequests'
+import type { Organization, OrganizationMember, OrganizationRequest } from '@/types'
 import BottomNavigation from '@/components/layout/BottomNavigation'
 
 interface Invitation {
@@ -32,12 +33,16 @@ export default function OrganizationDetailPage() {
     fetchInvitations,
     cancelInvitation,
     sendBroadcastMessage,
+    fetchRequests,
+    reviewRequest,
     loading
   } = useOrganizations()
 
   const [org, setOrg] = useState<Organization | null>(null)
   const [members, setMembers] = useState<OrganizationMember[]>([])
   const [invitations, setInvitations] = useState<Invitation[]>([])
+  const [requests, setRequests] = useState<OrganizationRequest[]>([])
+  const [activeTab, setActiveTab] = useState<'members' | 'invitations' | 'requests'>('members')
   const [membership, setMembership] = useState<{
     isMember: boolean
     isAdmin: boolean
@@ -75,10 +80,14 @@ export default function OrganizationDetailPage() {
       setMembers(membersData)
       setMembership(membershipData)
 
-      // Load invitations if admin
+      // Load invitations and requests if admin
       if (membershipData.isAdmin && orgData) {
-        const invitationsData = await fetchInvitations(orgId)
+        const [invitationsData, requestsData] = await Promise.all([
+          fetchInvitations(orgId),
+          fetchRequests(orgId)
+        ])
         setInvitations(invitationsData)
+        setRequests(requestsData)
       }
     }
   }
@@ -408,52 +417,105 @@ export default function OrganizationDetailPage() {
             )}
           </div>
 
-          {/* Right Column - Members */}
+          {/* Right Column - Tabs & Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Pending Invitations (Admin only) */}
-            {membership.isAdmin && invitations.length > 0 && (
+
+            {/* Admin Tabs */}
+            {membership.isAdmin && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 flex gap-2">
+                <button
+                  onClick={() => setActiveTab('members')}
+                  className={`flex-1 py-2 px-4 rounded-xl text-sm font-medium transition-colors ${activeTab === 'members'
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                >
+                  Members ({approvedCount})
+                </button>
+                <button
+                  onClick={() => setActiveTab('requests')}
+                  className={`flex-1 py-2 px-4 rounded-xl text-sm font-medium transition-colors ${activeTab === 'requests'
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                >
+                  Join Requests
+                  {requests.filter(r => r.status === 'PENDING').length > 0 && (
+                    <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-xs">
+                      {requests.filter(r => r.status === 'PENDING').length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab('invitations')}
+                  className={`flex-1 py-2 px-4 rounded-xl text-sm font-medium transition-colors ${activeTab === 'invitations'
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                >
+                  Invitations
+                  {invitations.length > 0 && (
+                    <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-600 rounded-full text-xs">
+                      {invitations.length}
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Content Area Based on Tab */}
+            {activeTab === 'requests' && membership.isAdmin ? (
+              <OrganizationRequests
+                requests={requests}
+                onReview={reviewRequest}
+                onUpdate={loadData}
+              />
+            ) : activeTab === 'invitations' && membership.isAdmin ? (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
                   Pending Invitations ({invitations.length})
                 </h2>
-                <div className="space-y-3">
-                  {invitations.map((inv) => (
-                    <div
-                      key={inv.id}
-                      className="flex items-center justify-between p-3 bg-purple-50 rounded-xl border border-purple-100"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                          <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{inv.email}</p>
-                          <p className="text-xs text-gray-500">
-                            Invited {new Date(inv.created_at).toLocaleDateString('en-US')} •
-                            Expires {new Date(inv.expires_at).toLocaleDateString('en-US')}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleCancelInvitation(inv.id)}
-                        className="text-sm text-red-600 hover:text-red-700 font-medium"
+                {invitations.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No pending invitations</p>
+                ) : (
+                  <div className="space-y-3">
+                    {invitations.map((inv) => (
+                      <div
+                        key={inv.id}
+                        className="flex items-center justify-between p-3 bg-purple-50 rounded-xl border border-purple-100"
                       >
-                        Cancel
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                            <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{inv.email}</p>
+                            <p className="text-xs text-gray-500">
+                              Invited {new Date(inv.created_at).toLocaleDateString('en-US')} •
+                              Expires {new Date(inv.expires_at).toLocaleDateString('en-US')}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleCancelInvitation(inv.id)}
+                          className="text-sm text-red-600 hover:text-red-700 font-medium"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+            ) : (
+              <MemberList
+                members={members}
+                isAdmin={membership.isAdmin}
+                onUpdate={loadData}
+              />
             )}
-
-            {/* Members List */}
-            <MemberList
-              members={members}
-              isAdmin={membership.isAdmin}
-              onUpdate={loadData}
-            />
           </div>
         </div>
       </main>

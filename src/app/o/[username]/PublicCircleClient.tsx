@@ -29,6 +29,12 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
     const [joining, setJoining] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
+    // Request to Join state
+    const [requestEmail, setRequestEmail] = useState('')
+    const [requestMessage, setRequestMessage] = useState('')
+    const [requesting, setRequesting] = useState(false)
+    const [requestSuccess, setRequestSuccess] = useState(false)
+
     // Search and Sort state
     const [searchQuery, setSearchQuery] = useState('')
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
@@ -95,17 +101,15 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                 return
             }
 
-            if (!orgData.is_public) {
-                setError('Circle ini bersifat privat. Anda memerlukan undangan untuk mengakses.')
-                return
-            }
-
             setOrg(orgData)
 
-            // Fetch approved members with business cards
-            const membersData = await fetchMembers(orgData.id)
-            const approvedMembers = membersData.filter(m => m.status === 'APPROVED')
-            setMembers(approvedMembers)
+            // If private, only fetch members if user is logged in
+            // Verification will happen server-side or we just hide the members below if they aren't authorized
+            if (orgData.is_public || user) {
+                const membersData = await fetchMembers(orgData.id)
+                const approvedMembers = membersData.filter(m => m.status === 'APPROVED')
+                setMembers(approvedMembers)
+            }
 
             // Check user membership if logged in
             if (user) {
@@ -149,6 +153,37 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
             setError(err.message || 'Gagal bergabung dengan Circle')
         } finally {
             setJoining(false)
+        }
+    }
+
+    const handleRequestJoin = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!org || !requestEmail) return
+
+        setRequesting(true)
+        setError(null)
+
+        try {
+            const res = await fetch('/api/organizations/request-join', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    organizationId: org.id,
+                    email: requestEmail,
+                    message: requestMessage
+                })
+            })
+
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Gagal mengirim permintaan')
+
+            setRequestSuccess(true)
+            setRequestEmail('')
+            setRequestMessage('')
+        } catch (err: any) {
+            alert(err.message)
+        } finally {
+            setRequesting(false)
         }
     }
 
@@ -221,8 +256,8 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                 <div>
                                     <h1 className="text-3xl font-bold text-gray-900 mb-2">{org.name}</h1>
                                     <div className="flex items-center gap-2">
-                                        <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
-                                            Publik
+                                        <span className={`px-3 py-1 text-sm font-medium rounded-full ${org.is_public ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                            {org.is_public ? 'Publik' : 'Privat'}
                                         </span>
                                         {org.category && (
                                             <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">
@@ -238,175 +273,217 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                 <p className="text-gray-600 text-lg leading-relaxed mb-6">{org.description}</p>
                             )}
 
-                            {/* Stats */}
-                            <div className="flex items-center gap-6 mb-6">
-                                <div className="flex items-center gap-2 text-gray-700">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                    <span className="font-semibold">{members.length}</span>
-                                    <span>Anggota</span>
+                            {/* Stats - Only show if public or member */}
+                            {(org.is_public || isMember) && (
+                                <div className="flex items-center gap-6 mb-6">
+                                    <div className="flex items-center gap-2 text-gray-700">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
+                                        <span className="font-semibold">{members.length}</span>
+                                        <span>Anggota</span>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Action Buttons */}
-                            <div className="flex gap-3">
-                                {!user ? (
-                                    <Link
-                                        href={`/login?redirect=/o/${circleUsername}`}
-                                        className="flex-1 py-3 bg-blue-600 text-white text-center rounded-xl font-medium hover:bg-blue-700 transition-colors"
-                                    >
-                                        Login untuk Bergabung
-                                    </Link>
-                                ) : isOwner ? (
+                            <div className="flex flex-col gap-4">
+                                {isOwner ? (
                                     <Link
                                         href={`/dashboard/organizations/${org.id}`}
-                                        className="flex-1 py-3 bg-blue-600 text-white text-center rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                                        className="w-full py-3 bg-blue-600 text-white text-center rounded-xl font-medium hover:bg-blue-700 transition-colors"
                                     >
                                         Kelola Circle
                                     </Link>
                                 ) : isMember ? (
                                     <Link
                                         href={`/dashboard/organizations/${org.id}`}
-                                        className="flex-1 py-3 bg-green-600 text-white text-center rounded-xl font-medium hover:bg-green-700 transition-colors"
+                                        className="w-full py-3 bg-green-600 text-white text-center rounded-xl font-medium hover:bg-green-700 transition-colors"
                                     >
                                         ✓ Sudah Bergabung - Lihat Detail
                                     </Link>
                                 ) : isPending ? (
                                     <button
                                         disabled
-                                        className="flex-1 py-3 bg-yellow-100 text-yellow-700 text-center rounded-xl font-medium cursor-not-allowed"
+                                        className="w-full py-3 bg-yellow-100 text-yellow-700 text-center rounded-xl font-medium cursor-not-allowed"
                                     >
                                         Menunggu Persetujuan
                                     </button>
-                                ) : (
+                                ) : org.is_public ? (
+                                    /* PUBLIC CIRCLES: Standard join flow */
                                     <button
                                         onClick={handleJoin}
                                         disabled={joining}
-                                        className="flex-1 py-3 bg-blue-600 text-white text-center rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                                        className="w-full py-3 bg-blue-600 text-white text-center rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
                                     >
                                         {joining ? 'Memproses...' : 'Bergabung dengan Circle'}
                                     </button>
+                                ) : (
+                                    /* PRIVATE CIRCLES: Request Form */
+                                    <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                                        <h3 className="text-lg font-semibold text-blue-900 mb-2">Tertarik bergabung?</h3>
+                                        <p className="text-blue-700 mb-4 text-sm">Circle ini bersifat privat. Sampaikan email aktif Anda untuk meminta undangan dari Admin.</p>
+
+                                        {requestSuccess ? (
+                                            <div className="bg-green-100 text-green-700 p-4 rounded-xl flex items-center gap-3">
+                                                <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                <p className="text-sm font-medium">Permintaan berhasil dikirim! Silakan periksa email Anda nanti untuk update status.</p>
+                                            </div>
+                                        ) : (
+                                            <form onSubmit={handleRequestJoin} className="space-y-3">
+                                                <input
+                                                    type="email"
+                                                    required
+                                                    value={requestEmail}
+                                                    onChange={e => setRequestEmail(e.target.value)}
+                                                    placeholder="Alamat Email Anda"
+                                                    className="w-full px-4 py-3 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                                    disabled={requesting}
+                                                />
+                                                <textarea
+                                                    value={requestMessage}
+                                                    onChange={e => setRequestMessage(e.target.value)}
+                                                    placeholder="Pesan ke Admin (Opsional: sebutkan alasan ingin bergabung)"
+                                                    rows={2}
+                                                    className="w-full px-4 py-3 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                                                    disabled={requesting}
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    disabled={requesting || !requestEmail}
+                                                    className="w-full py-3 bg-blue-600 text-white text-center rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex justify-center items-center"
+                                                >
+                                                    {requesting ? (
+                                                        <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+                                                    ) : 'Kirim Permintaan Bergabung'}
+                                                </button>
+                                            </form>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Members List */}
-                <div className="bg-white rounded-2xl shadow-lg p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900">Anggota Circle</h2>
+                {/* Members List - Only show if public or if user is a member */}
+                {(org.is_public || isMember) && (
+                    <div className="bg-white rounded-2xl shadow-lg p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                            <h2 className="text-2xl font-bold text-gray-900">Anggota Circle</h2>
 
-                        {/* Search and Sort Controls */}
-                        <div className="flex flex-col sm:flex-row gap-3">
-                            {/* Search Input */}
-                            <div className="relative">
-                                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                                <input
-                                    type="text"
-                                    placeholder="Cari anggota..."
-                                    value={searchQuery}
-                                    onChange={async (e) => {
-                                        const val = e.target.value
-                                        const isValid = await validateInput(val)
-                                        if (isValid) setSearchQuery(val)
-                                    }}
-                                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-48"
-                                />
+                            {/* Search and Sort Controls */}
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                {/* Search Input */}
+                                <div className="relative">
+                                    <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                    <input
+                                        type="text"
+                                        placeholder="Cari anggota..."
+                                        value={searchQuery}
+                                        onChange={async (e) => {
+                                            const val = e.target.value
+                                            const isValid = await validateInput(val)
+                                            if (isValid) setSearchQuery(val)
+                                        }}
+                                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-48"
+                                    />
+                                </div>
+
+                                {/* Sort Dropdown */}
+                                <select
+                                    value={sortOrder}
+                                    onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                                    className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                                >
+                                    <option value="asc">A - Z</option>
+                                    <option value="desc">Z - A</option>
+                                </select>
                             </div>
-
-                            {/* Sort Dropdown */}
-                            <select
-                                value={sortOrder}
-                                onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-                                className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                            >
-                                <option value="asc">A - Z</option>
-                                <option value="desc">Z - A</option>
-                            </select>
                         </div>
-                    </div>
 
-                    {members.length === 0 ? (
-                        <p className="text-gray-500 text-center py-8">Belum ada anggota yang bergabung</p>
-                    ) : filteredMembers.length === 0 ? (
-                        <p className="text-gray-500 text-center py-8">Tidak ada anggota yang sesuai dengan pencarian "{searchQuery}"</p>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {filteredMembers.map((member: any) => {
-                                const userData = member.users || {}
-                                const userName = userData.full_name || 'Anonymous'
-                                const userAvatar = userData.avatar_url
-                                const userId = userData.id
+                        {members.length === 0 ? (
+                            <p className="text-gray-500 text-center py-8">Belum ada anggota yang bergabung</p>
+                        ) : filteredMembers.length === 0 ? (
+                            <p className="text-gray-500 text-center py-8">Tidak ada anggota yang sesuai dengan pencarian "{searchQuery}"</p>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {filteredMembers.map((member: any) => {
+                                    const userData = member.users || {}
+                                    const userName = userData.full_name || 'Anonymous'
+                                    const userAvatar = userData.avatar_url
+                                    const userId = userData.id
 
-                                // Link directly to business card using user_id
-                                const cardLink = userId ? `/c/${userId}` : null
+                                    // Link directly to business card using user_id
+                                    const cardLink = userId ? `/c/${userId}` : null
 
-                                return (
-                                    <div
-                                        key={member.id}
-                                        className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
-                                    >
-                                        {/* Header Info */}
-                                        <div className="p-4 flex items-center gap-3 border-b border-gray-100">
-                                            {userAvatar ? (
-                                                <Image
-                                                    src={userAvatar}
-                                                    alt={userName}
-                                                    width={40}
-                                                    height={40}
-                                                    className="w-10 h-10 rounded-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
-                                                    <span className="text-white font-semibold text-sm">
-                                                        {userName.charAt(0) || '?'}
-                                                    </span>
+                                    return (
+                                        <div
+                                            key={member.id}
+                                            className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+                                        >
+                                            {/* Header Info */}
+                                            <div className="p-4 flex items-center gap-3 border-b border-gray-100">
+                                                {userAvatar ? (
+                                                    <Image
+                                                        src={userAvatar}
+                                                        alt={userName}
+                                                        width={40}
+                                                        height={40}
+                                                        className="w-10 h-10 rounded-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+                                                        <span className="text-white font-semibold text-sm">
+                                                            {userName.charAt(0) || '?'}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-semibold text-gray-900 truncate text-sm">
+                                                        {userName}
+                                                    </p>
+                                                    {member.is_admin && (
+                                                        <span className="text-[10px] text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full">Admin</span>
+                                                    )}
                                                 </div>
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-semibold text-gray-900 truncate text-sm">
-                                                    {userName}
-                                                </p>
-                                                {member.is_admin && (
-                                                    <span className="text-[10px] text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full">Admin</span>
+                                                {userId && (
+                                                    <button
+                                                        onClick={() => handleOpenMessageModal(userId, userName)}
+                                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        title="Kirim Pesan"
+                                                    >
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                        </svg>
+                                                    </button>
                                                 )}
                                             </div>
-                                            {userId && (
-                                                <button
-                                                    onClick={() => handleOpenMessageModal(userId, userName)}
-                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                    title="Kirim Pesan"
-                                                >
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                                    </svg>
-                                                </button>
-                                            )}
-                                        </div>
 
-                                        {/* Cards Carousel */}
-                                        <div className="relative">
-                                            {userData.business_cards && userData.business_cards.length > 0 ? (
-                                                <MemberToCardCarousel
-                                                    cards={userData.business_cards}
-                                                    userId={userId}
-                                                />
-                                            ) : (
-                                                <div className="p-8 text-center text-gray-400 text-sm bg-gray-50">
-                                                    Belum ada kartu nama
-                                                </div>
-                                            )}
+                                            {/* Cards Carousel */}
+                                            <div className="relative">
+                                                {userData.business_cards && userData.business_cards.length > 0 ? (
+                                                    <MemberToCardCarousel
+                                                        cards={userData.business_cards}
+                                                        userId={userId}
+                                                    />
+                                                ) : (
+                                                    <div className="p-8 text-center text-gray-400 text-sm bg-gray-50">
+                                                        Belum ada kartu nama
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    )}
-                </div>
+                                    )
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Message Modal */}

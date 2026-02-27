@@ -487,3 +487,168 @@ export function getContactCardShareEmailTemplate(data: {
     `
   }
 }
+
+// ----------------------------------------------------------------------
+// Circle Request Templates
+// ----------------------------------------------------------------------
+
+export function getCircleRequestAdminNotificationTemplate(data: {
+  adminName?: string
+  organizationName: string
+  requesterEmail: string
+  requesterMessage?: string
+}): { subject: string; html: string } {
+  const adminNameDisplay = data.adminName ? data.adminName : 'Admin'
+  return {
+    subject: `[${data.organizationName}] Permintaan Bergabung Baru dari ${data.requesterEmail}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f5f5f5;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #F59E0B, #D97706); border-radius: 16px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 28px;">🔔</span>
+            </div>
+            <h1 style="color: #1a1a1a; font-size: 24px; margin: 0;">Permintaan Bergabung</h1>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">Halo <strong>${adminNameDisplay}</strong>,</p>
+          <p style="color: #666; line-height: 1.6;">Ada seseorang yang ingin bergabung dengan Circle <strong>${data.organizationName}</strong>.</p>
+          
+          <div style="background: #fffbeb; border-radius: 12px; padding: 16px; margin: 20px 0; border-left: 4px solid #F59E0B;">
+            <p style="margin: 0 0 8px; color: #b45309; font-weight: 600;">Detail Pengaju:</p>
+            <p style="margin: 0 0 8px; color: #666;"><strong>Email:</strong> ${data.requesterEmail}</p>
+            ${data.requesterMessage ? `<p style="margin: 0; color: #666; font-style: italic;"><strong>Pesan:</strong> "${data.requesterMessage}"</p>` : ''}
+          </div>
+          
+          <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'}/dashboard/organizations" style="display: block; text-align: center; background: linear-gradient(135deg, #2D7C88 0%, #236B76 100%); color: white; padding: 14px 24px; border-radius: 12px; text-decoration: none; font-weight: 600; margin: 24px 0;">
+            Lihat Permintaan di Dashboard
+          </a>
+          
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 32px;">
+            © ${new Date().getFullYear()} Official ID. All rights reserved.
+          </p>
+        </div>
+      </body>
+      </html>
+    `
+  }
+}
+
+export function getCircleRequestApprovedTemplate(data: {
+  organizationName: string
+  organizationLogo?: string
+  recipientEmail: string
+}): { subject: string; html: string } {
+  return {
+    subject: `🎉 Permintaan bergabung Anda dengan ${data.organizationName} telah Disetujui!`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f5f5f5;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 24px;">
+            ${data.organizationLogo ? `
+              <img src="${data.organizationLogo}" alt="${data.organizationName}" width="70" height="70" style="border-radius: 16px; margin-bottom: 16px;">
+            ` : `
+              <div style="width: 70px; height: 70px; margin: 0 auto 16px; background: linear-gradient(135deg, #10B981, #059669); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 32px;">✅</span>
+              </div>
+            `}
+            <h1 style="color: #1a1a1a; font-size: 24px; margin: 0;">Selamat bergabung!</h1>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">
+            Selamat! Permintaan Anda untuk bergabung dengan Circle <strong>${data.organizationName}</strong> telah disetujui oleh admin.
+          </p>
+          
+          <div style="background: #f0fdf4; border-radius: 12px; padding: 16px; margin: 20px 0;">
+            <p style="margin: 0; color: #166534; font-weight: 600;">Langkah Selanjutnya:</p>
+            <p style="margin: 8px 0 0; color: #666;">Silakan mendaftar (register) atau masuk (login) ke Official ID menggunakan email <strong>${data.recipientEmail}</strong>. Profil Anda akan secara otomatis terhubung dengan Circle ini.</p>
+          </div>
+          
+          <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'}/register" style="display: block; text-align: center; background: linear-gradient(135deg, #10B981, #059669); color: white; padding: 14px 24px; border-radius: 12px; text-decoration: none; font-weight: 600; margin: 24px 0;">
+            Daftar & Lengkapi Profil
+          </a>
+          
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 32px;">
+            © ${new Date().getFullYear()} Official ID. All rights reserved.
+          </p>
+        </div>
+      </body>
+      </html>
+    `
+  }
+}
+
+export function getCircleRequestRejectedTemplate(data: {
+  organizationName: string
+  organizationLogo?: string
+}): { subject: string; html: string } {
+  return {
+    subject: `Status Permintaan Bergabung - ${data.organizationName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f5f5f5;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 24px;">
+            ${data.organizationLogo ? `
+              <img src="${data.organizationLogo}" alt="${data.organizationName}" width="70" height="70" style="border-radius: 16px; margin-bottom: 16px; opacity: 0.8;">
+            ` : `
+              <div style="width: 70px; height: 70px; margin: 0 auto 16px; background: linear-gradient(135deg, #64748b, #475569); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 32px;">✉️</span>
+              </div>
+            `}
+            <h1 style="color: #1a1a1a; font-size: 24px; margin: 0;">Pembaruan Status</h1>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">
+            Terima kasih atas ketertarikan Anda untuk bergabung dengan Circle <strong>${data.organizationName}</strong>. 
+          </p>
+          
+          <p style="color: #666; line-height: 1.6;">
+            Mohon maaf, saat ini permintaan Anda belum dapat disetujui. Keputusan ini sepenuhnya merupakan kewenangan admin dari Circle tersebut dan dapat dikarenakan berbagai alasan internal.
+          </p>
+          
+          <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin: 20px 0; border: 1px solid #e2e8f0;">
+            <p style="margin: 0 0 8px; color: #0f172a; font-weight: 600;">Tahukah Anda?</p>
+            <p style="margin: 0 0 16px; color: #475569;">Di Official ID, Anda dapat membuat kartu bisnis digital secara gratis dan bahkan membangun Circle Anda sendiri untuk komunitas Anda.</p>
+            
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+              <tr>
+                <td style="text-align: center;">
+                  <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'}/register" style="display: inline-block; background: linear-gradient(135deg, #2D7C88 0%, #236B76 100%); color: white; padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 14px;">
+                    Buat Kartu & Circle Sendiri
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">
+            Tetap semangat dan jadilah bagian dari ekosistem Official ID!
+          </p>
+          
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 32px;">
+            © ${new Date().getFullYear()} Official ID. All rights reserved.
+          </p>
+        </div>
+      </body>
+      </html>
+    `
+  }
+}

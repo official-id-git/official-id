@@ -17,7 +17,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     let query = supabase
         .from('organizations')
         .select('*')
-        .eq('is_public', true)
 
     if (isUuid) {
         query = query.eq('id', username)

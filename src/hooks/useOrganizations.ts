@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { Organization, OrganizationMember } from '@/types'
+import type { Organization, OrganizationMember, OrganizationRequest } from '@/types'
 
 interface CreateOrgData {
   name: string
@@ -675,6 +675,47 @@ export function useOrganizations() {
     }
   }, [supabase])
 
+  // ==========================================
+  // REQUESTS FUNCTIONS
+  // ==========================================
+
+  const fetchRequests = useCallback(async (orgId: string): Promise<OrganizationRequest[]> => {
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('organization_requests')
+        .select('*')
+        .eq('organization_id', orgId)
+        .order('created_at', { ascending: false })
+
+      if (fetchError) throw fetchError
+      return data || []
+    } catch (err: any) {
+      console.error('Error fetching requests:', err)
+      return []
+    }
+  }, [supabase])
+
+  const reviewRequest = useCallback(async (requestId: string, status: 'APPROVED' | 'REJECTED'): Promise<boolean> => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/organizations/review-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, status })
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to review request')
+      return true
+    } catch (err: any) {
+      setError(err.message)
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
   const cancelInvitation = useCallback(async (invitationId: string): Promise<boolean> => {
     setLoading(true)
     setError(null)
@@ -997,6 +1038,8 @@ export function useOrganizations() {
     acceptInvitation,
     checkInvitation,
     removeMember,
+    fetchRequests,
+    reviewRequest,
     sendBroadcastMessage,
   }
 }

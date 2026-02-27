@@ -23,6 +23,20 @@ export type OrganizationMember = Database['public']['Tables']['organization_memb
 export type OrganizationMemberInsert = Database['public']['Tables']['organization_members']['Insert']
 export type OrganizationMemberUpdate = Database['public']['Tables']['organization_members']['Update']
 
+// Organization request type
+export interface OrganizationRequest {
+  id: string
+  organization_id: string
+  email: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  message: string | null
+  created_at: string
+  reviewed_at: string | null
+  reviewed_by: string | null
+}
+export type OrganizationRequestInsert = Omit<OrganizationRequest, 'id' | 'created_at' | 'reviewed_at' | 'reviewed_by'>
+export type OrganizationRequestUpdate = Partial<OrganizationRequest>
+
 // User relationship type
 export type UserRelationship = Database['public']['Tables']['user_relationships']['Row']
 export type UserRelationshipInsert = Database['public']['Tables']['user_relationships']['Insert']
