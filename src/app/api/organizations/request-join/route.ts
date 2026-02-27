@@ -59,6 +59,8 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        console.log('Inserting request data', { organizationId, email, message })
+
         // Insert request
         const { data: requestResult, error: insertError } = await supabase
             .from('organization_requests')
@@ -70,6 +72,8 @@ export async function POST(request: NextRequest) {
             })
             .select()
             .single()
+
+        console.log('Insert result:', { requestResult, insertError })
 
         if (insertError) {
             // Handle unique constraint violation (duplicate pending request)
@@ -140,12 +144,13 @@ export async function POST(request: NextRequest) {
             }
         })
 
+        console.log('Successfully completed request-join endpoint')
         return NextResponse.json({ success: true, request: requestResult })
 
     } catch (error: any) {
-        console.error('Request join error:', error)
+        console.error('Request join caught error in try/catch block:', error, error.stack)
         return NextResponse.json(
-            { success: false, error: 'Terjadi kesalahan saat memproses permintaan bergabung' },
+            { success: false, error: 'Terjadi kesalahan saat memproses permintaan bergabung', details: error.message },
             { status: 500 }
         )
     }
