@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 export async function POST(request: NextRequest) {
     try {
         const supabase = await createClient() as any
+        const adminSupabase = createAdminClient() as any
 
         const body = await request.json()
         const { organizationId, email, message } = body
@@ -61,8 +62,8 @@ export async function POST(request: NextRequest) {
 
         console.log('Inserting request data', { organizationId, email, message })
 
-        // Insert request
-        const { data: requestResult, error: insertError } = await supabase
+        // Insert request via Admin Supabase so we don't trigger anonymous RLS violation
+        const { data: requestResult, error: insertError } = await adminSupabase
             .from('organization_requests')
             .insert({
                 organization_id: organizationId,
@@ -88,8 +89,6 @@ export async function POST(request: NextRequest) {
 
         // Fetch admins to send notification emails using the Admin client to bypass RLS
         // since the user requesting to join does not have SELECT access to private circles' members
-        const adminSupabase = createAdminClient() as any
-
         const { data: admins } = await adminSupabase
             .from('organization_members')
             .select('users(email, full_name)')
