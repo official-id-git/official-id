@@ -10,7 +10,8 @@ import {
   getShareCardEmailTemplate,
   getCircleRequestAdminNotificationTemplate,
   getCircleRequestApprovedTemplate,
-  getCircleRequestRejectedTemplate
+  getCircleRequestRejectedTemplate,
+  getCircleRequestUserConfirmationTemplate
 } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
@@ -192,6 +193,24 @@ export async function POST(request: NextRequest) {
         const template = getCircleRequestRejectedTemplate({
           organizationName: data.organizationName,
           organizationLogo: data.organizationLogo
+        })
+
+        logData.recipient_email = data.recipientEmail
+        logData.subject = template.subject
+
+        emailResult = await sendEmail({
+          to: data.recipientEmail,
+          subject: template.subject,
+          html: template.html,
+          from: EMAIL_SENDERS.circle
+        })
+        break
+      }
+
+      case 'circle_request_user_confirmation': {
+        const template = getCircleRequestUserConfirmationTemplate({
+          userName: data.userName,
+          organizationName: data.organizationName
         })
 
         logData.recipient_email = data.recipientEmail

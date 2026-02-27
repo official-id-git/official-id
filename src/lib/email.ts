@@ -652,3 +652,45 @@ export function getCircleRequestRejectedTemplate(data: {
     `
   }
 }
+
+export function getCircleRequestUserConfirmationTemplate(data: {
+  userName?: string
+  organizationName: string
+}): { subject: string; html: string } {
+  const userNameDisplay = data.userName ? ` <strong>${data.userName}</strong>` : ''
+  return {
+    subject: `Konfirmasi Permintaan Bergabung - ${data.organizationName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f5f5f5;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #2D7C88, #236B76); border-radius: 16px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 28px;">⏳</span>
+            </div>
+            <h1 style="color: #1a1a1a; font-size: 24px; margin: 0;">Permintaan Terkirim</h1>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">Halo${userNameDisplay},</p>
+          <p style="color: #666; line-height: 1.6;">Permintaan Anda untuk bergabung dengan Circle <strong>${data.organizationName}</strong> telah berhasil dikirim kepada admin.</p>
+          
+          <div style="background: #f0f9ff; border-radius: 12px; padding: 16px; margin: 20px 0; border-left: 4px solid #2D7C88;">
+            <p style="margin: 0; color: #666;">Kami telah meneruskan email dan pesan Anda. Anda akan menerima notifikasi email lebih lanjut setelah admin meninjau permintaan Anda.</p>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">Terima kasih atas ketertarikan Anda untuk terhubung dengan komunitas di Official ID!</p>
+          
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 32px;">
+            © ${new Date().getFullYear()} Official ID. All rights reserved.
+          </p>
+        </div>
+      </body>
+      </html>
+    `
+  }
+}

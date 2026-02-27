@@ -143,6 +143,24 @@ export async function POST(request: NextRequest) {
             }
         })
 
+        // Send confirmation email to the user who requested to join
+        try {
+            await fetch(new URL('/api/email/send', request.url).toString(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'circle_request_user_confirmation',
+                    data: {
+                        recipientEmail: email,
+                        userName: existingUser?.full_name || email.split('@')[0],
+                        organizationName: org.name
+                    }
+                })
+            })
+        } catch (err) {
+            console.error('Failed to queue user confirmation email:', err)
+        }
+
         console.log('Successfully completed request-join endpoint')
         return NextResponse.json({ success: true, request: requestResult })
 
