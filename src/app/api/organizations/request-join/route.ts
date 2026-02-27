@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
     try {
@@ -82,15 +82,18 @@ export async function POST(request: NextRequest) {
             throw insertError
         }
 
-        // Fetch admins to send notification emails
-        const { data: admins } = await supabase
+        // Fetch admins to send notification emails using the Admin client to bypass RLS
+        // since the user requesting to join does not have SELECT access to private circles' members
+        const adminSupabase = createAdminClient() as any
+
+        const { data: admins } = await adminSupabase
             .from('organization_members')
             .select('users(email, full_name)')
             .eq('organization_id', organizationId)
             .eq('status', 'APPROVED')
             .eq('is_admin', true)
 
-        const { data: owner } = await supabase
+        const { data: owner } = await adminSupabase
             .from('organizations')
             .select('users!organizations_owner_id_fkey(email, full_name)')
             .eq('id', organizationId)
