@@ -792,7 +792,7 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                     if (paymentFile) {
                                         const cloudFormData = new FormData()
                                         cloudFormData.append('file', paymentFile)
-                                        cloudFormData.append('upload_preset', 'official_id')
+                                        cloudFormData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'officialiddata')
                                         cloudFormData.append('folder', 'official-id/events/payment_proofs')
 
                                         const cloudRes = await fetch(
