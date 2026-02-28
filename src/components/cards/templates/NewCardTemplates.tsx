@@ -2,12 +2,15 @@
 
 import React from 'react'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { Mail, Phone, Globe, MapPin, Linkedin, Twitter, Github, Instagram, Facebook } from 'lucide-react'
 import type { BusinessCard } from '@/types'
 import PixelBlast from '@/components/effects/PixelBlast'
 import FaultyTerminal from '@/components/effects/FaultyTerminal'
 import LightRays from '@/components/effects/LightRays'
 import Dither from '@/components/effects/Dither'
+
+const FloatingLines = dynamic(() => import('@/components/effects/FloatingLines'), { ssr: false })
 
 interface TemplateProps {
     card: BusinessCard
@@ -590,6 +593,116 @@ export const FelixTheCatCard = ({ card, visibleFields, socialLinks, onGenerateVC
             <div className="relative px-6 pb-6 z-10">
                 <button onClick={onGenerateVCard}
                     className="w-full py-4 bg-gradient-to-r from-black to-gray-900 text-white rounded-lg font-semibold hover:from-gray-900 hover:to-gray-800 transition-all shadow-lg hover:shadow-red-600/50 transform hover:scale-105 border-2 border-red-600">
+                    Simpan Kontak
+                </button>
+            </div>
+        )}
+    </div>
+)
+
+// Template 6: IPTIKI - Ikatan Profesi Teknologi Informasi dan Komunikasi Indonesia
+export const IPTIKICard = ({ card, visibleFields, socialLinks, onGenerateVCard, readonly }: TemplateProps) => (
+    <div className="bg-white rounded-2xl shadow-2xl overflow-hidden font-sans max-w-md mx-auto">
+        {/* Header with FloatingLines Background - Red theme */}
+        <div className="relative h-40 overflow-hidden bg-black">
+            <div className="absolute inset-0">
+                <FloatingLines
+                    linesGradient={["#f54747", "#a22525", "#c5b5b5", "#ffffff"]}
+                    animationSpeed={2}
+                    interactive={false}
+                    bendRadius={12.5}
+                    bendStrength={1.1}
+                    mouseDamping={0.05}
+                    parallax={false}
+                    parallaxStrength={1}
+                />
+            </div>
+            <div className="relative z-10 p-6 flex items-start">
+                <div className="w-24 h-24 bg-white rounded-2xl p-3 shadow-xl">
+                    <Image src="/brand/iptiki_logo.png" alt="IPTIKI" width={96} height={96} className="w-full h-full object-contain" />
+                </div>
+            </div>
+        </div>
+
+        {/* Avatar with red glow pulse effect */}
+        <div className="relative -mt-16 flex justify-center z-20">
+            <div className="relative">
+                <div className="absolute -inset-2 bg-gradient-to-r from-red-600 to-red-400 rounded-full blur animate-pulse" />
+                {card.profile_photo_url ? (
+                    <div className="relative w-32 h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white">
+                        <Image src={card.profile_photo_url} alt={card.full_name} width={128} height={128} className="w-full h-full object-cover" unoptimized />
+                    </div>
+                ) : (
+                    <div className="relative w-32 h-32 rounded-full border-4 border-white shadow-xl bg-gradient-to-br from-red-700 to-red-500 flex items-center justify-center">
+                        <span className="text-5xl text-white font-bold">{card.full_name.charAt(0).toUpperCase()}</span>
+                    </div>
+                )}
+            </div>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 pt-4 pb-6 bg-white">
+            <h1 className="text-xl sm:text-2xl md:text-3xl text-center font-bold text-gray-900 break-words">{card.full_name}</h1>
+            {card.job_title && <p className="text-center text-red-600 font-semibold mt-2 text-lg">{card.job_title}</p>}
+            {card.company && <p className="text-center text-gray-600 mt-1">{card.company}</p>}
+            {(card as any).show_business_description !== false && (card as any).business_description && (
+                <p className="text-gray-700 text-center mt-3 text-sm italic px-4 max-w-sm mx-auto opacity-80">{(card as any).business_description}</p>
+            )}
+
+            <div className="mt-6 space-y-3">
+                {visibleFields.email && (
+                    <a href={`mailto:${card.email}`} className="flex items-center gap-3 px-4 py-3 bg-red-50 rounded-lg text-gray-900 hover:bg-red-100 transition-all border border-red-200 hover:border-red-400">
+                        <Mail className="w-5 h-5 text-red-600" />
+                        <span className="break-all">{card.email}</span>
+                    </a>
+                )}
+                {visibleFields.phone && card.phone && (
+                    <a href={`tel:${card.phone}`} className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg text-gray-900 hover:bg-gray-100 transition-all border border-gray-200 hover:border-gray-400">
+                        <Phone className="w-5 h-5 text-gray-700" />
+                        <span>{card.phone}</span>
+                    </a>
+                )}
+                {visibleFields.website && card.website && (
+                    <a href={card.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg text-gray-900 hover:bg-gray-100 transition-all border border-gray-200 hover:border-gray-400">
+                        <Globe className="w-5 h-5 text-gray-700" />
+                        <span className="break-all">{card.website}</span>
+                    </a>
+                )}
+                {(() => {
+                    const loc = getLocationDisplay(card, visibleFields)
+                    if (!loc.hasAny) return null
+                    return (
+                        <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg text-gray-900 border border-gray-200">
+                            <MapPin className="w-5 h-5 text-red-500 shrink-0" />
+                            <div className="flex flex-col">
+                                {loc.showAddress && <span className="break-words">{loc.address}</span>}
+                                {loc.showCity && <span className="text-gray-500 text-sm">{loc.city}</span>}
+                            </div>
+                        </div>
+                    )
+                })()}
+            </div>
+
+            {visibleFields.social_links && Object.keys(socialLinks).length > 0 && (
+                <div className="flex gap-3 mt-4 justify-center flex-wrap">
+                    {Object.entries(socialLinks).map(([platform, url]) => {
+                        if (!url) return null
+                        return (
+                            <a key={platform} href={url} target="_blank" rel="noopener noreferrer"
+                                className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center text-red-700 hover:bg-red-600 hover:text-white transition-all border border-red-200 hover:border-transparent">
+                                {getSocialIcon(platform)}
+                            </a>
+                        )
+                    })}
+                </div>
+            )}
+        </div>
+
+        {/* Footer */}
+        {!readonly && (
+            <div className="px-6 pb-6 bg-white">
+                <button onClick={onGenerateVCard}
+                    className="w-full py-4 bg-gradient-to-r from-red-700 to-red-500 text-white rounded-lg font-semibold hover:from-red-600 hover:to-red-400 transition-all shadow-lg hover:shadow-red-500/50">
                     Simpan Kontak
                 </button>
             </div>

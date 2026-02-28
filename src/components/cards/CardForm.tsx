@@ -108,6 +108,11 @@ const TEMPLATES = [
     name: 'Felix The Cat',
     description: 'Hitam putih klasik dengan dither effect',
   },
+  {
+    id: 'iptiki',
+    name: 'IPTIKI',
+    description: 'Merah putih profesional dengan animasi floating lines',
+  },
 ]
 
 import { useSecurity } from '@/hooks/useSecurity'

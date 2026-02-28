@@ -20,12 +20,13 @@ import {
   KabayanGroupCard,
   MickeyCard,
   BettyBoopCard,
-  FelixTheCatCard
+  FelixTheCatCard,
+  IPTIKICard
 } from './templates/NewCardTemplates'
 
 interface CardPreviewProps {
   card: BusinessCard
-  template?: 'professional' | 'modern' | 'minimal' | 'modern_dark' | 'creative' | 'minimal_white' | 'elegant' | 'corporate' | 'tech' | 'artistic' | 'luxury' | 'vibrant' | 'mmb8' | 'kabayan' | 'mickey' | 'bettyboop' | 'felix'
+  template?: 'professional' | 'modern' | 'minimal' | 'modern_dark' | 'creative' | 'minimal_white' | 'elegant' | 'corporate' | 'tech' | 'artistic' | 'luxury' | 'vibrant' | 'mmb8' | 'kabayan' | 'mickey' | 'bettyboop' | 'felix' | 'iptiki'
   readonly?: boolean
 }
 
@@ -614,6 +615,15 @@ export function CardPreview({ card, template = 'professional', readonly = false 
       )}
       {activeTemplate === 'felix' && (
         <FelixTheCatCard
+          card={card}
+          visibleFields={visibleFields}
+          socialLinks={socialLinks}
+          onGenerateVCard={generateVCard}
+          readonly={readonly}
+        />
+      )}
+      {activeTemplate === 'iptiki' && (
+        <IPTIKICard
           card={card}
           visibleFields={visibleFields}
           socialLinks={socialLinks}
