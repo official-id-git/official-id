@@ -831,14 +831,44 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                     <input
                                         type="file"
                                         accept="image/*"
-                                        onChange={(e) => {
+                                        onChange={async (e) => {
                                             const file = e.target.files?.[0]
                                             if (file) {
-                                                const reader = new FileReader()
-                                                reader.onloadend = () => {
-                                                    setRegForm(prev => ({ ...prev, payment_proof: reader.result as string }))
+                                                // Create a canvas to compress the image
+                                                const img = new (window as any).Image()
+                                                img.src = URL.createObjectURL(file)
+
+                                                img.onload = () => {
+                                                    const canvas = document.createElement('canvas')
+                                                    const ctx = canvas.getContext('2d')
+
+                                                    // Max width/height
+                                                    const MAX_WIDTH = 800
+                                                    const MAX_HEIGHT = 800
+                                                    let width = img.width
+                                                    let height = img.height
+
+                                                    if (width > height) {
+                                                        if (width > MAX_WIDTH) {
+                                                            height = Math.round((height * MAX_WIDTH) / width)
+                                                            width = MAX_WIDTH
+                                                        }
+                                                    } else {
+                                                        if (height > MAX_HEIGHT) {
+                                                            width = Math.round((width * MAX_HEIGHT) / height)
+                                                            height = MAX_HEIGHT
+                                                        }
+                                                    }
+
+                                                    canvas.width = width
+                                                    canvas.height = height
+                                                    ctx?.drawImage(img, 0, 0, width, height)
+
+                                                    // Compress to 0.6 quality WebP or JPEG
+                                                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6)
+                                                    setRegForm(prev => ({ ...prev, payment_proof: dataUrl }))
+                                                    URL.revokeObjectURL(img.src)
                                                 }
-                                                reader.readAsDataURL(file)
                                             } else {
                                                 setRegForm(prev => ({ ...prev, payment_proof: '' }))
                                             }
