@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
 import { useOrganizations } from '@/hooks/useOrganizations'
 import { useEvents } from '@/hooks/useEvents'
+import { generateQRCode, downloadQRCode } from '@/lib/qrcode'
 import type { CircleEvent, CircleEventInsert, EventRegistration } from '@/types'
 import BottomNavigation from '@/components/layout/BottomNavigation'
 
@@ -27,6 +29,7 @@ export default function EventManagementPage() {
     } = useEvents()
 
     const [orgName, setOrgName] = useState('')
+    const [orgUsername, setOrgUsername] = useState('')
     const [events, setEvents] = useState<CircleEvent[]>([])
     const [registrationCounts, setRegistrationCounts] = useState<Record<string, number>>({})
     const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming')
@@ -58,6 +61,13 @@ export default function EventManagementPage() {
     const [selectedRegs, setSelectedRegs] = useState<string[]>([])
     const [approving, setApproving] = useState(false)
 
+    // QR Code Modal
+    const [showQRModal, setShowQRModal] = useState(false)
+    const [qrEvent, setQrEvent] = useState<CircleEvent | null>(null)
+    const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+    const [qrGenerating, setQrGenerating] = useState(false)
+    const [linkCopied, setLinkCopied] = useState(false)
+
     // Custom Confirmation & Alert Modal
     const [confirmConfig, setConfirmConfig] = useState<{
         isOpen: boolean;
@@ -88,6 +98,7 @@ export default function EventManagementPage() {
         }
 
         setOrgName(orgData.name)
+        setOrgUsername((orgData as any).username || orgId)
         setIsAdmin(true)
 
         await loadEvents()
@@ -295,6 +306,42 @@ export default function EventManagementPage() {
         }
     }
 
+    const getEventLandingUrl = () => {
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://official.id'
+        return `${baseUrl}/o/${orgUsername}`
+    }
+
+    const handleShowQR = async (event: CircleEvent) => {
+        setQrEvent(event)
+        setShowQRModal(true)
+        setQrDataUrl(null)
+        setLinkCopied(false)
+        setQrGenerating(true)
+        try {
+            const url = getEventLandingUrl()
+            const dataUrl = await generateQRCode(url)
+            setQrDataUrl(dataUrl)
+        } catch (error) {
+            console.error('Error generating QR:', error)
+        } finally {
+            setQrGenerating(false)
+        }
+    }
+
+    const handleCopyEventLink = async () => {
+        const url = getEventLandingUrl()
+        await navigator.clipboard.writeText(url)
+        setLinkCopied(true)
+        setTimeout(() => setLinkCopied(false), 2000)
+    }
+
+    const handleDownloadQR = async () => {
+        if (!qrEvent) return
+        const url = getEventLandingUrl()
+        const filename = `qr-event-${qrEvent.title.replace(/\s+/g, '-').toLowerCase()}`
+        await downloadQRCode(url, filename)
+    }
+
     const filteredEvents = events.filter(e =>
         activeTab === 'upcoming' ? e.status === 'upcoming' : e.status === 'past'
     )
@@ -455,6 +502,13 @@ export default function EventManagementPage() {
                                                         </svg>
                                                     </a>
                                                 )}
+                                                <button
+                                                    onClick={() => handleShowQR(event)}
+                                                    className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="QR Code Event">
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h7v7H3V3zm11 0h7v7h-7V3zM3 14h7v7H3v-7zm14 3h.01M17 17h.01M14 14h3v3h-3v-3zm3 3h3v3h-3v-3z" />
+                                                    </svg>
+                                                </button>
                                                 <button
                                                     onClick={() => openParticipants(event)}
                                                     className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Peserta">
@@ -833,13 +887,114 @@ export default function EventManagementPage() {
                 </div>
             )}
 
+            {/* QR Code Modal */}
+            {showQRModal && qrEvent && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl max-w-sm w-full overflow-hidden">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-5">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-white/20 p-2 rounded-xl">
+                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h7v7H3V3zm11 0h7v7h-7V3zM3 14h7v7H3v-7zm14 3h.01M17 17h.01M14 14h3v3h-3v-3zm3 3h3v3h-3v-3z" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-lg font-bold text-white">QR Code Event</h3>
+                                </div>
+                                <button
+                                    onClick={() => setShowQRModal(false)}
+                                    className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+                                >
+                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <p className="text-white/80 text-sm mt-2 line-clamp-1">{qrEvent.title}</p>
+                        </div>
+
+                        {/* QR Code */}
+                        <div className="p-6 flex flex-col items-center">
+                            {qrGenerating ? (
+                                <div className="w-[200px] h-[200px] flex items-center justify-center">
+                                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+                                </div>
+                            ) : qrDataUrl ? (
+                                <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+                                    <Image
+                                        src={qrDataUrl}
+                                        alt="QR Code Event"
+                                        width={200}
+                                        height={200}
+                                        unoptimized
+                                        className="rounded-lg"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="w-[200px] h-[200px] flex items-center justify-center bg-gray-50 rounded-xl">
+                                    <p className="text-gray-400 text-sm">Gagal generate QR</p>
+                                </div>
+                            )}
+
+                            {/* URL Display */}
+                            <div className="w-full mt-4 bg-gray-50 rounded-xl p-3">
+                                <p className="text-xs text-gray-500 mb-1">Landing Page URL</p>
+                                <p className="text-sm text-gray-800 font-mono break-all">{getEventLandingUrl()}</p>
+                            </div>
+
+                            <p className="text-xs text-gray-500 mt-3 text-center">
+                                Scan QR code ini untuk mengunjungi halaman event circle
+                            </p>
+
+                            {/* Actions */}
+                            <div className="flex gap-3 w-full mt-4">
+                                <button
+                                    onClick={handleCopyEventLink}
+                                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-colors ${linkCopied
+                                        ? 'bg-green-100 text-green-700 border border-green-200'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+                                        }`}
+                                >
+                                    {linkCopied ? (
+                                        <>
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            Tersalin!
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                            </svg>
+                                            Salin Link
+                                        </>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={handleDownloadQR}
+                                    disabled={!qrDataUrl}
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-medium text-sm hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    Download QR
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Confirmation & Alert Custom Modal */}
             {confirmConfig.isOpen && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[70] p-4 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl animate-in zoom-in-95 duration-200 border border-gray-100">
                         <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ${confirmConfig.type === 'alert'
-                                ? (confirmConfig.title === 'Gagal' || confirmConfig.title === 'Error' ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500')
-                                : (confirmConfig.confirmColor === 'red' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500')
+                            ? (confirmConfig.title === 'Gagal' || confirmConfig.title === 'Error' ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500')
+                            : (confirmConfig.confirmColor === 'red' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500')
                             }`}>
                             {confirmConfig.type === 'alert' && (confirmConfig.title === 'Gagal' || confirmConfig.title === 'Error') ? (
                                 <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
