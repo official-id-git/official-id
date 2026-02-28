@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useCards } from '@/hooks/useCards'
-import { downloadCardAsImage } from '@/lib/card-download'
+
 import { getPublicCardUrl } from '@/lib/qrcode'
 import type { BusinessCard } from '@/types'
 
@@ -16,7 +16,7 @@ interface CardListProps {
 export function CardList({ cards, onDelete }: CardListProps) {
   const { deleteCard } = useCards()
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Yakin ingin menghapus kartu "${name}"?`)) return
@@ -29,15 +29,7 @@ export function CardList({ cards, onDelete }: CardListProps) {
     setDeletingId(null)
   }
 
-  const handleDownloadCard = async (card: BusinessCard) => {
-    setDownloadingId(card.id)
-    try {
-      await downloadCardAsImage(card, `kartu-${card.full_name.replace(/\s+/g, '-').toLowerCase()}`)
-    } catch (error) {
-      alert('Gagal mengunduh kartu')
-    }
-    setDownloadingId(null)
-  }
+
 
   const copyLink = async (cardId: string, username?: string) => {
     const url = getPublicCardUrl(cardId, username)
@@ -154,20 +146,7 @@ export function CardList({ cards, onDelete }: CardListProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
               </svg>
             </button>
-            <button
-              onClick={() => handleDownloadCard(card)}
-              disabled={downloadingId === card.id}
-              className="px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50"
-              title="Unduh Kartu"
-            >
-              {downloadingId === card.id ? (
-                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-              )}
-            </button>
+
             <button
               onClick={() => handleDelete(card.id, card.full_name)}
               disabled={deletingId === card.id}

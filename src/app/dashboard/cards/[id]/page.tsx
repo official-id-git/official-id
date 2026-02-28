@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useCards } from '@/hooks/useCards'
 import { CardPreview } from '@/components/cards/CardPreview'
 import { getPublicCardUrl } from '@/lib/qrcode'
-import { downloadBusinessCard } from '@/lib/cardDownload'
+
 import type { BusinessCard } from '@/types'
 import BottomNavigation from '@/components/layout/BottomNavigation'
 
@@ -18,7 +18,7 @@ export default function CardDetailPage() {
   const { user, loading: authLoading } = useAuth()
   const { fetchCard, deleteCard, regenerateQRCode, loading } = useCards()
   const [card, setCard] = useState<BusinessCard | null>(null)
-  const [downloading, setDownloading] = useState(false)
+
   const [showShareModal, setShowShareModal] = useState(false)
   const [shareEmail, setShareEmail] = useState('')
   const [shareMessage, setShareMessage] = useState('')
@@ -115,18 +115,7 @@ export default function CardDetailPage() {
     setLinkedInResult(null)
   }
 
-  const handleDownloadCard = async () => {
-    if (!card) return
-    setDownloading(true)
-    try {
-      await downloadBusinessCard(card)
-    } catch (error) {
-      console.error('Download error:', error)
-      alert('Failed to download card')
-    } finally {
-      setDownloading(false)
-    }
-  }
+
 
   const handleRegenerateQR = async () => {
     if (!card) return
@@ -240,9 +229,9 @@ export default function CardDetailPage() {
           </div>
         </div>
 
-        {/* QR Code & Download */}
+        {/* QR Code */}
         <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 text-center">QR Code & Download</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 text-center">QR Code</h2>
           {card.qr_code_url ? (
             <div className="flex flex-col items-center">
               <Image
@@ -252,30 +241,16 @@ export default function CardDetailPage() {
                 height={180}
                 className="mb-4 rounded-lg"
               />
-              <div className="flex gap-3 w-full max-w-sm">
-                <button
-                  onClick={handleDownloadCard}
-                  disabled={downloading}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 disabled:opacity-50"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  {downloading ? 'Downloading...' : 'Download Card'}
-                </button>
-                <button
-                  onClick={handleRegenerateQR}
-                  className="px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
-                  title="Regenerate QR"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-3 text-center">
-                Download standard size business card (85.6mm x 53.98mm)
-              </p>
+              <button
+                onClick={handleRegenerateQR}
+                className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
+                title="Regenerate QR"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Regenerate QR
+              </button>
             </div>
           ) : (
             <div className="text-center py-8">
