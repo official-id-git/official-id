@@ -62,6 +62,16 @@ export async function POST(request: NextRequest) {
             )
         }
 
+        // Delete old reviewed requests for same org+email to avoid unique constraint conflict
+        // (e.g., if user was previously rejected and requests again)
+        await supabase
+            .from('organization_requests')
+            .delete()
+            .eq('organization_id', orgId)
+            .eq('email', orgRequest.email)
+            .eq('status', status)
+            .neq('id', requestId)
+
         // Update the request status
         const { error: updateError } = await supabase
             .from('organization_requests')
