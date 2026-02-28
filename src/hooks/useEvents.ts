@@ -105,7 +105,7 @@ export function useEvents() {
     const fetchRegistrations = async (eventId: string): Promise<EventRegistration[]> => {
         try {
             const { data, error } = await registrationsTable()
-                .select('*')
+                .select('*, event_payment_proofs(*), event_tickets(*), event_rsvps(*)')
                 .eq('event_id', eventId)
                 .order('registered_at', { ascending: false })
 
