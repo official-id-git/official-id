@@ -88,17 +88,19 @@ export async function POST(request: NextRequest) {
         // Upload payment proof if provided
         if (payment_proof) {
             try {
-                // Upload to Cloudinary using REST API directly to avoid sdk issues
-                const formData = new URLSearchParams()
-                formData.append('file', payment_proof)
-                formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'official_id')
-                formData.append('folder', 'official-id/events/payment_proofs')
-
+                // Upload to Cloudinary using JSON payload for base64
                 const cloudinaryRes = await fetch(
                     `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
                     {
                         method: 'POST',
-                        body: formData,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            file: payment_proof,
+                            upload_preset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'official_id',
+                            folder: 'official-id/events/payment_proofs'
+                        }),
                     }
                 )
 
