@@ -219,14 +219,43 @@ export default function EventManagementPage() {
         }
     }
 
-    const handleStatusChange = async (regId: string, status: string) => {
-        const success = await updateRegistrationStatus(regId, status)
-        if (success && selectedEvent) {
-            const regs = await fetchRegistrations(selectedEvent.id)
-            setRegistrations(regs)
-            // Update counts
-            const count = await fetchRegistrationCount(selectedEvent.id)
-            setRegistrationCounts(prev => ({ ...prev, [selectedEvent.id]: count }))
+    const handleStatusChange = async (regId: string, newStatus: string, currentStatus: string) => {
+        if (newStatus === 'confirmed' && currentStatus === 'pending') {
+            if (!confirm('Ubah status menjadi Confirmed? Ini akan men-generate tiket dan mengirim email ke peserta.')) return
+
+            setApproving(true)
+            try {
+                const res = await fetch('/api/events/approve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ registration_ids: [regId] })
+                })
+                const data = await res.json()
+                if (res.ok) {
+                    if (selectedEvent) {
+                        const regs = await fetchRegistrations(selectedEvent.id)
+                        setRegistrations(regs)
+                        const count = await fetchRegistrationCount(selectedEvent.id)
+                        setRegistrationCounts(prev => ({ ...prev, [selectedEvent.id]: count }))
+                    }
+                } else {
+                    alert(data.error || 'Gagal menyetujui pendaftar')
+                }
+            } catch (error) {
+                console.error(error)
+                alert('Terjadi kesalahan')
+            } finally {
+                setApproving(false)
+            }
+        } else {
+            const success = await updateRegistrationStatus(regId, newStatus)
+            if (success && selectedEvent) {
+                const regs = await fetchRegistrations(selectedEvent.id)
+                setRegistrations(regs)
+                // Update counts
+                const count = await fetchRegistrationCount(selectedEvent.id)
+                setRegistrationCounts(prev => ({ ...prev, [selectedEvent.id]: count }))
+            }
         }
     }
 
@@ -733,7 +762,7 @@ export default function EventManagementPage() {
                                             <div className="flex items-center justify-end sm:block flex-shrink-0">
                                                 <select
                                                     value={reg.status}
-                                                    onChange={(e) => handleStatusChange(reg.id, e.target.value)}
+                                                    onChange={(e) => handleStatusChange(reg.id, e.target.value, reg.status)}
                                                     className={`px-3 py-1.5 rounded-lg text-sm font-medium border-0 focus:ring-0 ${reg.status === 'confirmed' ? 'bg-green-100 text-green-700'
                                                         : reg.status === 'pending' ? 'bg-yellow-100 text-yellow-700'
                                                             : 'bg-red-100 text-red-700'
