@@ -36,7 +36,14 @@ function LoginForm() {
 
   const handleGoogleLogin = async () => {
     try {
-      await signInWithGoogle()
+      const callbackUrl = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(redirectTo)}`
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: callbackUrl,
+        },
+      })
+      if (error) throw error
     } catch (err: any) {
       setError(err.message || 'Failed to login with Google')
     }
@@ -50,7 +57,7 @@ function LoginForm() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'linkedin_oidc',
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
+          redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(redirectTo)}`,
           // KITA PAKAI QUERYPARAMS (LEBIH KUAT DARI PADA 'SCOPES')
           queryParams: {
             // Paksa scope di sini. Perhatikan 'scope' (singular), bukan 'scopes'
