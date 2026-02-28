@@ -283,6 +283,47 @@ export default function OrganizationDetailPage() {
         </div>
       </div>
 
+      {/* Event Management Button - Between header and main content */}
+      {membership.isAdmin && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <Link
+            href={`/dashboard/organizations/${org.id}/events`}
+            className="group relative flex items-center gap-4 p-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] overflow-hidden"
+          >
+            {/* Animated background shimmer */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+
+            {/* Pulse ring */}
+            <div className="relative flex-shrink-0">
+              <div className="absolute inset-0 bg-white/30 rounded-xl animate-ping" style={{ animationDuration: '2s' }} />
+              <div className="relative w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-white group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                  <path d="M8 14h.01" />
+                  <path d="M12 14h.01" />
+                  <path d="M16 14h.01" />
+                  <path d="M8 18h.01" />
+                  <path d="M12 18h.01" />
+                  <path d="M16 18h.01" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <h3 className="text-white font-bold text-lg">Event Management</h3>
+              <p className="text-white/80 text-sm">Kelola event, peserta, dan pendaftaran</p>
+            </div>
+
+            <svg className="w-6 h-6 text-white/80 group-hover:translate-x-1 transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+        </div>
+      )}
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -426,8 +467,8 @@ export default function OrganizationDetailPage() {
                 <button
                   onClick={() => setActiveTab('members')}
                   className={`flex-1 py-2 px-4 rounded-xl text-sm font-medium transition-colors ${activeTab === 'members'
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-50'
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-gray-600 hover:bg-gray-50'
                     }`}
                 >
                   Members ({approvedCount})
@@ -435,8 +476,8 @@ export default function OrganizationDetailPage() {
                 <button
                   onClick={() => setActiveTab('requests')}
                   className={`flex-1 py-2 px-4 rounded-xl text-sm font-medium transition-colors ${activeTab === 'requests'
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-50'
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-gray-600 hover:bg-gray-50'
                     }`}
                 >
                   Join Requests
@@ -449,8 +490,8 @@ export default function OrganizationDetailPage() {
                 <button
                   onClick={() => setActiveTab('invitations')}
                   className={`flex-1 py-2 px-4 rounded-xl text-sm font-medium transition-colors ${activeTab === 'invitations'
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-50'
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-gray-600 hover:bg-gray-50'
                     }`}
                 >
                   Invitations

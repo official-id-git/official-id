@@ -6,8 +6,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { useOrganizations } from '@/hooks/useOrganizations'
+import { useEvents } from '@/hooks/useEvents'
 import SendMessageModal from '@/components/messages/SendMessageModal'
-import type { Organization, OrganizationMember } from '@/types'
+import type { Organization, OrganizationMember, CircleEvent } from '@/types'
 
 interface PublicCircleClientProps {
     circleUsername: string
@@ -19,6 +20,7 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
     const router = useRouter()
     const { user } = useAuth()
     const { fetchOrganization, fetchMembers, joinOrganization, checkMembership, loading } = useOrganizations()
+    const { fetchEvents, fetchRegistrationCount, registerForEvent } = useEvents()
     const { validateInput } = useSecurity()
 
     const [org, setOrg] = useState<Organization | null>(null)
@@ -42,6 +44,15 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
     // Message modal state
     const [messageModalOpen, setMessageModalOpen] = useState(false)
     const [selectedRecipient, setSelectedRecipient] = useState<{ id: string; name: string } | null>(null)
+
+    // Events state
+    const [circleEvents, setCircleEvents] = useState<CircleEvent[]>([])
+    const [eventCounts, setEventCounts] = useState<Record<string, number>>({})
+    const [showRegModal, setShowRegModal] = useState(false)
+    const [regEventId, setRegEventId] = useState<string | null>(null)
+    const [regForm, setRegForm] = useState({ name: '', email: '', phone: '', institution: '' })
+    const [regSubmitting, setRegSubmitting] = useState(false)
+    const [regSuccess, setRegSuccess] = useState(false)
 
     // Filtered and sorted members
     const filteredMembers = useMemo(() => {
@@ -109,6 +120,17 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                 const membersData = await fetchMembers(orgData.id)
                 const approvedMembers = membersData.filter(m => m.status === 'APPROVED')
                 setMembers(approvedMembers)
+            }
+
+            // Fetch events for this circle
+            if (orgData) {
+                const evts = await fetchEvents(orgData.id, 'upcoming')
+                setCircleEvents(evts)
+                const counts: Record<string, number> = {}
+                await Promise.all(evts.map(async (ev) => {
+                    counts[ev.id] = await fetchRegistrationCount(ev.id)
+                }))
+                setEventCounts(counts)
             }
 
             // Check user membership if logged in
@@ -368,6 +390,111 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                     </div>
                 </div>
 
+                {/* Upcoming Events Section */}
+                {circleEvents.length > 0 && (
+                    <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
+                        {/* Section Header */}
+                        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 p-6">
+                            <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                </svg>
+                                Event Mendatang
+                            </h2>
+                            <p className="text-white/80 text-sm mt-1">Jelajahi event menarik dari {org.name}</p>
+                        </div>
+
+                        <div className="p-6">
+                            {/* Featured Event (first) */}
+                            {circleEvents.length > 0 && (() => {
+                                const featured = circleEvents[0]
+                                const fCount = eventCounts[featured.id] || 0
+                                const fProgress = (fCount / featured.max_participants) * 100
+                                return (
+                                    <div className="mb-6 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-5 border border-blue-100">
+                                        <div className="flex flex-col sm:flex-row gap-5">
+                                            {featured.image_url && (
+                                                <img src={featured.image_url} alt={featured.title} className="w-full sm:w-48 h-36 object-cover rounded-xl" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                                            )}
+                                            <div className="flex-1">
+                                                <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium mb-2">{featured.category}</span>
+                                                <h3 className="text-xl font-bold text-gray-900 mb-1">{featured.title}</h3>
+                                                {featured.description && <p className="text-gray-600 text-sm line-clamp-2 mb-3">{featured.description}</p>}
+                                                <div className="flex flex-wrap gap-3 text-sm text-gray-600 mb-3">
+                                                    <span>📅 {new Date(featured.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                                                    <span>🕐 {featured.event_time?.substring(0, 5)} WIB</span>
+                                                    <span>{featured.type === 'online' ? '🎥 Online' : '📍 ' + (featured.location || 'Offline')}</span>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center justify-between text-sm mb-1">
+                                                            <span className="text-gray-500">🎟️ Pendaftar</span>
+                                                            <span className="font-semibold">{fCount}/{featured.max_participants}</span>
+                                                        </div>
+                                                        <div className="w-full bg-gray-200 rounded-full h-2">
+                                                            <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${Math.min(fProgress, 100)}%` }} />
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => { setRegEventId(featured.id); setRegForm({ name: '', email: '', phone: '', institution: '' }); setRegSuccess(false); setShowRegModal(true) }}
+                                                        className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors text-sm flex-shrink-0"
+                                                    >
+                                                        Daftar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            })()}
+
+                            {/* Other events grid */}
+                            {circleEvents.length > 1 && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {circleEvents.slice(1).map((event) => {
+                                        const eCount = eventCounts[event.id] || 0
+                                        const eProgress = (eCount / event.max_participants) * 100
+                                        return (
+                                            <div key={event.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+                                                {event.image_url && (
+                                                    <img src={event.image_url} alt={event.title} className="w-full h-36 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                                                )}
+                                                <div className="p-4">
+                                                    <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium mb-2">{event.category}</span>
+                                                    <h4 className="font-bold text-gray-900 mb-1">{event.title}</h4>
+                                                    <div className="space-y-1 text-sm text-gray-600 mb-3">
+                                                        <p>📅 {new Date(event.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                                                        <p>🕐 {event.event_time?.substring(0, 5)} WIB</p>
+                                                        <p>{event.type === 'online' ? '🎥 Online' : '📍 ' + (event.location || 'Offline')}</p>
+                                                    </div>
+                                                    <div className="mb-3">
+                                                        <div className="flex items-center justify-between text-xs mb-1">
+                                                            <span className="text-gray-500">Pendaftar</span>
+                                                            <span className="font-semibold">{eCount}/{event.max_participants}</span>
+                                                        </div>
+                                                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                                            <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${Math.min(eProgress, 100)}%` }} />
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => { setRegEventId(event.id); setRegForm({ name: '', email: '', phone: '', institution: '' }); setRegSuccess(false); setShowRegModal(true) }}
+                                                        className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors text-sm"
+                                                    >
+                                                        Daftar Sekarang
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Members List - Only show if public or if user is a member */}
                 {(org.is_public || isMember) && (
                     <div className="bg-white rounded-2xl shadow-lg p-6">
@@ -497,6 +624,89 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                     recipientId={selectedRecipient.id}
                     recipientName={selectedRecipient.name}
                 />
+            )}
+
+            {/* Event Registration Modal */}
+            {showRegModal && regEventId && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl max-w-md w-full">
+                        <div className="p-6 border-b">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-xl font-bold text-gray-900">Form Pendaftaran</h2>
+                                <button onClick={() => setShowRegModal(false)} className="text-gray-400 hover:text-gray-600">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <p className="text-sm text-gray-500 mt-1">{circleEvents.find(e => e.id === regEventId)?.title}</p>
+                        </div>
+
+                        {regSuccess ? (
+                            <div className="p-6 text-center">
+                                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-lg font-bold text-gray-900 mb-2">Pendaftaran Berhasil!</h3>
+                                <p className="text-gray-600 text-sm">Terima kasih telah mendaftar. Kami akan mengirimkan informasi lebih lanjut melalui email.</p>
+                                <button onClick={() => setShowRegModal(false)} className="mt-4 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors">
+                                    Tutup
+                                </button>
+                            </div>
+                        ) : (
+                            <form onSubmit={async (e) => {
+                                e.preventDefault()
+                                setRegSubmitting(true)
+                                try {
+                                    await registerForEvent({
+                                        event_id: regEventId,
+                                        user_id: user?.id || null,
+                                        name: regForm.name,
+                                        email: regForm.email,
+                                        phone: regForm.phone || null,
+                                        institution: regForm.institution || null,
+                                        status: 'pending',
+                                    })
+                                    setRegSuccess(true)
+                                    // Update count
+                                    const newCount = await fetchRegistrationCount(regEventId)
+                                    setEventCounts(prev => ({ ...prev, [regEventId]: newCount }))
+                                } catch (err: any) {
+                                    alert(err.message || 'Gagal mendaftar')
+                                } finally {
+                                    setRegSubmitting(false)
+                                }
+                            }} className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-900 mb-1">Nama Lengkap <span className="text-red-600">*</span></label>
+                                    <input type="text" required value={regForm.name} onChange={(e) => setRegForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-900 mb-1">Email <span className="text-red-600">*</span></label>
+                                    <input type="email" required value={regForm.email} onChange={(e) => setRegForm(prev => ({ ...prev, email: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-900 mb-1">Nomor Telepon</label>
+                                    <input type="tel" value={regForm.phone} onChange={(e) => setRegForm(prev => ({ ...prev, phone: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-900 mb-1">Institusi/Perusahaan</label>
+                                    <input type="text" value={regForm.institution} onChange={(e) => setRegForm(prev => ({ ...prev, institution: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                </div>
+                                <div className="flex gap-3 pt-2">
+                                    <button type="button" onClick={() => setShowRegModal(false)} className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors">
+                                        Batal
+                                    </button>
+                                    <button type="submit" disabled={regSubmitting} className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                                        {regSubmitting ? 'Mendaftar...' : 'Daftar'}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                </div>
             )}
         </div>
     )

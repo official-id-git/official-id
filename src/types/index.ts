@@ -95,3 +95,45 @@ export interface FormError {
   field: string
   message: string
 }
+
+// Event types
+export type EventType = 'online' | 'offline'
+export type EventStatus = 'upcoming' | 'past' | 'cancelled'
+export type RegistrationStatus = 'confirmed' | 'pending' | 'cancelled'
+
+export interface CircleEvent {
+  id: string
+  organization_id: string
+  created_by: string
+  title: string
+  description: string | null
+  category: string
+  event_date: string
+  event_time: string
+  type: EventType
+  status: EventStatus
+  location: string | null
+  google_map_url: string | null
+  zoom_link: string | null
+  max_participants: number
+  image_url: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type CircleEventInsert = Omit<CircleEvent, 'id' | 'created_at' | 'updated_at'>
+export type CircleEventUpdate = Partial<Omit<CircleEvent, 'id' | 'created_at' | 'updated_at'>>
+
+export interface EventRegistration {
+  id: string
+  event_id: string
+  user_id: string | null
+  name: string
+  email: string
+  phone: string | null
+  institution: string | null
+  status: RegistrationStatus
+  registered_at: string
+}
+
+export type EventRegistrationInsert = Omit<EventRegistration, 'id' | 'registered_at'>
