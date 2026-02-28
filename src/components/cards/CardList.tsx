@@ -82,6 +82,7 @@ export function CardList({ cards, onDelete }: CardListProps) {
                   width={64}
                   height={64}
                   className="w-16 h-16 rounded-full object-cover"
+                  unoptimized
                 />
               ) : (
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
@@ -125,6 +126,7 @@ export function CardList({ cards, onDelete }: CardListProps) {
                 width={120}
                 height={120}
                 className="w-28 h-28"
+                unoptimized
               />
             </div>
           )}

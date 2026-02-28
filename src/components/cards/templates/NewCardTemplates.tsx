@@ -61,7 +61,7 @@ export const MMBatch8Card = ({ card, visibleFields, socialLinks, onGenerateVCard
 
                 {card.profile_photo_url ? (
                     <div className="relative w-32 h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white">
-                        <Image src={card.profile_photo_url} alt={card.full_name} width={128} height={128} className="w-full h-full object-cover" />
+                        <Image src={card.profile_photo_url} alt={card.full_name} width={128} height={128} className="w-full h-full object-cover" unoptimized />
                     </div>
                 ) : (
                     <div className="relative w-32 h-32 rounded-full border-4 border-white shadow-xl bg-gradient-to-br from-blue-900 to-blue-600 flex items-center justify-center">
@@ -161,7 +161,7 @@ export const KabayanGroupCard = ({ card, visibleFields, socialLinks, onGenerateV
 
                 {card.profile_photo_url ? (
                     <div className="relative w-32 h-32 rounded-full border-4 border-black shadow-xl overflow-hidden bg-white">
-                        <Image src={card.profile_photo_url} alt={card.full_name} width={128} height={128} className="w-full h-full object-cover" />
+                        <Image src={card.profile_photo_url} alt={card.full_name} width={128} height={128} className="w-full h-full object-cover" unoptimized />
                     </div>
                 ) : (
                     <div className="relative w-32 h-32 rounded-full border-4 border-black shadow-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
@@ -277,7 +277,7 @@ export const MickeyCard = ({ card, visibleFields, socialLinks, onGenerateVCard, 
                 {/* Static inner content */}
                 {card.profile_photo_url ? (
                     <div className="relative w-32 h-32 rounded-3xl border-4 border-white shadow-xl overflow-hidden bg-white">
-                        <Image src={card.profile_photo_url} alt={card.full_name} width={128} height={128} className="w-full h-full object-cover" />
+                        <Image src={card.profile_photo_url} alt={card.full_name} width={128} height={128} className="w-full h-full object-cover" unoptimized />
                     </div>
                 ) : (
                     <div className="relative w-32 h-32 rounded-3xl border-4 border-white shadow-xl bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center">
@@ -402,7 +402,7 @@ export const BettyBoopCard = ({ card, visibleFields, socialLinks, onGenerateVCar
                 {/* Static inner content - border merah tua */}
                 {card.profile_photo_url ? (
                     <div className="relative w-32 h-32 rounded-full border-4 border-red-700 shadow-xl overflow-hidden bg-white">
-                        <Image src={card.profile_photo_url} alt={card.full_name} width={128} height={128} className="w-full h-full object-cover" />
+                        <Image src={card.profile_photo_url} alt={card.full_name} width={128} height={128} className="w-full h-full object-cover" unoptimized />
                     </div>
                 ) : (
                     <div className="relative w-32 h-32 rounded-full border-4 border-red-700 shadow-xl bg-gradient-to-br from-pink-400 to-red-500 flex items-center justify-center">
@@ -517,7 +517,7 @@ export const FelixTheCatCard = ({ card, visibleFields, socialLinks, onGenerateVC
                 {/* Static inner content */}
                 {card.profile_photo_url ? (
                     <div className="relative w-32 h-32 rounded-3xl border-4 border-red-600 shadow-xl overflow-hidden bg-white">
-                        <Image src={card.profile_photo_url} alt={card.full_name} width={128} height={128} className="w-full h-full object-cover" />
+                        <Image src={card.profile_photo_url} alt={card.full_name} width={128} height={128} className="w-full h-full object-cover" unoptimized />
                     </div>
                 ) : (
                     <div className="relative w-32 h-32 rounded-3xl border-4 border-red-600 shadow-xl bg-gradient-to-br from-gray-900 to-black flex items-center justify-center">

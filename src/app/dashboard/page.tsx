@@ -78,7 +78,24 @@ export default function DashboardPage() {
 
         <div className="relative z-10 flex items-center gap-4">
           {user.avatar_url ? (
-            <img src={user.avatar_url} alt={user.full_name} className="w-16 h-16 rounded-2xl object-cover border-2 border-white/20" />
+            <>
+              <img
+                src={user.avatar_url}
+                alt={user.full_name}
+                className="w-16 h-16 rounded-2xl object-cover border-2 border-white/20"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  target.style.display = 'none';
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl items-center justify-center border-2 border-white/20" style={{ display: 'none' }}>
+                <span className="text-white text-2xl font-bold">
+                  {user.full_name?.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            </>
           ) : (
             <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border-2 border-white/20">
               <span className="text-white text-2xl font-bold">

@@ -61,7 +61,7 @@ export function OrgList({ organizations, onDelete, showActions = true }: OrgList
             <div className="flex items-start gap-4">
               {org.logo_url ? (
                 <Image
-                  src={org.logo_url}
+                  src={org.logo_url} unoptimized
                   alt={org.name}
                   width={64}
                   height={64}

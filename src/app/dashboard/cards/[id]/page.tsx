@@ -246,7 +246,7 @@ export default function CardDetailPage() {
           {card.qr_code_url ? (
             <div className="flex flex-col items-center">
               <Image
-                src={card.qr_code_url}
+                src={card.qr_code_url} unoptimized
                 alt="QR Code"
                 width={180}
                 height={180}
@@ -520,7 +520,7 @@ export default function CardDetailPage() {
                 <div className="flex items-start gap-3 mb-4">
                   {card.profile_photo_url ? (
                     <Image
-                      src={card.profile_photo_url}
+                      src={card.profile_photo_url} unoptimized
                       alt={card.full_name}
                       width={48}
                       height={48}

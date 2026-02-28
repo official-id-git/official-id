@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import Image from 'next/image'
 import type { BusinessCard } from '@/types'
 
@@ -143,6 +143,11 @@ export function CardPreview({ card, template = 'professional', readonly = false 
                     width={96}
                     height={96}
                     className="relative w-24 h-24 rounded-full mx-auto border-4 border-white shadow-lg object-cover"
+                    unoptimized
+                    onError={(e) => {
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
                   />
                 </div>
               ) : (
@@ -278,6 +283,11 @@ export function CardPreview({ card, template = 'professional', readonly = false 
                   width={80}
                   height={80}
                   className="w-20 h-20 rounded-2xl object-cover"
+                  unoptimized
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
                 />
               ) : (
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
@@ -395,6 +405,11 @@ export function CardPreview({ card, template = 'professional', readonly = false 
                 width={80}
                 height={80}
                 className="w-20 h-20 rounded-full mx-auto object-cover"
+                unoptimized
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
               />
             ) : (
               <div className="w-20 h-20 rounded-full mx-auto bg-gray-200 flex items-center justify-center">

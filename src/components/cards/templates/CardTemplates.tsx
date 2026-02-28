@@ -48,7 +48,7 @@ export const ModernDarkCard = ({ card, visibleFields, socialLinks, onGenerateVCa
             <div className="flex flex-col items-center">
                 {card.profile_photo_url ? (
                     <Image
-                        src={card.profile_photo_url}
+                        src={card.profile_photo_url} unoptimized
                         alt={card.full_name}
                         width={128}
                         height={128}
@@ -148,7 +148,7 @@ export const CreativeCard = ({ card, visibleFields, socialLinks, onGenerateVCard
             <div className="flex items-start gap-6">
                 {card.profile_photo_url ? (
                     <Image
-                        src={card.profile_photo_url}
+                        src={card.profile_photo_url} unoptimized
                         alt={card.full_name}
                         width={112}
                         height={112}
@@ -259,7 +259,7 @@ export const MinimalWhiteCard = ({ card, visibleFields, socialLinks, onGenerateV
             <div className="flex flex-col items-center text-center">
                 {card.profile_photo_url ? (
                     <Image
-                        src={card.profile_photo_url}
+                        src={card.profile_photo_url} unoptimized
                         alt={card.full_name}
                         width={96}
                         height={96}
@@ -366,7 +366,7 @@ export const ElegantCard = ({ card, visibleFields, socialLinks, onGenerateVCard,
         <div className="relative -mt-20 px-8 pb-8">
             {card.profile_photo_url ? (
                 <Image
-                    src={card.profile_photo_url}
+                    src={card.profile_photo_url} unoptimized
                     alt={card.full_name}
                     width={128}
                     height={128}
@@ -482,7 +482,7 @@ export const CorporateCard = ({ card, visibleFields, socialLinks, onGenerateVCar
             <div className="flex items-center gap-6">
                 {card.profile_photo_url ? (
                     <Image
-                        src={card.profile_photo_url}
+                        src={card.profile_photo_url} unoptimized
                         alt={card.full_name}
                         width={80}
                         height={80}
@@ -586,7 +586,7 @@ export const TechCard = ({ card, visibleFields, socialLinks, onGenerateVCard, re
                         <div className="relative">
                             <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-lg blur animate-pulse" />
                             <Image
-                                src={card.profile_photo_url}
+                                src={card.profile_photo_url} unoptimized
                                 alt={card.full_name}
                                 width={96}
                                 height={96}
@@ -720,7 +720,7 @@ export const ArtisticCard = ({ card, visibleFields, socialLinks, onGenerateVCard
                     <div className="relative">
                         <div className="absolute -inset-2 bg-gradient-to-r from-rose-400 via-purple-400 to-indigo-400 rounded-full animate-spin-slow opacity-50 blur-sm" />
                         <Image
-                            src={card.profile_photo_url}
+                            src={card.profile_photo_url} unoptimized
                             alt={card.full_name}
                             width={128}
                             height={128}
@@ -844,7 +844,7 @@ export const LuxuryCard = ({ card, visibleFields, socialLinks, onGenerateVCard, 
                         <div className="relative">
                             <div className="absolute -inset-2 bg-gradient-to-r from-yellow-600 to-yellow-500 rounded-full blur-sm" />
                             <Image
-                                src={card.profile_photo_url}
+                                src={card.profile_photo_url} unoptimized
                                 alt={card.full_name}
                                 width={112}
                                 height={112}
@@ -968,7 +968,7 @@ export const VibrantCard = ({ card, visibleFields, socialLinks, onGenerateVCard,
                     <div className="relative">
                         <div className="absolute -inset-3 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-3xl blur-lg animate-pulse" />
                         <Image
-                            src={card.profile_photo_url}
+                            src={card.profile_photo_url} unoptimized
                             alt={card.full_name}
                             width={128}
                             height={128}

@@ -205,7 +205,7 @@ export default function UserManagementPage() {
                         <div className="flex items-center gap-3">
                           {u.avatar_url ? (
                             <Image
-                              src={u.avatar_url}
+                              src={u.avatar_url} unoptimized
                               alt={u.full_name || ''}
                               width={40}
                               height={40}

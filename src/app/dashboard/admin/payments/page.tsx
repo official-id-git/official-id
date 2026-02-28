@@ -197,7 +197,7 @@ export default function PaymentVerificationPage() {
                     {/* User Avatar */}
                     {payment.users?.avatar_url ? (
                       <Image
-                        src={payment.users.avatar_url}
+                        src={payment.users.avatar_url} unoptimized
                         alt={payment.users.full_name || ''}
                         width={48}
                         height={48}

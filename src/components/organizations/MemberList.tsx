@@ -157,7 +157,7 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
     if (user?.avatar_url) {
       return (
         <Image
-          src={user.avatar_url}
+          src={user.avatar_url} unoptimized
           alt={user.full_name || 'Avatar'}
           width={size === 'lg' ? 64 : size === 'md' ? 40 : 32}
           height={size === 'lg' ? 64 : size === 'md' ? 40 : 32}

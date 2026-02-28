@@ -241,7 +241,7 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                         <div className="absolute -top-16 left-6">
                             {org.logo_url ? (
                                 <div className="w-32 h-32 rounded-2xl overflow-hidden border-4 border-white shadow-xl">
-                                    <Image src={org.logo_url} alt={org.name} width={128} height={128} className="w-full h-full object-cover" />
+                                    <Image src={org.logo_url} unoptimized alt={org.name} width={128} height={128} className="w-full h-full object-cover" />
                                 </div>
                             ) : (
                                 <div className="w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-500 rounded-2xl border-4 border-white shadow-xl flex items-center justify-center">
