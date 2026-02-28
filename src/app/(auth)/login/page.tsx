@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -15,6 +15,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const { signIn, signInWithGoogle } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirect') || '/dashboard'
   const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,7 +26,7 @@ export default function LoginPage() {
 
     try {
       await signIn(email, password)
-      router.push('/dashboard')
+      router.push(redirectTo)
     } catch (err: any) {
       setError(err.message || 'Failed to login. Check your email and password.')
     } finally {
@@ -330,5 +332,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2D7C88]" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

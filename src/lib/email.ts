@@ -694,3 +694,156 @@ export function getCircleRequestUserConfirmationTemplate(data: {
     `
   }
 }
+
+// ----------------------------------------------------------------------
+// Event Registration Templates
+// ----------------------------------------------------------------------
+
+export function getEventRegistrationConfirmationTemplate(data: {
+  participantName: string
+  eventTitle: string
+  eventDate: string
+  eventTime: string
+  eventType: 'online' | 'offline'
+  eventLocation?: string
+  zoomLink?: string
+  organizationName: string
+  circleUrl: string
+}): { subject: string; html: string } {
+  const year = new Date().getFullYear()
+  const formattedDate = new Date(data.eventDate).toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+  const formattedTime = data.eventTime?.substring(0, 5)
+
+  return {
+    subject: `✅ Pendaftaran Berhasil - ${data.eventTitle}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.08);">
+                
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #2D7C88 0%, #1A5A66 100%); padding: 35px 30px; text-align: center;">
+                    <img src="https://res.cloudinary.com/dhr9kt7r5/image/upload/v1766548116/official-id/circles/dopjzc11o9fpqdfde63b.png" alt="Official ID" width="50" height="50" style="margin-bottom: 12px;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 700;">Pendaftaran Event Berhasil!</h1>
+                    <p style="margin: 8px 0 0; color: rgba(255,255,255,0.85); font-size: 14px;">Official ID - ${data.organizationName}</p>
+                  </td>
+                </tr>
+                
+                <!-- Greeting -->
+                <tr>
+                  <td style="padding: 35px 30px 0;">
+                    <p style="margin: 0 0 16px; color: #374151; font-size: 16px; line-height: 1.6;">
+                      Halo <strong>${data.participantName}</strong> 👋
+                    </p>
+                    <p style="margin: 0; color: #374151; font-size: 16px; line-height: 1.6;">
+                      Terima kasih telah mendaftar! Pendaftaran Anda untuk event berikut telah kami terima.
+                    </p>
+                  </td>
+                </tr>
+                
+                <!-- Event Detail Card -->
+                <tr>
+                  <td style="padding: 25px 30px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(135deg, #f0f9ff 0%, #eff6ff 100%); border-radius: 16px; border: 1px solid #bfdbfe; overflow: hidden;">
+                      <tr>
+                        <td style="padding: 24px;">
+                          <h2 style="margin: 0 0 16px; color: #1e3a5f; font-size: 20px; font-weight: 700;">📋 ${data.eventTitle}</h2>
+                          
+                          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td style="padding: 8px 0; vertical-align: top; width: 30px;">
+                                <span style="font-size: 16px;">📅</span>
+                              </td>
+                              <td style="padding: 8px 0;">
+                                <p style="margin: 0; color: #374151; font-size: 15px;"><strong>Tanggal:</strong> ${formattedDate}</p>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 8px 0; vertical-align: top; width: 30px;">
+                                <span style="font-size: 16px;">🕐</span>
+                              </td>
+                              <td style="padding: 8px 0;">
+                                <p style="margin: 0; color: #374151; font-size: 15px;"><strong>Waktu:</strong> ${formattedTime} WIB</p>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 8px 0; vertical-align: top; width: 30px;">
+                                <span style="font-size: 16px;">${data.eventType === 'online' ? '🎥' : '📍'}</span>
+                              </td>
+                              <td style="padding: 8px 0;">
+                                <p style="margin: 0; color: #374151; font-size: 15px;">
+                                  <strong>${data.eventType === 'online' ? 'Online' : 'Lokasi'}:</strong> 
+                                  ${data.eventType === 'online' ? 'Event Online' : (data.eventLocation || 'TBA')}
+                                </p>
+                              </td>
+                            </tr>
+                          </table>
+                          
+                          ${data.eventType === 'online' && data.zoomLink ? `
+                          <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #bfdbfe;">
+                            <a href="${data.zoomLink}" target="_blank" style="display: inline-block; background: #2563EB; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 10px 20px; border-radius: 8px;">
+                              🔗 Buka Link Zoom
+                            </a>
+                          </div>
+                          ` : ''}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                
+                <!-- Status -->
+                <tr>
+                  <td style="padding: 0 30px 25px;">
+                    <div style="background: #f0fdf4; border-radius: 12px; padding: 16px; border-left: 4px solid #10B981;">
+                      <p style="margin: 0 0 6px; color: #166534; font-weight: 600;">Status Pendaftaran</p>
+                      <p style="margin: 0; color: #374151; font-size: 14px;">Pendaftaran Anda sedang menunggu konfirmasi dari penyelenggara. Anda akan menerima email konfirmasi kehadiran saat disetujui.</p>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- CTA -->
+                <tr>
+                  <td style="padding: 0 30px 30px; text-align: center;">
+                    <a href="${data.circleUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #2D7C88 0%, #1A5A66 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 14px 32px; border-radius: 12px; box-shadow: 0 4px 15px rgba(45, 124, 136, 0.35);">
+                      Lihat Halaman Circle
+                    </a>
+                  </td>
+                </tr>
+                
+                <!-- Footer -->
+                <tr>
+                  <td style="background: #f9fafb; padding: 25px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                    <p style="margin: 0 0 8px;">
+                      <a href="https://official.id" style="color: #2D7C88; text-decoration: none; font-weight: 600; font-size: 14px;">official.id</a>
+                    </p>
+                    <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                      © ${year} Official ID. Digital Ecosystem for Professionals.
+                    </p>
+                  </td>
+                </tr>
+                
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `
+  }
+}
+

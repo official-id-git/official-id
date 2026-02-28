@@ -439,7 +439,21 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                                         </div>
                                                     </div>
                                                     <button
-                                                        onClick={() => { setRegEventId(featured.id); setRegForm({ name: '', email: '', phone: '', institution: '' }); setRegSuccess(false); setShowRegModal(true) }}
+                                                        onClick={() => {
+                                                            if (!user) {
+                                                                router.push(`/login?redirect=/o/${circleUsername}`)
+                                                                return
+                                                            }
+                                                            setRegEventId(featured.id)
+                                                            setRegForm({
+                                                                name: user.full_name || '',
+                                                                email: user.email || '',
+                                                                phone: '',
+                                                                institution: '',
+                                                            })
+                                                            setRegSuccess(false)
+                                                            setShowRegModal(true)
+                                                        }}
                                                         className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors text-sm flex-shrink-0"
                                                     >
                                                         Daftar
@@ -480,7 +494,21 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                                         </div>
                                                     </div>
                                                     <button
-                                                        onClick={() => { setRegEventId(event.id); setRegForm({ name: '', email: '', phone: '', institution: '' }); setRegSuccess(false); setShowRegModal(true) }}
+                                                        onClick={() => {
+                                                            if (!user) {
+                                                                router.push(`/login?redirect=/o/${circleUsername}`)
+                                                                return
+                                                            }
+                                                            setRegEventId(event.id)
+                                                            setRegForm({
+                                                                name: user.full_name || '',
+                                                                email: user.email || '',
+                                                                phone: '',
+                                                                institution: '',
+                                                            })
+                                                            setRegSuccess(false)
+                                                            setShowRegModal(true)
+                                                        }}
                                                         className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors text-sm"
                                                     >
                                                         Daftar Sekarang
@@ -650,7 +678,7 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                     </svg>
                                 </div>
                                 <h3 className="text-lg font-bold text-gray-900 mb-2">Pendaftaran Berhasil!</h3>
-                                <p className="text-gray-600 text-sm">Terima kasih telah mendaftar. Kami akan mengirimkan informasi lebih lanjut melalui email.</p>
+                                <p className="text-gray-600 text-sm">Terima kasih telah mendaftar. Email konfirmasi telah dikirim ke <strong>{regForm.email}</strong>.</p>
                                 <button onClick={() => setShowRegModal(false)} className="mt-4 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors">
                                     Tutup
                                 </button>
@@ -660,19 +688,23 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                 e.preventDefault()
                                 setRegSubmitting(true)
                                 try {
-                                    await registerForEvent({
-                                        event_id: regEventId,
-                                        user_id: user?.id || null,
-                                        name: regForm.name,
-                                        email: regForm.email,
-                                        phone: regForm.phone || null,
-                                        institution: regForm.institution || null,
-                                        status: 'pending',
+                                    const res = await fetch('/api/events/register', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            event_id: regEventId,
+                                            name: regForm.name,
+                                            email: regForm.email,
+                                            phone: regForm.phone || null,
+                                            institution: regForm.institution || null,
+                                        }),
                                     })
+                                    const data = await res.json()
+                                    if (!res.ok) throw new Error(data.error || 'Gagal mendaftar')
                                     setRegSuccess(true)
                                     // Update count
-                                    const newCount = await fetchRegistrationCount(regEventId)
-                                    setEventCounts(prev => ({ ...prev, [regEventId]: newCount }))
+                                    const newCount = await fetchRegistrationCount(regEventId!)
+                                    setEventCounts(prev => ({ ...prev, [regEventId!]: newCount }))
                                 } catch (err: any) {
                                     alert(err.message || 'Gagal mendaftar')
                                 } finally {
