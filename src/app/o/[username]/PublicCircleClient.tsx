@@ -66,7 +66,7 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
     const [eventCounts, setEventCounts] = useState<Record<string, number>>({})
     const [showRegModal, setShowRegModal] = useState(false)
     const [regEventId, setRegEventId] = useState<string | null>(null)
-    const [regForm, setRegForm] = useState({ name: '', email: '', phone: '', institution: '' })
+    const [regForm, setRegForm] = useState({ name: '', email: '', phone: '', institution: '', payment_proof: '' })
     const [regSubmitting, setRegSubmitting] = useState(false)
     const [regSuccess, setRegSuccess] = useState(false)
 
@@ -546,6 +546,7 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                                                 email: user.email || '',
                                                                 phone: user.phone || '',
                                                                 institution: user.company || '',
+                                                                payment_proof: '',
                                                             })
                                                             setRegSuccess(false)
                                                             setShowRegModal(true)
@@ -601,6 +602,7 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                                                 email: user.email || '',
                                                                 phone: user.phone || '',
                                                                 institution: user.company || '',
+                                                                payment_proof: '',
                                                             })
                                                             setRegSuccess(false)
                                                             setShowRegModal(true)
@@ -793,6 +795,7 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                             email: regForm.email,
                                             phone: regForm.phone || null,
                                             institution: regForm.institution || null,
+                                            payment_proof: regForm.payment_proof || null,
                                         }),
                                     })
                                     const data = await res.json()
@@ -822,6 +825,27 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-900 mb-1">Institusi/Perusahaan</label>
                                     <input type="text" value={regForm.institution} onChange={(e) => setRegForm(prev => ({ ...prev, institution: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-900 mb-1">Bukti Pembayaran (Opsional)</label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0]
+                                            if (file) {
+                                                const reader = new FileReader()
+                                                reader.onloadend = () => {
+                                                    setRegForm(prev => ({ ...prev, payment_proof: reader.result as string }))
+                                                }
+                                                reader.readAsDataURL(file)
+                                            } else {
+                                                setRegForm(prev => ({ ...prev, payment_proof: '' }))
+                                            }
+                                        }}
+                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">Format: JPG, PNG. Sertakan jika event ini mewajibkan biaya registrasi.</p>
                                 </div>
                                 <div className="flex gap-3 pt-2">
                                     <button type="button" onClick={() => setShowRegModal(false)} className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors">
