@@ -706,9 +706,9 @@ export function getEventRegistrationConfirmationTemplate(data: {
   eventTime: string
   eventType: 'online' | 'offline'
   eventLocation?: string
-  zoomLink?: string
   organizationName: string
   circleUrl: string
+  paymentProofUrl?: string
 }): { subject: string; html: string } {
   const year = new Date().getFullYear()
   const formattedDate = new Date(data.eventDate).toLocaleDateString('id-ID', {
@@ -793,10 +793,11 @@ export function getEventRegistrationConfirmationTemplate(data: {
                             </tr>
                           </table>
                           
-                          ${data.eventType === 'online' && data.zoomLink ? `
+                          ${data.paymentProofUrl ? `
                           <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #bfdbfe;">
-                            <a href="${data.zoomLink}" target="_blank" style="display: inline-block; background: #2563EB; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 10px 20px; border-radius: 8px;">
-                              🔗 Buka Link Zoom
+                            <p style="margin: 0 0 8px; color: #374151; font-size: 14px;"><strong>Bukti Bayar / Lampiran:</strong></p>
+                            <a href="${data.paymentProofUrl}" target="_blank" style="display: inline-block; background: #e0f2fe; color: #0284c7; text-decoration: none; font-size: 14px; font-weight: 600; padding: 8px 16px; border-radius: 8px;">
+                              📎 Lihat Bukti Upload
                             </a>
                           </div>
                           ` : ''}
@@ -847,3 +848,160 @@ export function getEventRegistrationConfirmationTemplate(data: {
   }
 }
 
+// ----------------------------------------------------------------------
+// Event Approval Template (V2)
+// ----------------------------------------------------------------------
+
+export function getEventApprovalTemplate(data: {
+  participantName: string
+  eventTitle: string
+  eventDate: string
+  eventTime: string
+  eventType: 'online' | 'offline'
+  eventLocation?: string
+  zoomLink?: string
+  ticketNumber: string
+  organizationName: string
+  circleUrl: string
+}): { subject: string; html: string } {
+  const year = new Date().getFullYear()
+  const formattedDate = new Date(data.eventDate).toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+  const formattedTime = data.eventTime?.substring(0, 5)
+
+  return {
+    subject: `🎟️ Tiket Event Disetujui - ${data.eventTitle}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.08);">
+                
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 35px 30px; text-align: center;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">🎟️ Tiket Event Anda</h1>
+                    <p style="margin: 8px 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">Official ID - ${data.organizationName}</p>
+                  </td>
+                </tr>
+                
+                <!-- Greeting -->
+                <tr>
+                  <td style="padding: 35px 30px 0;">
+                    <p style="margin: 0 0 16px; color: #374151; font-size: 16px; line-height: 1.6;">
+                      Halo <strong>${data.participantName}</strong> 👋
+                    </p>
+                    <p style="margin: 0; color: #374151; font-size: 16px; line-height: 1.6;">
+                      Selamat! Pendaftaran Anda untuk event <strong>${data.eventTitle}</strong> telah disetujui. Berikut adalah detail tiket Anda:
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Ticket Info -->
+                <tr>
+                  <td style="padding: 25px 30px 10px;">
+                    <div style="background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px; text-align: center;">
+                      <p style="margin: 0 0 4px; color: #64748b; font-size: 12px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">NOMOR TIKET</p>
+                      <p style="margin: 0; color: #0f172a; font-size: 28px; font-weight: 800; font-family: monospace; letter-spacing: 2px;">${data.ticketNumber}</p>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- Event Detail Card -->
+                <tr>
+                  <td style="padding: 15px 30px 25px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">
+                      <tr>
+                        <td style="padding: 20px;">
+                          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td style="padding: 6px 0; vertical-align: top; width: 30px;">
+                                <span style="font-size: 16px;">📅</span>
+                              </td>
+                              <td style="padding: 6px 0;">
+                                <p style="margin: 0; color: #374151; font-size: 15px;"><strong>Tanggal:</strong> ${formattedDate}</p>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 6px 0; vertical-align: top; width: 30px;">
+                                <span style="font-size: 16px;">🕐</span>
+                              </td>
+                              <td style="padding: 6px 0;">
+                                <p style="margin: 0; color: #374151; font-size: 15px;"><strong>Waktu:</strong> ${formattedTime} WIB</p>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 6px 0; vertical-align: top; width: 30px;">
+                                <span style="font-size: 16px;">${data.eventType === 'online' ? '🎥' : '📍'}</span>
+                              </td>
+                              <td style="padding: 6px 0;">
+                                <p style="margin: 0; color: #374151; font-size: 15px;">
+                                  <strong>${data.eventType === 'online' ? 'Online' : 'Lokasi'}:</strong> 
+                                  ${data.eventType === 'online' ? 'Zoom Meeting' : (data.eventLocation || 'TBA')}
+                                </p>
+                              </td>
+                            </tr>
+                          </table>
+                          
+                          ${data.eventType === 'online' && data.zoomLink ? `
+                          <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+                            <a href="${data.zoomLink}" target="_blank" style="display: block; text-align: center; background: #2563eb; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 12px 20px; border-radius: 8px;">
+                              📹 Buka Link Zoom Sekarang
+                            </a>
+                            <p style="margin: 8px 0 0; text-align: center; color: #64748b; font-size: 12px;">Link alternatif: <a href="${data.zoomLink}" style="color: #2563eb; word-break: break-all;">${data.zoomLink}</a></p>
+                          </div>
+                          ` : ''}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                
+                <!-- Status -->
+                <tr>
+                  <td style="padding: 0 30px 25px;">
+                    <div style="background: #fffbeb; border-radius: 12px; padding: 16px; border-left: 4px solid #f59e0b;">
+                      <p style="margin: 0 0 6px; color: #b45309; font-weight: 700; font-size: 15px;">⚠️ Konfirmasi Kehadiran (RSVP)</p>
+                      <p style="margin: 0; color: #78350f; font-size: 14px; line-height: 1.5;">Mohon luangkan waktu sebentar untuk mengonfirmasi kehadiran Anda pada link di bawah ini agar penyelenggara dapat mempersiapkan acara dengan lebih baik.</p>
+                      
+                      <div style="margin-top: 16px; text-align: center;">
+                        <a href="${data.circleUrl}?rsvp=${data.ticketNumber}" target="_blank" style="display: inline-block; background: #f59e0b; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 10px 24px; border-radius: 8px;">
+                          Buka Halaman RSVP
+                        </a>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- Footer -->
+                <tr>
+                  <td style="background: #f9fafb; padding: 25px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                    <p style="margin: 0 0 8px;">
+                      <a href="https://official.id" style="color: #2D7C88; text-decoration: none; font-weight: 600; font-size: 14px;">official.id</a>
+                    </p>
+                    <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                      © ${year} Official ID. Digital Ecosystem for Professionals.
+                    </p>
+                  </td>
+                </tr>
+                
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `
+  }
+}

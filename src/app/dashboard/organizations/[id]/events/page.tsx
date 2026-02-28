@@ -55,6 +55,8 @@ export default function EventManagementPage() {
     const [selectedEvent, setSelectedEvent] = useState<CircleEvent | null>(null)
     const [registrations, setRegistrations] = useState<EventRegistration[]>([])
     const [regLoading, setRegLoading] = useState(false)
+    const [selectedRegs, setSelectedRegs] = useState<string[]>([])
+    const [approving, setApproving] = useState(false)
 
     useEffect(() => {
         loadData()
@@ -178,9 +180,43 @@ export default function EventManagementPage() {
         setSelectedEvent(event)
         setRegLoading(true)
         setShowParticipantsModal(true)
+        setSelectedRegs([]) // Reset selection
         const regs = await fetchRegistrations(event.id)
         setRegistrations(regs)
         setRegLoading(false)
+    }
+
+    const handleBulkApprove = async () => {
+        if (selectedRegs.length === 0) return
+        if (!confirm(`Yakin ingin menyetujui ${selectedRegs.length} pendaftar?`)) return
+
+        setApproving(true)
+        try {
+            const res = await fetch('/api/events/approve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ registration_ids: selectedRegs })
+            })
+            const data = await res.json()
+            if (res.ok) {
+                alert(data.message)
+                setSelectedRegs([])
+                if (selectedEvent) {
+                    const regs = await fetchRegistrations(selectedEvent.id)
+                    setRegistrations(regs)
+                    // Update main view reg count (confirmed only or all? We count all usually, but up to you. We'll refresh counts.)
+                    const count = await fetchRegistrationCount(selectedEvent.id)
+                    setRegistrationCounts(prev => ({ ...prev, [selectedEvent.id]: count }))
+                }
+            } else {
+                alert(data.error || 'Gagal menyetujui pendaftar')
+            }
+        } catch (error) {
+            console.error(error)
+            alert('Terjadi kesalahan')
+        } finally {
+            setApproving(false)
+        }
     }
 
     const handleStatusChange = async (regId: string, status: string) => {
@@ -624,33 +660,105 @@ export default function EventManagementPage() {
                                             <p className="text-2xl font-bold text-yellow-600">{registrations.filter(r => r.status === 'pending').length}</p>
                                             <p className="text-xs text-yellow-700">Pending</p>
                                         </div>
-                                        <div className="bg-red-50 rounded-xl p-3 text-center">
+                                        <div className="bg-red-50 rounded-xl p-3 text-center flex-1">
                                             <p className="text-2xl font-bold text-red-600">{registrations.filter(r => r.status === 'cancelled').length}</p>
                                             <p className="text-xs text-red-700">Cancelled</p>
                                         </div>
                                     </div>
 
+                                    {/* Bulk Actions */}
+                                    {registrations.some(r => r.status === 'pending') && (
+                                        <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-200">
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                    onChange={(e) => {
+                                                        const pendingIds = registrations.filter(r => r.status === 'pending').map(r => r.id)
+                                                        setSelectedRegs(e.target.checked ? pendingIds : [])
+                                                    }}
+                                                    checked={
+                                                        registrations.filter(r => r.status === 'pending').length > 0 &&
+                                                        selectedRegs.length === registrations.filter(r => r.status === 'pending').length
+                                                    }
+                                                />
+                                                <span className="text-sm font-medium text-gray-700">Pilih Semua ({registrations.filter(r => r.status === 'pending').length})</span>
+                                            </div>
+                                            <button
+                                                onClick={handleBulkApprove}
+                                                disabled={selectedRegs.length === 0 || approving}
+                                                className="px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                                            >
+                                                {approving ? 'Memproses...' : `Setujui Terpilih (${selectedRegs.length})`}
+                                            </button>
+                                        </div>
+                                    )}
+
                                     {/* List */}
                                     {registrations.map((reg) => (
-                                        <div key={reg.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                                            <div className="min-w-0 flex-1">
-                                                <p className="font-semibold text-gray-900">{reg.name}</p>
-                                                <p className="text-sm text-gray-500">{reg.email}</p>
-                                                {reg.phone && <p className="text-sm text-gray-400">{reg.phone}</p>}
-                                                {reg.institution && <p className="text-sm text-gray-400">{reg.institution}</p>}
+                                        <div key={reg.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 rounded-xl gap-4">
+                                            <div className="flex items-start gap-3 min-w-0 flex-1">
+                                                {reg.status === 'pending' && (
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1 flex-shrink-0"
+                                                        checked={selectedRegs.includes(reg.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedRegs([...selectedRegs, reg.id])
+                                                            } else {
+                                                                setSelectedRegs(selectedRegs.filter(id => id !== reg.id))
+                                                            }
+                                                        }}
+                                                    />
+                                                )}
+                                                <div>
+                                                    <p className="font-semibold text-gray-900">{reg.name}</p>
+                                                    <p className="text-sm text-gray-500">{reg.email}</p>
+                                                    <div className="flex flex-wrap gap-x-2 mt-1">
+                                                        {reg.phone && <span className="text-xs text-gray-500">📞 {reg.phone}</span>}
+                                                        {reg.institution && <span className="text-xs text-gray-500">🏢 {reg.institution}</span>}
+                                                    </div>
+
+                                                    {/* Payment Proof Link */}
+                                                    {reg.event_payment_proofs && reg.event_payment_proofs.length > 0 && (
+                                                        <div className="mt-2">
+                                                            <a href={reg.event_payment_proofs[0].image_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded hover:bg-blue-100 transition-colors">
+                                                                📎 Lihat Bukti Bayar
+                                                            </a>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <select
-                                                value={reg.status}
-                                                onChange={(e) => handleStatusChange(reg.id, e.target.value)}
-                                                className={`px-3 py-1.5 rounded-lg text-sm font-medium border-0 ${reg.status === 'confirmed' ? 'bg-green-100 text-green-700'
+                                            <div className="flex items-center justify-end sm:block flex-shrink-0">
+                                                <select
+                                                    value={reg.status}
+                                                    onChange={(e) => handleStatusChange(reg.id, e.target.value)}
+                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium border-0 focus:ring-0 ${reg.status === 'confirmed' ? 'bg-green-100 text-green-700'
                                                         : reg.status === 'pending' ? 'bg-yellow-100 text-yellow-700'
                                                             : 'bg-red-100 text-red-700'
-                                                    }`}
-                                            >
-                                                <option value="confirmed">Confirmed</option>
-                                                <option value="pending">Pending</option>
-                                                <option value="cancelled">Cancelled</option>
-                                            </select>
+                                                        }`}
+                                                >
+                                                    <option value="confirmed">Confirmed</option>
+                                                    <option value="pending">Pending</option>
+                                                    <option value="cancelled">Cancelled</option>
+                                                </select>
+
+                                                {/* Ticket info if confirmed */}
+                                                {reg.status === 'confirmed' && reg.event_tickets && reg.event_tickets.length > 0 && (
+                                                    <p className="text-xs font-medium text-gray-500 text-right mt-1.5">
+                                                        🎫 {reg.event_tickets[0].ticket_number}
+                                                    </p>
+                                                )}
+
+                                                {/* RSVP Status */}
+                                                {reg.status === 'confirmed' && reg.event_rsvps && reg.event_rsvps.length > 0 && (
+                                                    <p className="text-xs font-medium text-purple-600 text-right mt-1">
+                                                        {reg.event_rsvps[0].status === 'Hadir Tepat Waktu' ? '✅ Hadir' :
+                                                            reg.event_rsvps[0].status === 'Hadir Terlambat' ? '⏳ Terlambat' : '❌ Tidak Hadir'}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

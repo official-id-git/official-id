@@ -8,7 +8,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { event_id, name, email, phone, institution } = body
+        const { event_id, name, email, phone, institution, payment_proof } = body
 
         if (!event_id || !name || !email) {
             return NextResponse.json(
@@ -83,6 +83,52 @@ export async function POST(request: NextRequest) {
             )
         }
 
+        let paymentProofUrl: string | undefined
+
+        // Upload payment proof if provided
+        if (payment_proof) {
+            try {
+                // Upload to Cloudinary using REST API directly to avoid sdk issues
+                const formData = new URLSearchParams()
+                formData.append('file', payment_proof)
+                formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'official_id')
+                formData.append('folder', 'official-id/events/payment_proofs')
+
+                const cloudinaryRes = await fetch(
+                    `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+                    {
+                        method: 'POST',
+                        body: formData,
+                    }
+                )
+
+                if (!cloudinaryRes.ok) {
+                    const errorText = await cloudinaryRes.text()
+                    console.error('Cloudinary upload error:', errorText)
+                    throw new Error('Gagal upload bukti bayar')
+                }
+
+                const cloudData = await cloudinaryRes.json()
+                paymentProofUrl = cloudData.secure_url
+
+                // Save to event_payment_proofs table
+                const { error: proofError } = await supabase
+                    .from('event_payment_proofs')
+                    .insert({
+                        registration_id: registration.id,
+                        image_url: paymentProofUrl,
+                    })
+
+                if (proofError) {
+                    console.error('Save payment proof error:', proofError)
+                    // We don't fail the whole request if saving proof fails, but we should log it
+                }
+            } catch (err) {
+                console.error('Payment proof processing error:', err)
+                // Note: We don't abort registration if image upload fails, but could be a future option
+            }
+        }
+
         // Send confirmation email
         const orgData = event.organizations as any
         const orgName = orgData?.name || 'Circle'
@@ -96,9 +142,9 @@ export async function POST(request: NextRequest) {
             eventTime: event.event_time,
             eventType: event.type,
             eventLocation: event.location || undefined,
-            zoomLink: event.zoom_link || undefined,
             organizationName: orgName,
             circleUrl,
+            paymentProofUrl,
         })
 
         await sendEmail({

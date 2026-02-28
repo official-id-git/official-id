@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, useMemo, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
@@ -17,7 +17,23 @@ interface PublicCircleClientProps {
 import { useSecurity } from '@/hooks/useSecurity'
 
 export default function PublicCircleClient({ circleUsername }: PublicCircleClientProps) {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+            <CircleContent circleUsername={circleUsername} />
+        </Suspense>
+    )
+}
+
+function CircleContent({ circleUsername }: PublicCircleClientProps) {
     const router = useRouter()
+    const searchParams = useSearchParams()
+
+    // RSVP State
+    const [rsvpTicket, setRsvpTicket] = useState<string | null>(null)
+    const [rsvpStatus, setRsvpStatus] = useState<string>('')
+    const [rsvpSubmitting, setRsvpSubmitting] = useState(false)
+    const [rsvpSuccess, setRsvpSuccess] = useState(false)
+
     const { user } = useAuth()
     const { fetchOrganization, fetchMembers, joinOrganization, checkMembership, loading } = useOrganizations()
     const { fetchEvents, fetchRegistrationCount, registerForEvent } = useEvents()
@@ -98,6 +114,35 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
     useEffect(() => {
         loadCircleData()
     }, [circleUsername, user])
+
+    useEffect(() => {
+        const ticket = searchParams.get('rsvp')
+        if (ticket) {
+            setRsvpTicket(ticket)
+        }
+    }, [searchParams])
+
+    const handleRSVPSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!rsvpTicket || !rsvpStatus) return
+
+        setRsvpSubmitting(true)
+        try {
+            const res = await fetch('/api/events/rsvp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ticket_number: rsvpTicket, status: rsvpStatus }),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Gagal menyimpan RSVP')
+
+            setRsvpSuccess(true)
+        } catch (err: any) {
+            alert(err.message)
+        } finally {
+            setRsvpSubmitting(false)
+        }
+    }
 
     const loadCircleData = async () => {
         setPageLoading(true)
@@ -408,6 +453,57 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                         </div>
 
                         <div className="p-6">
+                            {/* RSVP Section */}
+                            {rsvpTicket && (
+                                <div className="mb-8 bg-amber-50 rounded-2xl p-6 border-2 border-amber-200">
+                                    <div className="flex items-start gap-4">
+                                        <div className="bg-amber-100 p-3 rounded-xl flex-shrink-0">
+                                            <span className="text-2xl">🎟️</span>
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="text-xl font-bold text-amber-900 mb-2">Konfirmasi Kehadiran (RSVP)</h3>
+                                            <p className="text-amber-800 mb-4 text-sm">
+                                                Anda sedang dimintai konfirmasi kehadiran untuk tiket <strong>{rsvpTicket}</strong>.
+                                                Mohon pilih status kehadiran Anda di bawah ini:
+                                            </p>
+
+                                            {rsvpSuccess ? (
+                                                <div className="bg-green-100 text-green-800 p-4 rounded-xl flex items-center gap-3 border border-green-200">
+                                                    <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    <p className="font-semibold text-sm">Terima kasih! Konfirmasi kehadiran Anda berhasil disimpan.</p>
+                                                </div>
+                                            ) : (
+                                                <form onSubmit={handleRSVPSubmit} className="bg-white rounded-xl p-4 border border-amber-100 shadow-sm">
+                                                    <div className="space-y-3 mb-5">
+                                                        <label className="flex items-center p-3 rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
+                                                            <input type="radio" name="rsvpStatus" value="Hadir Tepat Waktu" onChange={(e) => setRsvpStatus(e.target.value)} className="w-4 h-4 text-amber-600 focus:ring-amber-500 border-gray-300" required />
+                                                            <span className="ml-3 font-medium text-gray-900">✅ Hadir Tepat Waktu</span>
+                                                        </label>
+                                                        <label className="flex items-center p-3 rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
+                                                            <input type="radio" name="rsvpStatus" value="Hadir Terlambat" onChange={(e) => setRsvpStatus(e.target.value)} className="w-4 h-4 text-amber-600 focus:ring-amber-500 border-gray-300" required />
+                                                            <span className="ml-3 font-medium text-gray-900">⏳ Hadir (Terlambat)</span>
+                                                        </label>
+                                                        <label className="flex items-center p-3 rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
+                                                            <input type="radio" name="rsvpStatus" value="Tidak Hadir" onChange={(e) => setRsvpStatus(e.target.value)} className="w-4 h-4 text-amber-600 focus:ring-amber-500 border-gray-300" required />
+                                                            <span className="ml-3 font-medium text-gray-900">❌ Tidak Dapat Hadir</span>
+                                                        </label>
+                                                    </div>
+                                                    <button
+                                                        type="submit"
+                                                        disabled={rsvpSubmitting || !rsvpStatus}
+                                                        className="w-full sm:w-auto px-6 py-2.5 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
+                                                    >
+                                                        {rsvpSubmitting ? 'Menyimpan...' : 'Kirim Konfirmasi'}
+                                                    </button>
+                                                </form>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Featured Event (first) */}
                             {circleEvents.length > 0 && (() => {
                                 const featured = circleEvents[0]

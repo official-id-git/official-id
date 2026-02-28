@@ -558,6 +558,72 @@ export type Database = {
         }
         Relationships: []
       }
+      event_payment_proofs: {
+        Row: {
+          id: string
+          registration_id: string
+          image_url: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          registration_id: string
+          image_url: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          registration_id?: string
+          image_url?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      event_tickets: {
+        Row: {
+          id: string
+          registration_id: string
+          ticket_number: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          registration_id: string
+          ticket_number: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          registration_id?: string
+          ticket_number?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      event_rsvps: {
+        Row: {
+          id: string
+          registration_id: string
+          status: 'Hadir Tepat Waktu' | 'Hadir Terlambat' | 'Tidak Hadir'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          registration_id: string
+          status: 'Hadir Tepat Waktu' | 'Hadir Terlambat' | 'Tidak Hadir'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          registration_id?: string
+          status?: 'Hadir Tepat Waktu' | 'Hadir Terlambat' | 'Tidak Hadir'
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

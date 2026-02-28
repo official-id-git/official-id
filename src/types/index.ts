@@ -124,6 +124,10 @@ export interface CircleEvent {
 export type CircleEventInsert = Omit<CircleEvent, 'id' | 'created_at' | 'updated_at'>
 export type CircleEventUpdate = Partial<Omit<CircleEvent, 'id' | 'created_at' | 'updated_at'>>
 
+export type EventPaymentProof = Database['public']['Tables']['event_payment_proofs']['Row']
+export type EventTicket = Database['public']['Tables']['event_tickets']['Row']
+export type EventRsvp = Database['public']['Tables']['event_rsvps']['Row']
+
 export interface EventRegistration {
   id: string
   event_id: string
@@ -134,6 +138,11 @@ export interface EventRegistration {
   institution: string | null
   status: RegistrationStatus
   registered_at: string
+
+  // Relations
+  event_payment_proofs?: EventPaymentProof[]
+  event_tickets?: EventTicket[]
+  event_rsvps?: EventRsvp[]
 }
 
-export type EventRegistrationInsert = Omit<EventRegistration, 'id' | 'registered_at'>
+export type EventRegistrationInsert = Omit<EventRegistration, 'id' | 'registered_at' | 'event_payment_proofs' | 'event_tickets' | 'event_rsvps'>
