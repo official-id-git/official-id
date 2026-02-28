@@ -8,7 +8,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { event_id, name, email, phone, institution, payment_proof } = body
+        const { event_id, name, email, phone, institution, payment_proof_url } = body
 
         if (!event_id || !name || !email) {
             return NextResponse.json(
@@ -85,41 +85,10 @@ export async function POST(request: NextRequest) {
 
         let paymentProofUrl: string | undefined
 
-        // Upload payment proof if provided
-        if (payment_proof) {
+        // Save payment proof URL if provided (uploaded directly to Cloudinary by client)
+        if (payment_proof_url) {
+            paymentProofUrl = payment_proof_url
             try {
-                // Upload to Cloudinary using JSON payload for base64
-                const cloudinaryRes = await fetch(
-                    `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            file: payment_proof,
-                            upload_preset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'official_id',
-                            folder: 'official-id/events/payment_proofs'
-                        }),
-                    }
-                )
-
-                if (!cloudinaryRes.ok) {
-                    const errorText = await cloudinaryRes.text()
-                    console.error('Cloudinary upload error:', errorText)
-                    throw new Error('Gagal upload bukti bayar')
-                }
-
-                const cloudData = await cloudinaryRes.json()
-                paymentProofUrl = cloudData.secure_url
-
-                if (!paymentProofUrl) {
-                    throw new Error('Cloudinary response did not contain secure_url')
-                }
-
-                console.log('Successfully uploaded to Cloudinary:', paymentProofUrl)
-
-                // Save to event_payment_proofs table using service role key (bypasses RLS)
                 const { error: proofError } = await supabase
                     .from('event_payment_proofs')
                     .insert({
@@ -129,13 +98,11 @@ export async function POST(request: NextRequest) {
 
                 if (proofError) {
                     console.error('Save payment proof to DB error:', proofError)
-                    // We don't fail the whole request if saving proof fails, but we should log it
                 } else {
                     console.log('Successfully saved payment proof to DB for registration_id:', registration.id)
                 }
             } catch (err) {
-                console.error('🔥 Payment proof processing error:', err)
-                // Note: We don't abort registration if image upload fails, but could be a future option
+                console.error('Payment proof save error:', err)
             }
         }
 

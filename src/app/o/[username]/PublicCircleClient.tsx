@@ -67,6 +67,7 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
     const [showRegModal, setShowRegModal] = useState(false)
     const [regEventId, setRegEventId] = useState<string | null>(null)
     const [regForm, setRegForm] = useState({ name: '', email: '', phone: '', institution: '', payment_proof: '' })
+    const [paymentFile, setPaymentFile] = useState<File | null>(null)
     const [regSubmitting, setRegSubmitting] = useState(false)
     const [regSuccess, setRegSuccess] = useState(false)
 
@@ -786,6 +787,27 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                 e.preventDefault()
                                 setRegSubmitting(true)
                                 try {
+                                    // Step 1: Upload payment proof directly to Cloudinary from client (bypasses API body limit)
+                                    let paymentProofUrl: string | null = null
+                                    if (paymentFile) {
+                                        const cloudFormData = new FormData()
+                                        cloudFormData.append('file', paymentFile)
+                                        cloudFormData.append('upload_preset', 'official_id')
+                                        cloudFormData.append('folder', 'official-id/events/payment_proofs')
+
+                                        const cloudRes = await fetch(
+                                            `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+                                            { method: 'POST', body: cloudFormData }
+                                        )
+                                        if (cloudRes.ok) {
+                                            const cloudData = await cloudRes.json()
+                                            paymentProofUrl = cloudData.secure_url
+                                        } else {
+                                            console.error('Cloudinary upload failed:', await cloudRes.text())
+                                        }
+                                    }
+
+                                    // Step 2: Send registration data + payment proof URL to our API
                                     const res = await fetch('/api/events/register', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
@@ -795,7 +817,7 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                             email: regForm.email,
                                             phone: regForm.phone || null,
                                             institution: regForm.institution || null,
-                                            payment_proof: regForm.payment_proof || null,
+                                            payment_proof_url: paymentProofUrl,
                                         }),
                                     })
                                     const data = await res.json()
@@ -831,55 +853,13 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                     <input
                                         type="file"
                                         accept="image/*"
-                                        onChange={async (e) => {
+                                        onChange={(e) => {
                                             const file = e.target.files?.[0]
                                             if (file) {
-                                                // If size is under 500KB, skip canvas compression entirely to maintain quality
-                                                if (file.size <= 500 * 1024) {
-                                                    const reader = new FileReader()
-                                                    reader.onloadend = () => {
-                                                        setRegForm(prev => ({ ...prev, payment_proof: reader.result as string }))
-                                                    }
-                                                    reader.readAsDataURL(file)
-                                                    return
-                                                }
-
-                                                // Create a canvas to compress the image
-                                                const img = new (window as any).Image()
-                                                img.src = URL.createObjectURL(file)
-
-                                                img.onload = () => {
-                                                    const canvas = document.createElement('canvas')
-                                                    const ctx = canvas.getContext('2d')
-
-                                                    // Max width/height
-                                                    const MAX_WIDTH = 800
-                                                    const MAX_HEIGHT = 800
-                                                    let width = img.width
-                                                    let height = img.height
-
-                                                    if (width > height) {
-                                                        if (width > MAX_WIDTH) {
-                                                            height = Math.round((height * MAX_WIDTH) / width)
-                                                            width = MAX_WIDTH
-                                                        }
-                                                    } else {
-                                                        if (height > MAX_HEIGHT) {
-                                                            width = Math.round((width * MAX_HEIGHT) / height)
-                                                            height = MAX_HEIGHT
-                                                        }
-                                                    }
-
-                                                    canvas.width = width
-                                                    canvas.height = height
-                                                    ctx?.drawImage(img, 0, 0, width, height)
-
-                                                    // Compress to 0.6 quality WebP or JPEG
-                                                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6)
-                                                    setRegForm(prev => ({ ...prev, payment_proof: dataUrl }))
-                                                    URL.revokeObjectURL(img.src)
-                                                }
+                                                setPaymentFile(file)
+                                                setRegForm(prev => ({ ...prev, payment_proof: file.name }))
                                             } else {
+                                                setPaymentFile(null)
                                                 setRegForm(prev => ({ ...prev, payment_proof: '' }))
                                             }
                                         }}
