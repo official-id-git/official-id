@@ -61,6 +61,14 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
     const [messageModalOpen, setMessageModalOpen] = useState(false)
     const [selectedRecipient, setSelectedRecipient] = useState<{ id: string; name: string } | null>(null)
 
+    // Public contact form state (for non-logged-in visitors)
+    const [publicContactOpen, setPublicContactOpen] = useState(false)
+    const [publicContactRecipient, setPublicContactRecipient] = useState<{ id: string; name: string } | null>(null)
+    const [publicContactForm, setPublicContactForm] = useState({ sender_name: '', sender_email: '', purpose: 'bermitra', message: '' })
+    const [publicContactSubmitting, setPublicContactSubmitting] = useState(false)
+    const [publicContactSuccess, setPublicContactSuccess] = useState(false)
+    const [publicContactError, setPublicContactError] = useState('')
+
     // Events state
     const [circleEvents, setCircleEvents] = useState<CircleEvent[]>([])
     const [eventCounts, setEventCounts] = useState<Record<string, number>>({})
@@ -160,13 +168,10 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
 
             setOrg(orgData)
 
-            // If private, only fetch members if user is logged in
-            // Verification will happen server-side or we just hide the members below if they aren't authorized
-            if (orgData.is_public || user) {
-                const membersData = await fetchMembers(orgData.id)
-                const approvedMembers = membersData.filter(m => m.status === 'APPROVED')
-                setMembers(approvedMembers)
-            }
+            // Always fetch members for both public and private circles
+            const membersData = await fetchMembers(orgData.id)
+            const approvedMembers = membersData.filter(m => m.status === 'APPROVED')
+            setMembers(approvedMembers)
 
             // Fetch events for this circle
             if (orgData) {
@@ -341,18 +346,16 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                 <p className="text-gray-600 text-lg leading-relaxed mb-6">{org.description}</p>
                             )}
 
-                            {/* Stats - Only show if public or member */}
-                            {(org.is_public || isMember) && (
-                                <div className="flex items-center gap-6 mb-6">
-                                    <div className="flex items-center gap-2 text-gray-700">
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                        </svg>
-                                        <span className="font-semibold">{members.length}</span>
-                                        <span>Anggota</span>
-                                    </div>
+                            {/* Stats */}
+                            <div className="flex items-center gap-6 mb-6">
+                                <div className="flex items-center gap-2 text-gray-700">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    <span className="font-semibold">{members.length}</span>
+                                    <span>Anggota</span>
                                 </div>
-                            )}
+                            </div>
 
                             {/* Action Buttons */}
                             <div className="flex flex-col gap-4">
@@ -622,273 +625,476 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                     </div>
                 )}
 
-                {/* Members List - Only show if public or if user is a member */}
-                {(org.is_public || isMember) && (
-                    <div className="bg-white rounded-2xl shadow-lg p-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900">Anggota Circle</h2>
+                {/* Members List - Always visible */}
+                <div className="bg-white rounded-2xl shadow-lg p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900">Anggota Circle</h2>
 
-                            {/* Search and Sort Controls */}
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                {/* Search Input */}
-                                <div className="relative">
-                                    <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                    </svg>
-                                    <input
-                                        type="text"
-                                        placeholder="Cari anggota..."
-                                        value={searchQuery}
-                                        onChange={async (e) => {
-                                            const val = e.target.value
-                                            const isValid = await validateInput(val)
-                                            if (isValid) setSearchQuery(val)
-                                        }}
-                                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-48"
-                                    />
-                                </div>
-
-                                {/* Sort Dropdown */}
-                                <select
-                                    value={sortOrder}
-                                    onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-                                    className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                                >
-                                    <option value="asc">A - Z</option>
-                                    <option value="desc">Z - A</option>
-                                </select>
+                        {/* Search and Sort Controls */}
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            {/* Search Input */}
+                            <div className="relative">
+                                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                <input
+                                    type="text"
+                                    placeholder="Cari anggota..."
+                                    value={searchQuery}
+                                    onChange={async (e) => {
+                                        const val = e.target.value
+                                        const isValid = await validateInput(val)
+                                        if (isValid) setSearchQuery(val)
+                                    }}
+                                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-48"
+                                />
                             </div>
+
+                            {/* Sort Dropdown */}
+                            <select
+                                value={sortOrder}
+                                onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                                className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                            >
+                                <option value="asc">A - Z</option>
+                                <option value="desc">Z - A</option>
+                            </select>
                         </div>
-
-                        {members.length === 0 ? (
-                            <p className="text-gray-500 text-center py-8">Belum ada anggota yang bergabung</p>
-                        ) : filteredMembers.length === 0 ? (
-                            <p className="text-gray-500 text-center py-8">Tidak ada anggota yang sesuai dengan pencarian "{searchQuery}"</p>
-                        ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {filteredMembers.map((member: any) => {
-                                    const userData = member.users || {}
-                                    const userName = userData.full_name || 'Anonymous'
-                                    // Prioritize business card photo (Cloudinary) over avatar_url (LinkedIn, ORB blocked)
-                                    const cardPhoto = userData.business_cards && userData.business_cards.length > 0
-                                        ? userData.business_cards[0].profile_photo_url
-                                        : null
-                                    const userAvatar = cardPhoto || userData.avatar_url
-                                    const userId = userData.id
-
-                                    // Link directly to business card using user_id
-                                    const cardLink = userId ? `/c/${userId}` : null
-
-                                    return (
-                                        <div
-                                            key={member.id}
-                                            className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
-                                        >
-                                            {/* Header Info */}
-                                            <div className="p-4 flex items-center gap-3 border-b border-gray-100">
-                                                <div className="w-10 h-10 rounded-full flex-shrink-0 relative">
-                                                    {/* Always render initials as base layer */}
-                                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
-                                                        <span className="text-white font-semibold text-sm">
-                                                            {userName.charAt(0) || '?'}
-                                                        </span>
-                                                    </div>
-                                                    {/* Overlay photo on top */}
-                                                    {userAvatar && (
-                                                        <img
-                                                            src={userAvatar}
-                                                            alt={userName}
-                                                            width={40}
-                                                            height={40}
-                                                            className="w-10 h-10 rounded-full object-cover absolute inset-0"
-                                                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                                                        />
-                                                    )}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-semibold text-gray-900 truncate text-sm">
-                                                        {userName}
-                                                    </p>
-                                                    {member.is_admin && (
-                                                        <span className="text-[10px] text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full">Admin</span>
-                                                    )}
-                                                </div>
-                                                {userId && (
-                                                    <button
-                                                        onClick={() => handleOpenMessageModal(userId, userName)}
-                                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                        title="Kirim Pesan"
-                                                    >
-                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                                        </svg>
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            {/* Cards Carousel */}
-                                            <div className="relative">
-                                                {userData.business_cards && userData.business_cards.length > 0 ? (
-                                                    <MemberToCardCarousel
-                                                        cards={userData.business_cards}
-                                                        userId={userId}
-                                                    />
-                                                ) : (
-                                                    <div className="p-8 text-center text-gray-400 text-sm bg-gray-50">
-                                                        Belum ada kartu nama
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        )}
                     </div>
-                )}
+
+                    {members.length === 0 ? (
+                        <p className="text-gray-500 text-center py-8">Belum ada anggota yang bergabung</p>
+                    ) : filteredMembers.length === 0 ? (
+                        <p className="text-gray-500 text-center py-8">Tidak ada anggota yang sesuai dengan pencarian "{searchQuery}"</p>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {filteredMembers.map((member: any) => {
+                                const userData = member.users || {}
+                                const userName = userData.full_name || 'Anonymous'
+                                // Prioritize business card photo (Cloudinary) over avatar_url (LinkedIn, ORB blocked)
+                                const cardPhoto = userData.business_cards && userData.business_cards.length > 0
+                                    ? userData.business_cards[0].profile_photo_url
+                                    : null
+                                const userAvatar = cardPhoto || userData.avatar_url
+                                const userId = userData.id
+
+                                // Link directly to business card using user_id
+                                const cardLink = userId ? `/c/${userId}` : null
+
+                                return (
+                                    <div
+                                        key={member.id}
+                                        className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+                                    >
+                                        {/* Header Info */}
+                                        <div className="p-4 flex items-center gap-3 border-b border-gray-100">
+                                            <div className="w-10 h-10 rounded-full flex-shrink-0 relative">
+                                                {/* Always render initials as base layer */}
+                                                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+                                                    <span className="text-white font-semibold text-sm">
+                                                        {userName.charAt(0) || '?'}
+                                                    </span>
+                                                </div>
+                                                {/* Overlay photo on top */}
+                                                {userAvatar && (
+                                                    <img
+                                                        src={userAvatar}
+                                                        alt={userName}
+                                                        width={40}
+                                                        height={40}
+                                                        className="w-10 h-10 rounded-full object-cover absolute inset-0"
+                                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                                    />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-gray-900 truncate text-sm">
+                                                    {userName}
+                                                </p>
+                                                {member.is_admin && (
+                                                    <span className="text-[10px] text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full">Admin</span>
+                                                )}
+                                            </div>
+                                            {userId && (
+                                                <button
+                                                    onClick={() => {
+                                                        if (user) {
+                                                            handleOpenMessageModal(userId, userName)
+                                                        } else {
+                                                            setPublicContactRecipient({ id: userId, name: userName })
+                                                            setPublicContactOpen(true)
+                                                            setPublicContactSuccess(false)
+                                                            setPublicContactError('')
+                                                            setPublicContactForm({ sender_name: '', sender_email: '', purpose: 'bermitra', message: '' })
+                                                        }
+                                                    }}
+                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    title="Kirim Pesan"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                    </svg>
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Cards Carousel */}
+                                        <div className="relative">
+                                            {userData.business_cards && userData.business_cards.length > 0 ? (
+                                                <MemberToCardCarousel
+                                                    cards={userData.business_cards}
+                                                    userId={userId}
+                                                />
+                                            ) : (
+                                                <div className="p-8 text-center text-gray-400 text-sm bg-gray-50">
+                                                    Belum ada kartu nama
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Message Modal */}
-            {selectedRecipient && (
-                <SendMessageModal
-                    isOpen={messageModalOpen}
-                    onClose={() => {
-                        setMessageModalOpen(false)
-                        setSelectedRecipient(null)
-                    }}
-                    recipientId={selectedRecipient.id}
-                    recipientName={selectedRecipient.name}
-                />
-            )}
+            {
+                selectedRecipient && (
+                    <SendMessageModal
+                        isOpen={messageModalOpen}
+                        onClose={() => {
+                            setMessageModalOpen(false)
+                            setSelectedRecipient(null)
+                        }}
+                        recipientId={selectedRecipient.id}
+                        recipientName={selectedRecipient.name}
+                    />
+                )
+            }
 
-            {/* Event Registration Modal */}
-            {showRegModal && regEventId && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl max-w-md w-full">
-                        <div className="p-6 border-b">
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-xl font-bold text-gray-900">Form Pendaftaran</h2>
-                                <button onClick={() => setShowRegModal(false)} className="text-gray-400 hover:text-gray-600">
+            {/* Public Contact Form Modal (For Non-Logged-In Users) */}
+            {
+                publicContactOpen && publicContactRecipient && (
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-6 border-b">
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">Kirim Pesan</h2>
+                                    <p className="text-sm text-gray-500 mt-1">Ke: {publicContactRecipient.name}</p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setPublicContactOpen(false)
+                                        setPublicContactRecipient(null)
+                                    }}
+                                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                                >
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </button>
                             </div>
-                            <p className="text-sm text-gray-500 mt-1">{circleEvents.find(e => e.id === regEventId)?.title}</p>
-                        </div>
 
-                        {regSuccess ? (
-                            <div className="p-6 text-center">
-                                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </div>
-                                <h3 className="text-lg font-bold text-gray-900 mb-2">Pendaftaran Berhasil!</h3>
-                                <p className="text-gray-600 text-sm">Terima kasih telah mendaftar. Email konfirmasi telah dikirim ke <strong>{regForm.email}</strong>.</p>
-                                <button onClick={() => setShowRegModal(false)} className="mt-4 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors">
-                                    Tutup
-                                </button>
-                            </div>
-                        ) : (
-                            <form onSubmit={async (e) => {
-                                e.preventDefault()
-                                setRegSubmitting(true)
-                                try {
-                                    // Step 1: Upload payment proof directly to Cloudinary from client (bypasses API body limit)
-                                    let paymentProofUrl: string | null = null
-                                    if (paymentFile) {
-                                        const cloudFormData = new FormData()
-                                        cloudFormData.append('file', paymentFile)
-                                        cloudFormData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'officialiddata')
-                                        cloudFormData.append('folder', 'official-id/events/payment_proofs')
-
-                                        const cloudRes = await fetch(
-                                            `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-                                            { method: 'POST', body: cloudFormData }
-                                        )
-                                        if (cloudRes.ok) {
-                                            const cloudData = await cloudRes.json()
-                                            paymentProofUrl = cloudData.secure_url
-                                        } else {
-                                            console.error('Cloudinary upload failed:', await cloudRes.text())
-                                        }
-                                    }
-
-                                    // Step 2: Send registration data + payment proof URL to our API
-                                    const res = await fetch('/api/events/register', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                            event_id: regEventId,
-                                            name: regForm.name,
-                                            email: regForm.email,
-                                            phone: regForm.phone || null,
-                                            institution: regForm.institution || null,
-                                            payment_proof_url: paymentProofUrl,
-                                        }),
-                                    })
-                                    const data = await res.json()
-                                    if (!res.ok) throw new Error(data.error || 'Gagal mendaftar')
-                                    setRegSuccess(true)
-                                    // Update count
-                                    const newCount = await fetchRegistrationCount(regEventId!)
-                                    setEventCounts(prev => ({ ...prev, [regEventId!]: newCount }))
-                                } catch (err: any) {
-                                    alert(err.message || 'Gagal mendaftar')
-                                } finally {
-                                    setRegSubmitting(false)
-                                }
-                            }} className="p-6 space-y-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-1">Nama Lengkap <span className="text-red-600">*</span></label>
-                                    <input type="text" required value={regForm.name} onChange={(e) => setRegForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-1">Email <span className="text-red-600">*</span></label>
-                                    <input type="email" required value={regForm.email} onChange={(e) => setRegForm(prev => ({ ...prev, email: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-1">Nomor Telepon</label>
-                                    <input type="tel" value={regForm.phone} onChange={(e) => setRegForm(prev => ({ ...prev, phone: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-1">Institusi/Perusahaan</label>
-                                    <input type="text" value={regForm.institution} onChange={(e) => setRegForm(prev => ({ ...prev, institution: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-1">Bukti Pembayaran (Opsional)</label>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0]
-                                            if (file) {
-                                                setPaymentFile(file)
-                                                setRegForm(prev => ({ ...prev, payment_proof: file.name }))
-                                            } else {
-                                                setPaymentFile(null)
-                                                setRegForm(prev => ({ ...prev, payment_proof: '' }))
-                                            }
+                            {/* Success State */}
+                            {publicContactSuccess ? (
+                                <div className="p-8 text-center">
+                                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Pesan Terkirim!</h3>
+                                    <p className="text-gray-500">Pesan Anda telah dikirim ke {publicContactRecipient.name}</p>
+                                    <button
+                                        onClick={() => {
+                                            setPublicContactOpen(false)
+                                            setPublicContactRecipient(null)
                                         }}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">Format: JPG, PNG. Sertakan jika event ini mewajibkan biaya registrasi.</p>
-                                </div>
-                                <div className="flex gap-3 pt-2">
-                                    <button type="button" onClick={() => setShowRegModal(false)} className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors">
-                                        Batal
-                                    </button>
-                                    <button type="submit" disabled={regSubmitting} className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
-                                        {regSubmitting ? 'Mendaftar...' : 'Daftar'}
+                                        className="mt-6 w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                                    >
+                                        Tutup
                                     </button>
                                 </div>
-                            </form>
-                        )}
+                            ) : (
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault()
+                                    setPublicContactError('')
+                                    if (!publicContactForm.sender_name.trim()) return setPublicContactError('Nama wajib diisi')
+                                    if (!publicContactForm.sender_email.trim()) return setPublicContactError('Email / WhatsApp wajib diisi')
+                                    if (!publicContactForm.message.trim()) return setPublicContactError('Pesan wajib diisi')
+
+                                    setPublicContactSubmitting(true)
+                                    try {
+                                        const { createClient } = await import('@/lib/supabase/client')
+                                        const supabase = createClient() as any
+
+                                        const { error: insertError } = await supabase
+                                            .from('messages')
+                                            .insert({
+                                                recipient_id: publicContactRecipient.id,
+                                                sender_name: publicContactForm.sender_name,
+                                                sender_whatsapp: publicContactForm.sender_email,
+                                                sender_email: publicContactForm.sender_email,
+                                                purpose: publicContactForm.purpose as any,
+                                                message: publicContactForm.message,
+                                                is_read: false,
+                                            })
+
+                                        if (insertError) throw insertError
+
+                                        // Try to send email notification implicitly
+                                        try {
+                                            const { data: userData } = await supabase
+                                                .from('users')
+                                                .select('email, full_name')
+                                                .eq('id', publicContactRecipient.id)
+                                                .single()
+
+                                            if (userData && (userData as any).email) {
+                                                fetch('/api/email/circle', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        type: 'message',
+                                                        recipients: [{ email: (userData as any).email, name: (userData as any).full_name || 'Member' }],
+                                                        circleName: org?.name || 'Official ID',
+                                                        senderName: publicContactForm.sender_name,
+                                                        message: publicContactForm.message,
+                                                    })
+                                                }).catch(console.error)
+                                            }
+                                        } catch (e) {
+                                            console.error("Failed email trigger", e)
+                                        }
+
+                                        setPublicContactSuccess(true)
+                                    } catch (err: any) {
+                                        setPublicContactError(err.message || 'Gagal mengirim pesan')
+                                    } finally {
+                                        setPublicContactSubmitting(false)
+                                    }
+                                }} className="p-6 space-y-4">
+                                    {publicContactError && (
+                                        <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+                                            {publicContactError}
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Nama Anda <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={publicContactForm.sender_name}
+                                            onChange={e => setPublicContactForm(prev => ({ ...prev, sender_name: e.target.value }))}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="Masukkan nama Anda"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Email / WhatsApp <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={publicContactForm.sender_email}
+                                            onChange={e => setPublicContactForm(prev => ({ ...prev, sender_email: e.target.value }))}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="email@example.com / 0812..."
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Keperluan <span className="text-red-500">*</span>
+                                        </label>
+                                        <select
+                                            value={publicContactForm.purpose}
+                                            onChange={e => setPublicContactForm(prev => ({ ...prev, purpose: e.target.value }))}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                                        >
+                                            <option value="bermitra">Partnership Interest</option>
+                                            <option value="produk">Product Interest</option>
+                                            <option value="jasa">Service Interest</option>
+                                            <option value="investasi">Investment Interest</option>
+                                            <option value="lainnya">Lainnya</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Pesan <span className="text-red-500">*</span>
+                                        </label>
+                                        <textarea
+                                            required
+                                            value={publicContactForm.message}
+                                            onChange={e => {
+                                                if (e.target.value.length <= 250) {
+                                                    setPublicContactForm(prev => ({ ...prev, message: e.target.value }))
+                                                }
+                                            }}
+                                            rows={4}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                            placeholder="Tulis pesan Anda..."
+                                        />
+                                        <p className="text-xs text-gray-400 mt-1 text-right">
+                                            {publicContactForm.message.length}/250 karakter
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={publicContactSubmitting}
+                                        className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex justify-center items-center mt-2"
+                                    >
+                                        {publicContactSubmitting ? (
+                                            <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+                                        ) : 'Kirim Pesan'}
+                                    </button>
+                                </form>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+
+            {/* Event Registration Modal */}
+            {
+                showRegModal && regEventId && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl max-w-md w-full">
+                            <div className="p-6 border-b">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-xl font-bold text-gray-900">Form Pendaftaran</h2>
+                                    <button onClick={() => setShowRegModal(false)} className="text-gray-400 hover:text-gray-600">
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p className="text-sm text-gray-500 mt-1">{circleEvents.find(e => e.id === regEventId)?.title}</p>
+                            </div>
+
+                            {regSuccess ? (
+                                <div className="p-6 text-center">
+                                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-900 mb-2">Pendaftaran Berhasil!</h3>
+                                    <p className="text-gray-600 text-sm">Terima kasih telah mendaftar. Email konfirmasi telah dikirim ke <strong>{regForm.email}</strong>.</p>
+                                    <button onClick={() => setShowRegModal(false)} className="mt-4 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors">
+                                        Tutup
+                                    </button>
+                                </div>
+                            ) : (
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault()
+                                    setRegSubmitting(true)
+                                    try {
+                                        // Step 1: Upload payment proof directly to Cloudinary from client (bypasses API body limit)
+                                        let paymentProofUrl: string | null = null
+                                        if (paymentFile) {
+                                            const cloudFormData = new FormData()
+                                            cloudFormData.append('file', paymentFile)
+                                            cloudFormData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'officialiddata')
+                                            cloudFormData.append('folder', 'official-id/events/payment_proofs')
+
+                                            const cloudRes = await fetch(
+                                                `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+                                                { method: 'POST', body: cloudFormData }
+                                            )
+                                            if (cloudRes.ok) {
+                                                const cloudData = await cloudRes.json()
+                                                paymentProofUrl = cloudData.secure_url
+                                            } else {
+                                                console.error('Cloudinary upload failed:', await cloudRes.text())
+                                            }
+                                        }
+
+                                        // Step 2: Send registration data + payment proof URL to our API
+                                        const res = await fetch('/api/events/register', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                event_id: regEventId,
+                                                name: regForm.name,
+                                                email: regForm.email,
+                                                phone: regForm.phone || null,
+                                                institution: regForm.institution || null,
+                                                payment_proof_url: paymentProofUrl,
+                                            }),
+                                        })
+                                        const data = await res.json()
+                                        if (!res.ok) throw new Error(data.error || 'Gagal mendaftar')
+                                        setRegSuccess(true)
+                                        // Update count
+                                        const newCount = await fetchRegistrationCount(regEventId!)
+                                        setEventCounts(prev => ({ ...prev, [regEventId!]: newCount }))
+                                    } catch (err: any) {
+                                        alert(err.message || 'Gagal mendaftar')
+                                    } finally {
+                                        setRegSubmitting(false)
+                                    }
+                                }} className="p-6 space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-900 mb-1">Nama Lengkap <span className="text-red-600">*</span></label>
+                                        <input type="text" required value={regForm.name} onChange={(e) => setRegForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-900 mb-1">Email <span className="text-red-600">*</span></label>
+                                        <input type="email" required value={regForm.email} onChange={(e) => setRegForm(prev => ({ ...prev, email: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-900 mb-1">Nomor Telepon</label>
+                                        <input type="tel" value={regForm.phone} onChange={(e) => setRegForm(prev => ({ ...prev, phone: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-900 mb-1">Institusi/Perusahaan</label>
+                                        <input type="text" value={regForm.institution} onChange={(e) => setRegForm(prev => ({ ...prev, institution: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-900 mb-1">Bukti Pembayaran (Opsional)</label>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0]
+                                                if (file) {
+                                                    setPaymentFile(file)
+                                                    setRegForm(prev => ({ ...prev, payment_proof: file.name }))
+                                                } else {
+                                                    setPaymentFile(null)
+                                                    setRegForm(prev => ({ ...prev, payment_proof: '' }))
+                                                }
+                                            }}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">Format: JPG, PNG. Sertakan jika event ini mewajibkan biaya registrasi.</p>
+                                    </div>
+                                    <div className="flex gap-3 pt-2">
+                                        <button type="button" onClick={() => setShowRegModal(false)} className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors">
+                                            Batal
+                                        </button>
+                                        <button type="submit" disabled={regSubmitting} className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                                            {regSubmitting ? 'Mendaftar...' : 'Daftar'}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     )
 }
 
@@ -903,6 +1109,8 @@ import {
     LuxuryCard,
     VibrantCard
 } from '@/components/cards/templates/CardTemplates'
+
+import { IPTIKICard } from '@/components/cards/templates/NewCardTemplates'
 
 // Helper component for carousel
 function MemberToCardCarousel({ cards, userId }: { cards: any[], userId: string }) {
@@ -934,6 +1142,7 @@ function MemberToCardCarousel({ cards, userId }: { cards: any[], userId: string 
             'artistic': ArtisticCard,
             'luxury': LuxuryCard,
             'vibrant': VibrantCard,
+            'iptiki': IPTIKICard,
             'professional': ModernDarkCard, // Fallback or mapping for 'professional'
             'modern': ModernDarkCard // Fallback for 'modern'
         }
