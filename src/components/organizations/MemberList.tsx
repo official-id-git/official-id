@@ -160,12 +160,21 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
 
     if (photoUrl) {
       return (
-        <Image
-          src={photoUrl} unoptimized
+        <img
+          src={photoUrl}
           alt={user?.full_name || 'Avatar'}
-          width={size === 'lg' ? 64 : size === 'md' ? 40 : 32}
-          height={size === 'lg' ? 64 : size === 'md' ? 40 : 32}
           className={`${sizeClass} rounded-full object-cover`}
+          onError={(e) => {
+            // Hide broken image, show initials fallback
+            (e.target as HTMLImageElement).style.display = 'none'
+            const parent = (e.target as HTMLImageElement).parentElement
+            if (parent) {
+              const fallback = document.createElement('div')
+              fallback.className = `${sizeClass} bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center`
+              fallback.innerHTML = `<span class="text-blue-600 font-semibold">${user?.full_name?.charAt(0).toUpperCase() || '?'}</span>`
+              parent.appendChild(fallback)
+            }
+          }}
         />
       )
     }
