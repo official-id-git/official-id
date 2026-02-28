@@ -154,11 +154,15 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
       lg: 'w-16 h-16 text-2xl'
     }[size]
 
-    if (user?.avatar_url) {
+    // Try avatar_url first, then fallback to first business card profile_photo_url
+    const photoUrl = user?.avatar_url
+      || (user?.business_cards && user.business_cards.length > 0 ? user.business_cards[0].profile_photo_url : null)
+
+    if (photoUrl) {
       return (
         <Image
-          src={user.avatar_url} unoptimized
-          alt={user.full_name || 'Avatar'}
+          src={photoUrl} unoptimized
+          alt={user?.full_name || 'Avatar'}
           width={size === 'lg' ? 64 : size === 'md' ? 40 : 32}
           height={size === 'lg' ? 64 : size === 'md' ? 40 : 32}
           className={`${sizeClass} rounded-full object-cover`}
