@@ -555,6 +555,8 @@ export default function OrganizationDetailPage() {
                 members={members}
                 isAdmin={membership.isAdmin}
                 onUpdate={loadData}
+                organization={org ? { name: org.name, username: (org as any).username, description: (org as any).description, logo_url: (org as any).logo_url } : undefined}
+                currentUserId={user?.id}
               />
             )}
           </div>
