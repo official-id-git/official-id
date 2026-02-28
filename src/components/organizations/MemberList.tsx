@@ -154,9 +154,12 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
       lg: 'w-16 h-16 text-2xl'
     }[size]
 
-    // Try avatar_url first, then fallback to first business card profile_photo_url
-    const photoUrl = user?.avatar_url
-      || (user?.business_cards && user.business_cards.length > 0 ? user.business_cards[0].profile_photo_url : null)
+    // Prioritize business card profile_photo_url (Cloudinary, reliable)
+    // over avatar_url (may be LinkedIn URL blocked by browser ORB policy)
+    const cardPhoto = user?.business_cards && user.business_cards.length > 0
+      ? user.business_cards[0].profile_photo_url
+      : null
+    const photoUrl = cardPhoto || user?.avatar_url
 
     if (photoUrl) {
       return (
@@ -166,8 +169,9 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
           className={`${sizeClass} rounded-full object-cover`}
           onError={(e) => {
             // Hide broken image, show initials fallback
-            (e.target as HTMLImageElement).style.display = 'none'
-            const parent = (e.target as HTMLImageElement).parentElement
+            const img = e.target as HTMLImageElement
+            img.style.display = 'none'
+            const parent = img.parentElement
             if (parent) {
               const fallback = document.createElement('div')
               fallback.className = `${sizeClass} bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center`
