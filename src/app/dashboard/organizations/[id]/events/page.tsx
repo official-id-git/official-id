@@ -58,6 +58,17 @@ export default function EventManagementPage() {
     const [selectedRegs, setSelectedRegs] = useState<string[]>([])
     const [approving, setApproving] = useState(false)
 
+    // Custom Confirmation & Alert Modal
+    const [confirmConfig, setConfirmConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'confirm' | 'alert';
+        onConfirm?: () => void;
+        confirmText?: string;
+        confirmColor?: 'blue' | 'red';
+    }>({ isOpen: false, title: '', message: '', type: 'alert' })
+
     useEffect(() => {
         loadData()
     }, [user, orgId])
@@ -171,9 +182,18 @@ export default function EventManagementPage() {
     }
 
     const handleDelete = async (eventId: string, title: string) => {
-        if (!confirm(`Yakin ingin menghapus event "${title}"?`)) return
-        const success = await deleteEvent(eventId)
-        if (success) await loadEvents()
+        setConfirmConfig({
+            isOpen: true,
+            title: 'Hapus Event',
+            message: `Yakin ingin menghapus event "${title}"?`,
+            type: 'confirm',
+            confirmText: 'Hapus',
+            confirmColor: 'red',
+            onConfirm: async () => {
+                const success = await deleteEvent(eventId)
+                if (success) await loadEvents()
+            }
+        })
     }
 
     const openParticipants = async (event: CircleEvent) => {
@@ -188,71 +208,87 @@ export default function EventManagementPage() {
 
     const handleBulkApprove = async () => {
         if (selectedRegs.length === 0) return
-        if (!confirm(`Yakin ingin menyetujui ${selectedRegs.length} pendaftar?`)) return
 
-        setApproving(true)
-        try {
-            const res = await fetch('/api/events/approve', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ registration_ids: selectedRegs })
-            })
-            const data = await res.json()
-            if (res.ok) {
-                alert(data.message)
-                setSelectedRegs([])
-                if (selectedEvent) {
-                    const regs = await fetchRegistrations(selectedEvent.id)
-                    setRegistrations(regs)
-                    // Update main view reg count (confirmed only or all? We count all usually, but up to you. We'll refresh counts.)
-                    const count = await fetchRegistrationCount(selectedEvent.id)
-                    setRegistrationCounts(prev => ({ ...prev, [selectedEvent.id]: count }))
+        setConfirmConfig({
+            isOpen: true,
+            title: 'Setujui Pendaftar',
+            message: `Yakin ingin menyetujui ${selectedRegs.length} pendaftar? Email konfirmasi akan dikirim.`,
+            type: 'confirm',
+            confirmText: 'Setujui',
+            confirmColor: 'blue',
+            onConfirm: async () => {
+                setApproving(true)
+                try {
+                    const res = await fetch('/api/events/approve', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ registration_ids: selectedRegs })
+                    })
+                    const data = await res.json()
+                    if (res.ok) {
+                        setConfirmConfig({ isOpen: true, title: 'Berhasil', message: data.message, type: 'alert' })
+                        setSelectedRegs([])
+                        if (selectedEvent) {
+                            const regs = await fetchRegistrations(selectedEvent.id)
+                            setRegistrations(regs)
+                            const count = await fetchRegistrationCount(selectedEvent.id)
+                            setRegistrationCounts(prev => ({ ...prev, [selectedEvent.id]: count }))
+                        }
+                    } else {
+                        setConfirmConfig({ isOpen: true, title: 'Gagal', message: data.error || 'Gagal menyetujui pendaftar', type: 'alert' })
+                    }
+                } catch (error) {
+                    console.error(error)
+                    setConfirmConfig({ isOpen: true, title: 'Error', message: 'Terjadi kesalahan sistem', type: 'alert' })
+                } finally {
+                    setApproving(false)
                 }
-            } else {
-                alert(data.error || 'Gagal menyetujui pendaftar')
             }
-        } catch (error) {
-            console.error(error)
-            alert('Terjadi kesalahan')
-        } finally {
-            setApproving(false)
-        }
+        })
     }
 
     const handleStatusChange = async (regId: string, newStatus: string, currentStatus: string) => {
         if (newStatus === 'confirmed' && currentStatus === 'pending') {
-            if (!confirm('Ubah status menjadi Confirmed? Ini akan men-generate tiket dan mengirim email ke peserta.')) return
-
-            setApproving(true)
-            try {
-                const res = await fetch('/api/events/approve', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ registration_ids: [regId] })
-                })
-                const data = await res.json()
-                if (res.ok) {
-                    if (selectedEvent) {
-                        const regs = await fetchRegistrations(selectedEvent.id)
-                        setRegistrations(regs)
-                        const count = await fetchRegistrationCount(selectedEvent.id)
-                        setRegistrationCounts(prev => ({ ...prev, [selectedEvent.id]: count }))
+            setConfirmConfig({
+                isOpen: true,
+                title: 'Konfirmasi Kehadiran',
+                message: 'Ubah status menjadi Confirmed? Ini akan men-generate tiket dan mengirim email ke peserta.',
+                type: 'confirm',
+                confirmText: 'Ya, Confirmed',
+                confirmColor: 'blue',
+                onConfirm: async () => {
+                    setApproving(true)
+                    try {
+                        const res = await fetch('/api/events/approve', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ registration_ids: [regId] })
+                        })
+                        const data = await res.json()
+                        if (res.ok) {
+                            if (selectedEvent) {
+                                const regs = await fetchRegistrations(selectedEvent.id)
+                                setRegistrations(regs)
+                                const count = await fetchRegistrationCount(selectedEvent.id)
+                                setRegistrationCounts(prev => ({ ...prev, [selectedEvent.id]: count }))
+                            }
+                            setConfirmConfig({ isOpen: true, title: 'Berhasil', message: 'Status berhasil diubah menjadi Confirmed', type: 'alert' })
+                        } else {
+                            setConfirmConfig({ isOpen: true, title: 'Gagal', message: data.error || 'Gagal menyetujui pendaftar', type: 'alert' })
+                        }
+                    } catch (error) {
+                        console.error(error)
+                        setConfirmConfig({ isOpen: true, title: 'Error', message: 'Terjadi kesalahan sistem', type: 'alert' })
+                    } finally {
+                        setApproving(false)
                     }
-                } else {
-                    alert(data.error || 'Gagal menyetujui pendaftar')
                 }
-            } catch (error) {
-                console.error(error)
-                alert('Terjadi kesalahan')
-            } finally {
-                setApproving(false)
-            }
+            })
         } else {
             const success = await updateRegistrationStatus(regId, newStatus)
             if (success && selectedEvent) {
                 const regs = await fetchRegistrations(selectedEvent.id)
                 setRegistrations(regs)
-                // Update counts
                 const count = await fetchRegistrationCount(selectedEvent.id)
                 setRegistrationCounts(prev => ({ ...prev, [selectedEvent.id]: count }))
             }
@@ -791,6 +827,59 @@ export default function EventManagementPage() {
                                         </div>
                                     ))}
                                 </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirmation & Alert Custom Modal */}
+            {confirmConfig.isOpen && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[70] p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl animate-in zoom-in-95 duration-200 border border-gray-100">
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ${confirmConfig.type === 'alert'
+                                ? (confirmConfig.title === 'Gagal' || confirmConfig.title === 'Error' ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500')
+                                : (confirmConfig.confirmColor === 'red' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500')
+                            }`}>
+                            {confirmConfig.type === 'alert' && (confirmConfig.title === 'Gagal' || confirmConfig.title === 'Error') ? (
+                                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                            ) : confirmConfig.type === 'alert' ? (
+                                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            ) : confirmConfig.confirmColor === 'red' ? (
+                                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            ) : (
+                                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            )}
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">{confirmConfig.title}</h3>
+                        <p className="text-gray-500 text-sm mb-6 leading-relaxed">{confirmConfig.message}</p>
+
+                        <div className="flex gap-3 justify-center">
+                            {confirmConfig.type === 'confirm' ? (
+                                <>
+                                    <button
+                                        onClick={() => setConfirmConfig({ ...confirmConfig, isOpen: false })}
+                                        className="flex-1 px-4 py-3 bg-gray-50 text-gray-700 font-medium rounded-xl border border-gray-200 hover:bg-gray-100 transition-colors"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (confirmConfig.onConfirm) confirmConfig.onConfirm()
+                                            setConfirmConfig({ ...confirmConfig, isOpen: false })
+                                        }}
+                                        className={`flex-1 px-4 py-3 text-white font-medium rounded-xl transition-colors shadow-sm cursor-pointer ${confirmConfig.confirmColor === 'red' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-600 hover:bg-blue-700'}`}
+                                    >
+                                        {confirmConfig.confirmText}
+                                    </button>
+                                </>
+                            ) : (
+                                <button
+                                    onClick={() => setConfirmConfig({ ...confirmConfig, isOpen: false })}
+                                    className="flex-1 px-4 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
+                                >
+                                    Tutup
+                                </button>
                             )}
                         </div>
                     </div>

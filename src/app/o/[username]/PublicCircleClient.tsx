@@ -834,6 +834,16 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                         onChange={async (e) => {
                                             const file = e.target.files?.[0]
                                             if (file) {
+                                                // If size is under 500KB, skip canvas compression entirely to maintain quality
+                                                if (file.size <= 500 * 1024) {
+                                                    const reader = new FileReader()
+                                                    reader.onloadend = () => {
+                                                        setRegForm(prev => ({ ...prev, payment_proof: reader.result as string }))
+                                                    }
+                                                    reader.readAsDataURL(file)
+                                                    return
+                                                }
+
                                                 // Create a canvas to compress the image
                                                 const img = new (window as any).Image()
                                                 img.src = URL.createObjectURL(file)
