@@ -148,6 +148,7 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
 
   // Avatar component with fallback
   const Avatar = ({ user, size = 'md' }: { user?: MemberWithUser['users'], size?: 'sm' | 'md' | 'lg' }) => {
+    const dims = { sm: 32, md: 40, lg: 64 }[size]
     const sizeClass = {
       sm: 'w-8 h-8 text-sm',
       md: 'w-10 h-10 text-base',
@@ -161,33 +162,25 @@ export function MemberList({ members, isAdmin, onUpdate }: MemberListProps) {
       : null
     const photoUrl = cardPhoto || user?.avatar_url
 
-    if (photoUrl) {
-      return (
-        <img
-          src={photoUrl}
-          alt={user?.full_name || 'Avatar'}
-          className={`${sizeClass} rounded-full object-cover`}
-          onError={(e) => {
-            // Hide broken image, show initials fallback
-            const img = e.target as HTMLImageElement
-            img.style.display = 'none'
-            const parent = img.parentElement
-            if (parent) {
-              const fallback = document.createElement('div')
-              fallback.className = `${sizeClass} bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center`
-              fallback.innerHTML = `<span class="text-blue-600 font-semibold">${user?.full_name?.charAt(0).toUpperCase() || '?'}</span>`
-              parent.appendChild(fallback)
-            }
-          }}
-        />
-      )
-    }
-
     return (
-      <div className={`${sizeClass} bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center`}>
-        <span className="text-blue-600 font-semibold">
-          {user?.full_name?.charAt(0).toUpperCase() || '?'}
-        </span>
+      <div className={`${sizeClass} rounded-full flex-shrink-0 relative`}>
+        {/* Always render initials as base layer */}
+        <div className={`${sizeClass} bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center`}>
+          <span className="text-blue-600 font-semibold">
+            {user?.full_name?.charAt(0).toUpperCase() || '?'}
+          </span>
+        </div>
+        {/* Overlay photo on top — hides itself on error, revealing initials underneath */}
+        {photoUrl && (
+          <img
+            src={photoUrl}
+            alt={user?.full_name || 'Avatar'}
+            width={dims}
+            height={dims}
+            className={`${sizeClass} rounded-full object-cover absolute inset-0`}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+          />
+        )}
       </div>
     )
   }
