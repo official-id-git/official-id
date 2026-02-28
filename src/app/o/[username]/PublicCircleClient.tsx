@@ -669,7 +669,11 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                 {filteredMembers.map((member: any) => {
                                     const userData = member.users || {}
                                     const userName = userData.full_name || 'Anonymous'
-                                    const userAvatar = userData.avatar_url
+                                    // Prioritize business card photo (Cloudinary) over avatar_url (LinkedIn, ORB blocked)
+                                    const cardPhoto = userData.business_cards && userData.business_cards.length > 0
+                                        ? userData.business_cards[0].profile_photo_url
+                                        : null
+                                    const userAvatar = cardPhoto || userData.avatar_url
                                     const userId = userData.id
 
                                     // Link directly to business card using user_id
@@ -682,21 +686,25 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                         >
                                             {/* Header Info */}
                                             <div className="p-4 flex items-center gap-3 border-b border-gray-100">
-                                                {userAvatar ? (
-                                                    <Image
-                                                        src={userAvatar}
-                                                        alt={userName}
-                                                        width={40}
-                                                        height={40}
-                                                        className="w-10 h-10 rounded-full object-cover"
-                                                    />
-                                                ) : (
+                                                <div className="w-10 h-10 rounded-full flex-shrink-0 relative">
+                                                    {/* Always render initials as base layer */}
                                                     <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
                                                         <span className="text-white font-semibold text-sm">
                                                             {userName.charAt(0) || '?'}
                                                         </span>
                                                     </div>
-                                                )}
+                                                    {/* Overlay photo on top */}
+                                                    {userAvatar && (
+                                                        <img
+                                                            src={userAvatar}
+                                                            alt={userName}
+                                                            width={40}
+                                                            height={40}
+                                                            className="w-10 h-10 rounded-full object-cover absolute inset-0"
+                                                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                                        />
+                                                    )}
+                                                </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="font-semibold text-gray-900 truncate text-sm">
                                                         {userName}
