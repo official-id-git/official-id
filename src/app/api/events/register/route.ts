@@ -108,6 +108,29 @@ export async function POST(request: NextRequest) {
             from: EMAIL_SENDERS.circle,
         })
 
+        // Progressively enrich user profile with phone and company
+        // Only update fields that are currently empty in the user's profile
+        if (phone || institution) {
+            const { data: userProfile } = await supabase
+                .from('users')
+                .select('id, phone, company')
+                .eq('email', email)
+                .maybeSingle()
+
+            if (userProfile) {
+                const updates: Record<string, string> = {}
+                if (phone && !userProfile.phone) updates.phone = phone
+                if (institution && !userProfile.company) updates.company = institution
+
+                if (Object.keys(updates).length > 0) {
+                    await supabase
+                        .from('users')
+                        .update(updates)
+                        .eq('id', userProfile.id)
+                }
+            }
+        }
+
         return NextResponse.json({
             success: true,
             registration,

@@ -15,6 +15,8 @@ export type Database = {
           email: string
           full_name: string
           avatar_url: string | null
+          phone: string | null
+          company: string | null
           role: 'FREE_USER' | 'PAID_USER' | 'APP_ADMIN'
           payment_verified_at: string | null
           created_at: string
@@ -25,6 +27,8 @@ export type Database = {
           email: string
           full_name: string
           avatar_url?: string | null
+          phone?: string | null
+          company?: string | null
           role?: 'FREE_USER' | 'PAID_USER' | 'APP_ADMIN'
           payment_verified_at?: string | null
           created_at?: string
@@ -35,6 +39,8 @@ export type Database = {
           email?: string
           full_name?: string
           avatar_url?: string | null
+          phone?: string | null
+          company?: string | null
           role?: 'FREE_USER' | 'PAID_USER' | 'APP_ADMIN'
           payment_verified_at?: string | null
           created_at?: string

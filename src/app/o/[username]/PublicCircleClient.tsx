@@ -448,8 +448,8 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                                             setRegForm({
                                                                 name: user.full_name || '',
                                                                 email: user.email || '',
-                                                                phone: '',
-                                                                institution: '',
+                                                                phone: user.phone || '',
+                                                                institution: user.company || '',
                                                             })
                                                             setRegSuccess(false)
                                                             setShowRegModal(true)
@@ -503,8 +503,8 @@ export default function PublicCircleClient({ circleUsername }: PublicCircleClien
                                                             setRegForm({
                                                                 name: user.full_name || '',
                                                                 email: user.email || '',
-                                                                phone: '',
-                                                                institution: '',
+                                                                phone: user.phone || '',
+                                                                institution: user.company || '',
                                                             })
                                                             setRegSuccess(false)
                                                             setShowRegModal(true)
