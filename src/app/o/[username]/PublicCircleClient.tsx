@@ -492,11 +492,61 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                             </p>
 
                                             {rsvpSuccess ? (
-                                                <div className="bg-green-100 text-green-800 p-4 rounded-xl flex items-center gap-3 border border-green-200">
-                                                    <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                    <p className="font-semibold text-sm">Terima kasih! Konfirmasi kehadiran Anda berhasil disimpan.</p>
+                                                <div className="bg-white rounded-xl border border-green-200 shadow-sm overflow-hidden">
+                                                    <div className="bg-green-50 p-4 border-b border-green-100 flex items-center gap-3">
+                                                        <div className="bg-green-100 text-green-600 p-2 rounded-full">
+                                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-bold text-green-900">RSVP Berhasil Disimpan!</h4>
+                                                            <p className="text-sm text-green-800">Kehadiran Anda telah dikonfirmasi.</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="p-5 space-y-4">
+                                                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <h4 className="font-semibold text-blue-900 flex items-center gap-2">
+                                                                    <span className="text-lg">💳</span> Buat Kartu Nama Digital
+                                                                </h4>
+                                                                <span className="bg-blue-100 text-blue-700 text-[10px] uppercase font-bold px-2 py-0.5 rounded">Gratis</span>
+                                                            </div>
+                                                            <p className="text-sm text-blue-800 mb-3">
+                                                                Sebagai peserta event, buat kartu nama digital profesional Anda sekarang untuk networking yang lebih mudah selama acara.
+                                                            </p>
+                                                            <ul className="text-xs text-blue-700 space-y-1 mb-4 pl-5 list-disc">
+                                                                <li>Klaim link kustom <span className="font-mono bg-white/50 px-1 rounded">official.id/c/[nama-anda]</span></li>
+                                                                <li>Bagikan via QR Code dengan mudah</li>
+                                                                <li>Gunakan template circle (tanya admin untuk PIN)</li>
+                                                            </ul>
+
+                                                            <Link
+                                                                href={user ? "/dashboard/cards/new" : `/register?redirect=/dashboard/cards/new`}
+                                                                className="block w-full text-center py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                                                            >
+                                                                Buat Kartu Nama Sekarang
+                                                            </Link>
+                                                        </div>
+
+                                                        {(!user || user.role === 'FREE_USER') && (
+                                                            <div className="bg-amber-50 p-3 rounded-lg border border-amber-100 flex items-center justify-between gap-3">
+                                                                <div className="flex-1">
+                                                                    <p className="text-xs font-medium text-amber-900 flex items-center gap-1.5">
+                                                                        <span className="text-amber-500">⭐</span> Ingin fitur lebih?
+                                                                    </p>
+                                                                    <p className="text-[10px] text-amber-800 mt-0.5">Upgrade PRO (Rp 25.000 selamanya) untuk buat 20 kartu.</p>
+                                                                </div>
+                                                                <Link
+                                                                    href="/dashboard/upgrade"
+                                                                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold rounded shadow-sm whitespace-nowrap"
+                                                                >
+                                                                    Lihat PRO
+                                                                </Link>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <form onSubmit={handleRSVPSubmit} className="bg-white rounded-xl p-4 border border-amber-100 shadow-sm">
@@ -1119,19 +1169,7 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
     )
 }
 
-import {
-    ModernDarkCard,
-    CreativeCard,
-    MinimalWhiteCard,
-    ElegantCard,
-    CorporateCard,
-    TechCard,
-    ArtisticCard,
-    LuxuryCard,
-    VibrantCard
-} from '@/components/cards/templates/CardTemplates'
-
-import { IPTIKICard } from '@/components/cards/templates/NewCardTemplates'
+import { CardPreview } from '@/components/cards/CardPreview'
 
 // Helper component for carousel
 function MemberToCardCarousel({ cards, userId }: { cards: any[], userId: string }) {
@@ -1151,24 +1189,7 @@ function MemberToCardCarousel({ cards, userId }: { cards: any[], userId: string 
         }
     }
 
-    // Mapping template ID to component
-    const getTemplateComponent = (templateId: string) => {
-        const templates: any = {
-            'modern_dark': ModernDarkCard,
-            'creative': CreativeCard,
-            'minimal_white': MinimalWhiteCard,
-            'elegant': ElegantCard,
-            'corporate': CorporateCard,
-            'tech': TechCard,
-            'artistic': ArtisticCard,
-            'luxury': LuxuryCard,
-            'vibrant': VibrantCard,
-            'iptiki': IPTIKICard,
-            'professional': ModernDarkCard, // Fallback or mapping for 'professional'
-            'modern': ModernDarkCard // Fallback for 'modern'
-        }
-        return templates[templateId] || ModernDarkCard
-    }
+
 
     if (cards.length === 0) return null
 
@@ -1181,21 +1202,14 @@ function MemberToCardCarousel({ cards, userId }: { cards: any[], userId: string 
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
             >
                 {cards.map((card, idx) => {
-                    const Template = getTemplateComponent(card.template)
-                    // Ensure visible_fields is an object
-                    const visibleFields = typeof card.visible_fields === 'object' ? card.visible_fields : {}
-                    const socialLinks = typeof card.social_links === 'object' ? card.social_links : {}
-
                     return (
                         <div key={card.id} className="w-full flex-shrink-0 snap-center px-2 pt-4">
                             <div className="transform scale-[0.85] origin-top-center -mb-12 sm:scale-95 sm:mb-0 transition-transform">
                                 <Link href={`/c/${userId}?card=${card.id}`} className="block hover:opacity-95 transition-opacity">
                                     <div className="pointer-events-none"> {/* Disable interaction within carousel preview to allow clicking the whole card to view detail */}
-                                        <Template
+                                        <CardPreview
                                             card={card}
-                                            visibleFields={visibleFields}
-                                            socialLinks={socialLinks}
-                                            onGenerateVCard={() => { }} // No action in preview
+                                            template={card.template}
                                             readonly={true}
                                         />
                                     </div>

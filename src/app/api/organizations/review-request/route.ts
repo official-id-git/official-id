@@ -117,6 +117,23 @@ export async function POST(request: NextRequest) {
         try {
             const emailType = status === 'APPROVED' ? 'circle_member_welcome' : 'circle_request_rejected'
 
+            let upcomingEvents = []
+            if (status === 'APPROVED') {
+                // Fetch up to 3 upcoming events for this circle
+                const { data: events } = await supabase
+                    .from('circle_events')
+                    .select('title, event_date, event_time')
+                    .eq('organization_id', orgId)
+                    .in('status', ['upcoming'])
+                    .gte('event_date', new Date().toISOString().split('T')[0])
+                    .order('event_date', { ascending: true })
+                    .limit(3)
+
+                if (events) {
+                    upcomingEvents = events
+                }
+            }
+
             await fetch(new URL('/api/email/send', request.url).toString(), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -126,7 +143,9 @@ export async function POST(request: NextRequest) {
                         recipientEmail: orgRequest.email,
                         organizationName: orgRequest.organizations.name,
                         organizationLogo: orgRequest.organizations.logo_url,
-                        userExists: targetUserExists
+                        userExists: targetUserExists,
+                        upcomingEvents: upcomingEvents,
+                        circleUsername: orgRequest.organizations.username
                     }
                 })
             })

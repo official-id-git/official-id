@@ -560,6 +560,8 @@ export function getCircleMemberWelcomeTemplate(data: {
   organizationLogo?: string
   recipientEmail: string
   userExists?: boolean
+  upcomingEvents?: any[]
+  circleUsername?: string
 }): { subject: string; html: string } {
   const year = new Date().getFullYear()
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'
@@ -612,6 +614,32 @@ export function getCircleMemberWelcomeTemplate(data: {
                     </p>
                   </td>
                 </tr>
+
+                ${data.upcomingEvents && data.upcomingEvents.length > 0 ? `
+                <!-- Upcoming Events Section -->
+                <tr>
+                  <td style="padding: 25px 30px 0;">
+                    <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 16px; padding: 24px; border: 1px solid #e2e8f0;">
+                      <p style="margin: 0 0 16px; color: #334155; font-weight: 700; font-size: 15px; text-align: center;">📅 Event Mendatang di Circle Ini</p>
+                      
+                      ${data.upcomingEvents.slice(0, 3).map((event: any) => {
+      const eventDate = new Date(event.event_date).toLocaleDateString('id-ID', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+      });
+      return `
+                        <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #e2e8f0; text-align: left;">
+                          <h4 style="margin: 0 0 4px; color: #1e293b; font-size: 15px; font-weight: 600;">${event.title}</h4>
+                          <p style="margin: 0 0 12px; color: #64748b; font-size: 13px;">${eventDate} • ${event.event_time.substring(0, 5)} WIB</p>
+                          <a href="${siteUrl}/o/${data.circleUsername || 'circle'}" style="display: inline-block; background: #3b82f6; color: white; text-decoration: none; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 8px;">
+                            Lihat Event
+                          </a>
+                        </div>
+                        `;
+    }).join('')}
+                    </div>
+                  </td>
+                </tr>
+                ` : ''}
 
                 ${!data.userExists ? `
                 <!-- Registration CTA for non-registered users -->

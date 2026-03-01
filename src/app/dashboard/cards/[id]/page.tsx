@@ -378,6 +378,29 @@ export default function CardDetailPage() {
             </button>
           </div>
         </div>
+
+        {/* Upgrade PRO Banner */}
+        {user?.role === 'FREE_USER' && (
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-200">
+            <div className="flex flex-col items-center flex-col sm:flex-row gap-4 mb-4">
+              <div className="bg-gradient-to-br from-amber-400 to-orange-500 w-12 h-12 rounded-full flex justify-center items-center shadow-md flex-shrink-0">
+                <span className="text-2xl">⭐</span>
+              </div>
+              <div>
+                <h3 className="text-amber-900 font-bold text-lg mb-1">Upgrade ke PRO</h3>
+                <p className="text-amber-800 text-sm leading-relaxed">
+                  Buka fitur penuh: Bebas ubah username kartu semaumu, buat hingga 20 kartu bisnis, dan buat Circle komunitasmu sendiri! Hanya Rp 25.000 (Selamanya).
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/dashboard/upgrade"
+              className="flex items-center justify-center w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition-colors shadow-md shadow-amber-500/20"
+            >
+              🚀 Upgrade Sekarang
+            </Link>
+          </div>
+        )}
       </main>
 
       {/* Share Email Modal */}
