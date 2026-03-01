@@ -177,8 +177,8 @@ export default function WelcomePage() {
         </p>
         <div className="mt-6 flex justify-center">
           <a href="https://www.immuniweb.com/websec/official.id/Iq55zI8i/" target="_blank" rel="noopener noreferrer">
-            <img src="/iw_websec_large_light.png" alt="ImmuniWeb Website Security Test" className="h-[40px] dark:hidden" />
-            <img src="/iw_websec_large_dark.png" alt="ImmuniWeb Website Security Test" className="h-[40px] hidden dark:block" />
+            <img src="/secure/iw_websec_large_light.png" alt="ImmuniWeb Website Security Test" className="h-[40px] dark:hidden" />
+            <img src="/secure/iw_websec_large_dark.png" alt="ImmuniWeb Website Security Test" className="h-[40px] hidden dark:block" />
           </a>
         </div>
       </motion.footer>
