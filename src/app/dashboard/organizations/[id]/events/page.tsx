@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import * as XLSX from 'xlsx'
+import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useOrganizations } from '@/hooks/useOrganizations'
 import { useEvents } from '@/hooks/useEvents'
@@ -324,6 +326,76 @@ export default function EventManagementPage() {
         }
     }
 
+    const handleExportExcel = async (eventId: string, eventTitle: string) => {
+        try {
+            setConfirmConfig({ isOpen: true, title: 'Exporting', message: 'Sedang menyiapkan file Excel...', type: 'alert' })
+            const supabase = createClient()
+
+            // 1. Fetch registrations with required relation data
+            const { data: regData, error: regError } = await supabase
+                .from('event_registrations')
+                .select(`
+                    *,
+                    event_tickets(ticket_number),
+                    event_rsvps(status),
+                    users:user_id(
+                        id,
+                        business_cards(job_title, city)
+                    )
+                `)
+                .eq('event_id', eventId)
+                .order('registered_at', { ascending: false })
+
+            if (regError) throw regError
+
+            // 2. Fetch organization members to check circle join status
+            const { data: orgMembers, error: orgError } = await supabase
+                .from('organization_members')
+                .select('user_id, status')
+                .eq('organization_id', orgId)
+
+            if (orgError) throw orgError
+
+            const memberStatusMap = new Map()
+            if (orgMembers) {
+                orgMembers.forEach((m: any) => memberStatusMap.set(m.user_id, m.status))
+            }
+
+            // 3. Transform data for Excel
+            const excelData = (regData || []).map(reg => {
+                const user = reg.users || null
+                const businessCards = user?.business_cards || []
+                const latestCard = businessCards.length > 0 ? businessCards[0] : null
+
+                return {
+                    'Nama': reg.name,
+                    'Email': reg.email,
+                    'Mobile Phone': reg.phone || '-',
+                    'Jabatan': latestCard?.job_title || '-',
+                    'Nama Instansi': reg.institution || '-',
+                    'Kota': latestCard?.city || '-',
+                    'Nomor Tiket': reg.event_tickets?.[0]?.ticket_number || '-',
+                    'Status Konfirmasi Kehadiran': reg.status === 'confirmed' ? 'Confirmed' : reg.status === 'pending' ? 'Pending' : 'Cancelled',
+                    'Tanggal Daftar': new Date(reg.registered_at).toLocaleString('id-ID'),
+                    'Status Join di Circle': user ? (memberStatusMap.has(user.id) ? memberStatusMap.get(user.id) : 'Belum Join') : 'Belum Join',
+                    'Status Akun Official.id': user ? 'Terdaftar' : 'Belum Terdaftar'
+                }
+            })
+
+            // 4. Create and download Excel
+            const ws = XLSX.utils.json_to_sheet(excelData)
+            const wb = XLSX.utils.book_new()
+            XLSX.utils.book_append_sheet(wb, ws, "Peserta")
+
+            XLSX.writeFile(wb, `Peserta_Event_${eventTitle.replace(/[^a-z0-9]/gi, '_')}.xlsx`)
+
+            setConfirmConfig({ isOpen: false, title: '', message: '', type: 'alert' })
+        } catch (error) {
+            console.error('Error exporting to Excel:', error)
+            setConfirmConfig({ isOpen: true, title: 'Error', message: 'Gagal mengekspor data ke Excel', type: 'alert' })
+        }
+    }
+
     const getEventLandingUrl = () => {
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://official.id'
         return `${baseUrl}/o/${orgUsername}`
@@ -630,32 +702,44 @@ export default function EventManagementPage() {
                                                                 </div>
                                                             </div>
 
-                                                            {/* Filter + Search */}
-                                                            <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                                                                <div className="flex gap-1.5 flex-wrap">
-                                                                    {(['all', 'confirmed', 'pending', 'cancelled'] as const).map(status => (
-                                                                        <button
-                                                                            key={status}
-                                                                            onClick={() => setFilterStatus(status)}
-                                                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filterStatus === status
-                                                                                ? status === 'confirmed' ? 'bg-green-600 text-white'
-                                                                                    : status === 'pending' ? 'bg-yellow-500 text-white'
-                                                                                        : status === 'cancelled' ? 'bg-red-500 text-white'
-                                                                                            : 'bg-blue-600 text-white'
-                                                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                                                }`}
-                                                                        >
-                                                                            {status === 'all' ? `Semua (${registrations.length})` : `${status.charAt(0).toUpperCase() + status.slice(1)} (${registrations.filter(r => r.status === status).length})`}
-                                                                        </button>
-                                                                    ))}
+                                                            {/* Filter + Search + Export */}
+                                                            <div className="flex flex-col sm:flex-row gap-3 mb-4 justify-between">
+                                                                <div className="flex flex-col sm:flex-row gap-3">
+                                                                    <div className="flex gap-1.5 flex-wrap">
+                                                                        {(['all', 'confirmed', 'pending', 'cancelled'] as const).map(status => (
+                                                                            <button
+                                                                                key={status}
+                                                                                onClick={() => setFilterStatus(status)}
+                                                                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filterStatus === status
+                                                                                    ? status === 'confirmed' ? 'bg-green-600 text-white'
+                                                                                        : status === 'pending' ? 'bg-yellow-500 text-white'
+                                                                                            : status === 'cancelled' ? 'bg-red-500 text-white'
+                                                                                                : 'bg-blue-600 text-white'
+                                                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                                                    }`}
+                                                                            >
+                                                                                {status === 'all' ? `Semua (${registrations.length})` : `${status.charAt(0).toUpperCase() + status.slice(1)} (${registrations.filter(r => r.status === status).length})`}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="🔍 Cari nama atau email..."
+                                                                        value={searchQuery}
+                                                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                                                        className="flex-1 min-w-[200px] px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                                    />
                                                                 </div>
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="🔍 Cari nama atau email..."
-                                                                    value={searchQuery}
-                                                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                                                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                                />
+                                                                <button
+                                                                    onClick={() => handleExportExcel(event.id, event.title)}
+                                                                    disabled={registrations.length === 0}
+                                                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 whitespace-nowrap h-fit"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                                    </svg>
+                                                                    Export Excel
+                                                                </button>
                                                             </div>
 
                                                             {/* Bulk Actions */}
