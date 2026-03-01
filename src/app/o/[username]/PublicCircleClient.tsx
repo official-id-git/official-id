@@ -88,10 +88,11 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase()
             result = result.filter((member: any) => {
-                const userName = member.users?.full_name?.toLowerCase() || ''
-
-                // Get business card data
                 const businessCards = member.users?.business_cards || []
+
+                const userNameRaw = member.users?.full_name || (businessCards.length > 0 && businessCards[0].full_name ? businessCards[0].full_name : '')
+                const userName = userNameRaw.toLowerCase()
+
                 const companyMatch = businessCards.some((card: any) =>
                     card.company?.toLowerCase().includes(query) ||
                     card.city?.toLowerCase().includes(query) ||
@@ -104,8 +105,15 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
 
         // Sort by name
         result.sort((a: any, b: any) => {
-            const nameA = a.users?.full_name?.toLowerCase() || ''
-            const nameB = b.users?.full_name?.toLowerCase() || ''
+            const aBusinessCards = a.users?.business_cards || []
+            const bBusinessCards = b.users?.business_cards || []
+
+            const nameARaw = a.users?.full_name || (aBusinessCards.length > 0 && aBusinessCards[0].full_name ? aBusinessCards[0].full_name : '')
+            const nameBRaw = b.users?.full_name || (bBusinessCards.length > 0 && bBusinessCards[0].full_name ? bBusinessCards[0].full_name : '')
+
+            const nameA = nameARaw.toLowerCase()
+            const nameB = nameBRaw.toLowerCase()
+
             if (sortOrder === 'asc') {
                 return nameA.localeCompare(nameB)
             } else {
@@ -740,10 +748,11 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {filteredMembers.map((member: any) => {
                                 const userData = member.users || {}
-                                const userName = userData.full_name || 'Anonymous'
+                                const businessCards = userData.business_cards || []
+                                const userName = userData.full_name || (businessCards.length > 0 && businessCards[0].full_name ? businessCards[0].full_name : 'Anonymous')
                                 // Prioritize business card photo (Cloudinary) over avatar_url (LinkedIn, ORB blocked)
-                                const cardPhoto = userData.business_cards && userData.business_cards.length > 0
-                                    ? userData.business_cards[0].profile_photo_url
+                                const cardPhoto = businessCards.length > 0
+                                    ? businessCards[0].profile_photo_url
                                     : null
                                 const userAvatar = cardPhoto || userData.avatar_url
                                 const userId = userData.id

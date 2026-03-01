@@ -25,11 +25,20 @@ interface MemberListProps {
 interface MemberWithUser extends OrganizationMember {
   users?: {
     id: string
-    full_name: string
+    full_name: string | null
     email: string
     avatar_url: string | null
     business_cards?: BusinessCard[]
   }
+}
+
+const getUserFullName = (user?: MemberWithUser['users']): string => {
+  if (!user) return 'Unknown'
+  if (user.full_name) return user.full_name
+  if (user.business_cards && user.business_cards.length > 0 && user.business_cards[0].full_name) {
+    return user.business_cards[0].full_name
+  }
+  return 'Unknown'
 }
 
 export function MemberList({ members, isAdmin, onUpdate, organization, currentUserId }: MemberListProps) {
@@ -123,7 +132,8 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
     const query = searchQuery.toLowerCase()
 
     // Check name and email
-    const nameMatch = m.users?.full_name?.toLowerCase().includes(query)
+    const fullName = getUserFullName(m.users)
+    const nameMatch = fullName.toLowerCase().includes(query)
     const emailMatch = m.users?.email?.toLowerCase().includes(query)
 
     // Check business cards
@@ -138,8 +148,8 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
   }).sort((a, b) => {
     const m1 = a as MemberWithUser
     const m2 = b as MemberWithUser
-    const nameA = m1.users?.full_name?.toLowerCase() || ''
-    const nameB = m2.users?.full_name?.toLowerCase() || ''
+    const nameA = getUserFullName(m1.users).toLowerCase()
+    const nameB = getUserFullName(m2.users).toLowerCase()
 
     if (sortOrder === 'asc') {
       return nameA.localeCompare(nameB)
@@ -169,19 +179,21 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
       : null
     const photoUrl = cardPhoto || user?.avatar_url
 
+    const userFullName = getUserFullName(user)
+
     return (
       <div className={`${sizeClass} rounded-full flex-shrink-0 relative`}>
         {/* Always render initials as base layer */}
         <div className={`${sizeClass} bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center`}>
           <span className="text-blue-600 font-semibold">
-            {user?.full_name?.charAt(0).toUpperCase() || '?'}
+            {userFullName !== 'Unknown' ? userFullName.charAt(0).toUpperCase() : '?'}
           </span>
         </div>
         {/* Overlay photo on top — hides itself on error, revealing initials underneath */}
         {photoUrl && (
           <img
             src={photoUrl}
-            alt={user?.full_name || 'Avatar'}
+            alt={userFullName}
             width={dims}
             height={dims}
             className={`${sizeClass} rounded-full object-cover absolute inset-0`}
@@ -300,7 +312,7 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
                   <div className="flex items-center gap-3">
                     <Avatar user={m.users} />
                     <div>
-                      <p className="font-medium text-gray-900">{m.users?.full_name || 'Unknown'}</p>
+                      <p className="font-medium text-gray-900">{getUserFullName(m.users)}</p>
                       <a
                         href={`mailto:${m.users?.email}`}
                         className="text-sm text-blue-600 hover:underline"
@@ -360,7 +372,7 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
                     <Avatar user={m.users} />
                     <div className="min-w-0">
                       <p className="font-medium text-gray-900 flex items-center gap-2">
-                        <span className="truncate">{m.users?.full_name || 'Unknown'}</span>
+                        <span className="truncate">{getUserFullName(m.users)}</span>
                         {m.is_admin && (
                           <span className="px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-full flex-shrink-0">
                             Admin
@@ -381,7 +393,7 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
                     </span>
                     {/* Message Button */}
                     <button
-                      onClick={() => handleOpenMessage(m.users?.id || '', m.users?.full_name || '')}
+                      onClick={() => handleOpenMessage(m.users?.id || '', getUserFullName(m.users))}
                       className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                       title="Kirim Pesan"
                     >
@@ -441,11 +453,11 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-red-200 rounded-full flex items-center justify-center">
                       <span className="text-red-700 font-medium">
-                        {m.users?.full_name?.charAt(0).toUpperCase() || '?'}
+                        {getUserFullName(m.users) !== 'Unknown' ? getUserFullName(m.users).charAt(0).toUpperCase() : '?'}
                       </span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{m.users?.full_name || 'Unknown'}</p>
+                      <p className="font-medium text-gray-900">{getUserFullName(m.users)}</p>
                       <p className="text-sm text-gray-500">{m.users?.email}</p>
                     </div>
                   </div>
@@ -482,7 +494,7 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
                   <Avatar user={selectedMember.users} size="lg" />
                 </div>
                 <h4 className="text-xl font-semibold text-gray-900">
-                  {selectedMember.users?.full_name || 'Unknown'}
+                  {getUserFullName(selectedMember.users)}
                 </h4>
                 {selectedMember.is_admin && (
                   <span className="inline-block mt-2 px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-full">
@@ -572,7 +584,7 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
               <div className="flex gap-3">
                 <button
                   onClick={() => {
-                    handleOpenMessage(selectedMember.users?.id || '', selectedMember.users?.full_name || '')
+                    handleOpenMessage(selectedMember.users?.id || '', getUserFullName(selectedMember.users))
                     // Does not close modal, allows messaging while viewing details
                   }}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
