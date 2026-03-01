@@ -336,6 +336,14 @@ function LoginForm() {
               Register now
             </Link>
           </p>
+
+          {/* ImmuniWeb Security Badge */}
+          <div className="mt-8 flex justify-center">
+            <a href="https://www.immuniweb.com/websec/official.id/Iq55zI8i/" target="_blank" rel="noopener noreferrer">
+              <img src="/secure/iw_websec_large_light.png" alt="ImmuniWeb Website Security Test" className="h-[40px] dark:hidden" />
+              <img src="/secure/iw_websec_large_dark.png" alt="ImmuniWeb Website Security Test" className="h-[40px] hidden dark:block" />
+            </a>
+          </div>
         </div>
       </div>
     </div>
