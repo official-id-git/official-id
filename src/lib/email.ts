@@ -540,13 +540,33 @@ export function getCircleRequestAdminNotificationTemplate(data: {
   }
 }
 
+// Legacy alias — now delegates to the new welcome template
 export function getCircleRequestApprovedTemplate(data: {
   organizationName: string
   organizationLogo?: string
   recipientEmail: string
 }): { subject: string; html: string } {
+  return getCircleMemberWelcomeTemplate({
+    organizationName: data.organizationName,
+    organizationLogo: data.organizationLogo,
+    recipientEmail: data.recipientEmail,
+    userExists: false,
+  })
+}
+
+// New premium welcome email for approved circle members (generic for all circles)
+export function getCircleMemberWelcomeTemplate(data: {
+  organizationName: string
+  organizationLogo?: string
+  recipientEmail: string
+  userExists?: boolean
+}): { subject: string; html: string } {
+  const year = new Date().getFullYear()
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'
+  const logoUrl = 'https://res.cloudinary.com/dhr9kt7r5/image/upload/v1766548116/official-id/circles/dopjzc11o9fpqdfde63b.png'
+
   return {
-    subject: `🎉 Permintaan bergabung Anda dengan ${data.organizationName} telah Disetujui!`,
+    subject: `🎉 Selamat Bergabung dengan Circle ${data.organizationName}!`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -554,36 +574,272 @@ export function getCircleRequestApprovedTemplate(data: {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
       </head>
-      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f5f5f5;">
-        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-          <div style="text-align: center; margin-bottom: 24px;">
-            ${data.organizationLogo ? `
-              <img src="${data.organizationLogo}" alt="${data.organizationName}" width="70" height="70" style="border-radius: 16px; margin-bottom: 16px;">
-            ` : `
-              <div style="width: 70px; height: 70px; margin: 0 auto 16px; background: linear-gradient(135deg, #10B981, #059669); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 32px;">✅</span>
-              </div>
-            `}
-            <h1 style="color: #1a1a1a; font-size: 24px; margin: 0;">Selamat bergabung!</h1>
-          </div>
-          
-          <p style="color: #666; line-height: 1.6;">
-            Selamat! Permintaan Anda untuk bergabung dengan Circle <strong>${data.organizationName}</strong> telah disetujui oleh admin.
-          </p>
-          
-          <div style="background: #f0fdf4; border-radius: 12px; padding: 16px; margin: 20px 0;">
-            <p style="margin: 0; color: #166534; font-weight: 600;">Langkah Selanjutnya:</p>
-            <p style="margin: 8px 0 0; color: #666;">Silakan mendaftar (register) atau masuk (login) ke Official ID menggunakan email <strong>${data.recipientEmail}</strong>. Profil Anda akan secara otomatis terhubung dengan Circle ini.</p>
-          </div>
-          
-          <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'}/register" style="display: block; text-align: center; background: linear-gradient(135deg, #10B981, #059669); color: white; padding: 14px 24px; border-radius: 12px; text-decoration: none; font-weight: 600; margin: 24px 0;">
-            Daftar & Lengkapi Profil
-          </a>
-          
-          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 32px;">
-            © ${new Date().getFullYear()} Official ID. All rights reserved.
-          </p>
-        </div>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.08);">
+                
+                <!-- Header with Official.id branding -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #2D7C88 0%, #1A5A66 100%); padding: 35px 30px; text-align: center;">
+                    <img src="${logoUrl}" alt="Official ID" width="50" height="50" style="margin-bottom: 12px; border-radius: 10px;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">🎉 Selamat Bergabung!</h1>
+                    <p style="margin: 8px 0 0; color: rgba(255,255,255,0.85); font-size: 14px;">Official ID Circle</p>
+                  </td>
+                </tr>
+                
+                <!-- Circle Info -->
+                <tr>
+                  <td style="padding: 35px 30px 0;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                      ${data.organizationLogo ? `
+                        <img src="${data.organizationLogo}" alt="${data.organizationName}" width="80" height="80" style="border-radius: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                      ` : `
+                        <div style="width: 80px; height: 80px; margin: 0 auto 12px; background: linear-gradient(135deg, #10B981, #059669); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                          <span style="font-size: 36px; color: white; font-weight: bold;">${data.organizationName.charAt(0)}</span>
+                        </div>
+                      `}
+                    </div>
+                    <p style="margin: 0 0 8px; color: #374151; font-size: 16px; line-height: 1.6; text-align: center;">
+                      Permintaan Anda untuk bergabung dengan Circle
+                    </p>
+                    <h2 style="margin: 0 0 16px; color: #111827; font-size: 22px; font-weight: 700; text-align: center;">
+                      ${data.organizationName}
+                    </h2>
+                    <p style="margin: 0; color: #374151; font-size: 16px; line-height: 1.6; text-align: center;">
+                      telah <span style="color: #10B981; font-weight: 700;">disetujui</span> oleh admin! 🥳
+                    </p>
+                  </td>
+                </tr>
+
+                ${!data.userExists ? `
+                <!-- Registration CTA for non-registered users -->
+                <tr>
+                  <td style="padding: 25px 30px 0;">
+                    <div style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); border-radius: 16px; padding: 24px; border: 1px solid #bbf7d0;">
+                      <p style="margin: 0 0 8px; color: #166534; font-weight: 700; font-size: 15px;">📋 Langkah Selanjutnya</p>
+                      <p style="margin: 0 0 16px; color: #374151; font-size: 14px; line-height: 1.6;">
+                        Silakan mendaftar atau masuk ke Official ID menggunakan email <strong>${data.recipientEmail}</strong>. Profil Anda akan secara otomatis terhubung dengan Circle ini dan tampil di halaman Circle.
+                      </p>
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td style="text-align: center;">
+                            <a href="${siteUrl}/register" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 14px 28px; border-radius: 12px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                              Daftar &amp; Lengkapi Profil
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+                ` : ''}
+                
+                <!-- Business Card Info -->
+                <tr>
+                  <td style="padding: 25px 30px;">
+                    <div style="background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 16px; padding: 24px; border: 1px solid #c7d2fe;">
+                      <p style="margin: 0 0 4px; font-size: 20px; text-align: center;">💳</p>
+                      <h3 style="margin: 0 0 12px; color: #1e3a5f; font-size: 16px; font-weight: 700; text-align: center;">Kartu Bisnis Digital Premium</h3>
+                      <p style="margin: 0; color: #374151; font-size: 14px; line-height: 1.7; text-align: center;">
+                        Sebagai anggota Circle, Anda dapat membuat kartu bisnis digital dengan template premium circle cukup dengan memasukkan <strong>PIN</strong> ketika memilih template saat membuat kartu nama bisnis digital.
+                      </p>
+                      <p style="margin: 12px 0 0; color: #6b7280; font-size: 13px; text-align: center; font-style: italic;">
+                        Untuk PIN template, silakan ditanyakan kepada admin circle Anda.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- Divider -->
+                <tr>
+                  <td style="padding: 0 30px;">
+                    <hr style="margin: 0; border: none; border-top: 1px solid #e5e7eb;">
+                  </td>
+                </tr>
+                
+                <!-- PRO Upgrade CTA -->
+                <tr>
+                  <td style="padding: 25px 30px;">
+                    <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-radius: 16px; padding: 24px; border: 1px solid #fde68a;">
+                      <p style="margin: 0 0 4px; font-size: 20px; text-align: center;">⭐</p>
+                      <h3 style="margin: 0 0 8px; color: #92400e; font-size: 16px; font-weight: 700; text-align: center;">Upgrade ke PRO</h3>
+                      <p style="margin: 0 0 16px; color: #78350f; font-size: 14px; line-height: 1.6; text-align: center;">
+                        Nikmati berbagai layanan PRO Official ID hanya dengan <strong style="font-size: 18px; color: #d97706;">Rp 25.000</strong> — <strong>selamanya!</strong> Buat hingga 20 kartu bisnis digital, buat Circle sendiri, dan banyak lagi.
+                      </p>
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td style="text-align: center;">
+                            <a href="${siteUrl}/dashboard/upgrade" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 12px 24px; border-radius: 10px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+                              🚀 Upgrade Sekarang
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- Footer -->
+                <tr>
+                  <td style="background: #f9fafb; padding: 25px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                    <p style="margin: 0 0 8px;">
+                      <a href="${siteUrl}" style="color: #2D7C88; text-decoration: none; font-weight: 600; font-size: 14px;">official.id</a>
+                    </p>
+                    <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                      © ${year} Official ID. Digital Ecosystem for Professionals.
+                    </p>
+                  </td>
+                </tr>
+                
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `
+  }
+}
+
+// One-time email template for existing approved user who hasn't registered yet (fhadzvembryant@gmail.com case)
+export function getCircleExistingApprovalInviteTemplate(data: {
+  organizationName: string
+  organizationLogo?: string
+  recipientEmail: string
+}): { subject: string; html: string } {
+  const year = new Date().getFullYear()
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'
+  const logoUrl = 'https://res.cloudinary.com/dhr9kt7r5/image/upload/v1766548116/official-id/circles/dopjzc11o9fpqdfde63b.png'
+
+  return {
+    subject: `🎉 Anda Telah Disetujui Sebagai Anggota ${data.organizationName} — Buat Akun Official ID Sekarang!`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.08);">
+                
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #2D7C88 0%, #1A5A66 100%); padding: 35px 30px; text-align: center;">
+                    <img src="${logoUrl}" alt="Official ID" width="50" height="50" style="margin-bottom: 12px; border-radius: 10px;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">🎉 Anda Telah Disetujui!</h1>
+                    <p style="margin: 8px 0 0; color: rgba(255,255,255,0.85); font-size: 14px;">Official ID Circle</p>
+                  </td>
+                </tr>
+                
+                <!-- Main Content -->
+                <tr>
+                  <td style="padding: 35px 30px 0;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                      ${data.organizationLogo ? `
+                        <img src="${data.organizationLogo}" alt="${data.organizationName}" width="80" height="80" style="border-radius: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                      ` : ''}
+                    </div>
+                    <p style="margin: 0 0 16px; color: #374151; font-size: 16px; line-height: 1.6;">
+                      Halo <strong>${data.recipientEmail}</strong>,
+                    </p>
+                    <p style="margin: 0 0 8px; color: #374151; font-size: 16px; line-height: 1.6;">
+                      Selamat! Anda telah <strong style="color: #10B981;">disetujui</strong> sebagai anggota Circle <strong>${data.organizationName}</strong> di Official ID.
+                    </p>
+                    <p style="margin: 0; color: #374151; font-size: 16px; line-height: 1.6;">
+                      Untuk melihat profil Anda di halaman Circle dan menikmati semua layanan, silakan buat akun Official ID terlebih dahulu.
+                    </p>
+                  </td>
+                </tr>
+                
+                <!-- Registration CTA -->
+                <tr>
+                  <td style="padding: 25px 30px;">
+                    <div style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); border-radius: 16px; padding: 24px; border: 1px solid #bbf7d0;">
+                      <p style="margin: 0 0 12px; color: #166534; font-weight: 700; font-size: 15px; text-align: center;">📋 Buat Akun Official ID</p>
+                      <p style="margin: 0 0 16px; color: #374151; font-size: 14px; line-height: 1.6; text-align: center;">
+                        Daftarkan akun menggunakan email <strong>${data.recipientEmail}</strong> agar profil Anda otomatis terhubung dengan Circle ${data.organizationName}.
+                      </p>
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td style="text-align: center;">
+                            <a href="${siteUrl}/register" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 14px 28px; border-radius: 12px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                              Buat Akun Sekarang
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- Business Card Info -->
+                <tr>
+                  <td style="padding: 0 30px 25px;">
+                    <div style="background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 16px; padding: 24px; border: 1px solid #c7d2fe;">
+                      <p style="margin: 0 0 4px; font-size: 20px; text-align: center;">💳</p>
+                      <h3 style="margin: 0 0 12px; color: #1e3a5f; font-size: 16px; font-weight: 700; text-align: center;">Kartu Bisnis Digital Premium</h3>
+                      <p style="margin: 0; color: #374151; font-size: 14px; line-height: 1.7; text-align: center;">
+                        Sebagai anggota Circle ${data.organizationName}, Anda dapat membuat kartu bisnis digital dengan template premium circle cukup dengan memasukkan <strong>PIN</strong> ketika memilih template. Untuk PIN, silakan ditanyakan kepada admin circle.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- PRO Upgrade CTA -->
+                <tr>
+                  <td style="padding: 0 30px 25px;">
+                    <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-radius: 16px; padding: 24px; border: 1px solid #fde68a;">
+                      <p style="margin: 0 0 4px; font-size: 20px; text-align: center;">⭐</p>
+                      <h3 style="margin: 0 0 8px; color: #92400e; font-size: 16px; font-weight: 700; text-align: center;">Upgrade ke PRO</h3>
+                      <p style="margin: 0 0 16px; color: #78350f; font-size: 14px; line-height: 1.6; text-align: center;">
+                        Nikmati berbagai layanan PRO Official ID hanya dengan <strong style="font-size: 18px; color: #d97706;">Rp 25.000</strong> — <strong>selamanya!</strong>
+                      </p>
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td style="text-align: center;">
+                            <a href="${siteUrl}/dashboard/upgrade" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 12px 24px; border-radius: 10px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+                              🚀 Upgrade Sekarang
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- Note -->
+                <tr>
+                  <td style="padding: 0 30px 25px;">
+                    <div style="background: #f8fafc; border-radius: 12px; padding: 16px; border: 1px solid #e2e8f0;">
+                      <p style="margin: 0; color: #64748b; font-size: 13px; line-height: 1.6; text-align: center;">
+                        💡 Jika Anda sudah membuat akun Official ID setelah menerima email ini, silakan abaikan pesan ini atau langsung <a href="${siteUrl}/login" style="color: #2D7C88; font-weight: 600;">login</a> dan gunakan berbagai layanan kami.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- Footer -->
+                <tr>
+                  <td style="background: #f9fafb; padding: 25px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                    <p style="margin: 0 0 8px;">
+                      <a href="${siteUrl}" style="color: #2D7C88; text-decoration: none; font-weight: 600; font-size: 14px;">official.id</a>
+                    </p>
+                    <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                      © ${year} Official ID. Digital Ecosystem for Professionals.
+                    </p>
+                  </td>
+                </tr>
+                
+              </table>
+            </td>
+          </tr>
+        </table>
       </body>
       </html>
     `

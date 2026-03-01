@@ -10,6 +10,8 @@ import {
   getShareCardEmailTemplate,
   getCircleRequestAdminNotificationTemplate,
   getCircleRequestApprovedTemplate,
+  getCircleMemberWelcomeTemplate,
+  getCircleExistingApprovalInviteTemplate,
   getCircleRequestRejectedTemplate,
   getCircleRequestUserConfirmationTemplate
 } from '@/lib/email'
@@ -171,7 +173,47 @@ export async function POST(request: NextRequest) {
       }
 
       case 'circle_request_approved': {
-        const template = getCircleRequestApprovedTemplate({
+        const template = getCircleMemberWelcomeTemplate({
+          organizationName: data.organizationName,
+          organizationLogo: data.organizationLogo,
+          recipientEmail: data.recipientEmail,
+          userExists: data.userExists || false
+        })
+
+        logData.recipient_email = data.recipientEmail
+        logData.subject = template.subject
+
+        emailResult = await sendEmail({
+          to: data.recipientEmail,
+          subject: template.subject,
+          html: template.html,
+          from: EMAIL_SENDERS.circle
+        })
+        break
+      }
+
+      case 'circle_member_welcome': {
+        const template = getCircleMemberWelcomeTemplate({
+          organizationName: data.organizationName,
+          organizationLogo: data.organizationLogo,
+          recipientEmail: data.recipientEmail,
+          userExists: data.userExists || false
+        })
+
+        logData.recipient_email = data.recipientEmail
+        logData.subject = template.subject
+
+        emailResult = await sendEmail({
+          to: data.recipientEmail,
+          subject: template.subject,
+          html: template.html,
+          from: EMAIL_SENDERS.circle
+        })
+        break
+      }
+
+      case 'circle_existing_approval_invite': {
+        const template = getCircleExistingApprovalInviteTemplate({
           organizationName: data.organizationName,
           organizationLogo: data.organizationLogo,
           recipientEmail: data.recipientEmail

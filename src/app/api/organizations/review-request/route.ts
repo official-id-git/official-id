@@ -88,12 +88,15 @@ export async function POST(request: NextRequest) {
 
         // If approved, check if the user already has an account with this email
         // and automatically add them to the organization if they do
+        let targetUserExists = false
         if (status === 'APPROVED') {
             const { data: targetUser } = await supabase
                 .from('users')
                 .select('id')
                 .eq('email', orgRequest.email)
                 .single()
+
+            targetUserExists = !!targetUser
 
             if (targetUser) {
                 // User exists, add them as member directly
@@ -112,7 +115,7 @@ export async function POST(request: NextRequest) {
 
         // Send email notification based on status
         try {
-            const emailType = status === 'APPROVED' ? 'circle_request_approved' : 'circle_request_rejected'
+            const emailType = status === 'APPROVED' ? 'circle_member_welcome' : 'circle_request_rejected'
 
             await fetch(new URL('/api/email/send', request.url).toString(), {
                 method: 'POST',
@@ -122,7 +125,8 @@ export async function POST(request: NextRequest) {
                     data: {
                         recipientEmail: orgRequest.email,
                         organizationName: orgRequest.organizations.name,
-                        organizationLogo: orgRequest.organizations.logo_url
+                        organizationLogo: orgRequest.organizations.logo_url,
+                        userExists: targetUserExists
                     }
                 })
             })

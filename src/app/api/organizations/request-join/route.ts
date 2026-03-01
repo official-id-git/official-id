@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
         }
 
         console.log('Successfully completed request-join endpoint')
-        return NextResponse.json({ success: true, request: requestResult })
+        return NextResponse.json({ success: true, request: requestResult, userExists: !!existingUser })
 
     } catch (error: any) {
         console.error('Request join caught error in try/catch block:', error, error.stack)

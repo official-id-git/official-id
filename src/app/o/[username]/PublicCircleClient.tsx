@@ -52,6 +52,7 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
     const [requestMessage, setRequestMessage] = useState('')
     const [requesting, setRequesting] = useState(false)
     const [requestSuccess, setRequestSuccess] = useState(false)
+    const [requestUserExists, setRequestUserExists] = useState(true)
 
     // Search and Sort state
     const [searchQuery, setSearchQuery] = useState('')
@@ -251,6 +252,7 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
             if (!res.ok) throw new Error(data.error || 'Gagal mengirim permintaan')
 
             setRequestSuccess(true)
+            setRequestUserExists(data.userExists || false)
             setRequestEmail('')
             setRequestMessage('')
         } catch (err: any) {
@@ -396,11 +398,29 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                         <p className="text-blue-700 mb-4 text-sm">Circle ini bersifat privat. Sampaikan email aktif Anda untuk meminta undangan dari Admin.</p>
 
                                         {requestSuccess ? (
-                                            <div className="bg-green-100 text-green-700 p-4 rounded-xl flex items-center gap-3">
-                                                <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                                <p className="text-sm font-medium">Permintaan berhasil dikirim! Silakan periksa email Anda nanti untuk update status.</p>
+                                            <div className="space-y-3">
+                                                <div className="bg-green-100 text-green-700 p-4 rounded-xl flex items-center gap-3">
+                                                    <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    <p className="text-sm font-medium">Permintaan berhasil dikirim! Silakan periksa email Anda nanti untuk update status.</p>
+                                                </div>
+                                                {!requestUserExists && (
+                                                    <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl">
+                                                        <p className="text-sm text-amber-800 mb-3">
+                                                            <strong>📋 Penting:</strong> Anda belum memiliki akun Official.id. Silakan daftar agar setelah disetujui admin, profil Anda langsung tampil di halaman Circle.
+                                                        </p>
+                                                        <a
+                                                            href="/register"
+                                                            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-medium rounded-xl hover:from-green-600 hover:to-green-700 transition-all"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                                            </svg>
+                                                            Buat Akun Official.id Sekarang
+                                                        </a>
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : (
                                             <form onSubmit={handleRequestJoin} className="space-y-3">
