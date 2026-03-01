@@ -358,15 +358,45 @@ export default function EventManagementPage() {
             if (orgError) throw orgError
 
             const memberStatusMap = new Map()
-            if (orgMembers) {
-                orgMembers.forEach((m: any) => memberStatusMap.set(m.user_id, m.status))
+            if (orgMembers && orgMembers.length > 0) {
+                // Fetch emails for those org members to match against registration emails
+                const { data: memberUsers } = await supabase
+                    .from('users')
+                    .select('id, email')
+                    .in('id', orgMembers.map((m: any) => m.user_id))
+
+                if (memberUsers) {
+                    memberUsers.forEach((mu: any) => {
+                        const memberRecord = orgMembers.find((m: any) => m.user_id === mu.id) as any
+                        if (memberRecord) {
+                            memberStatusMap.set(mu.email, memberRecord.status)
+                        }
+                    })
+                }
+            }
+
+            // Also check all emails in the event_registrations against the users table directly
+            // to accurately say if they have an Official.id account.
+            const participantEmails = regData?.map((r: any) => r.email).filter(Boolean) || []
+            const { data: registeredUsers } = await supabase
+                .from('users')
+                .select('email, phone, business_cards(job_title, city)')
+                .in('email', participantEmails)
+
+            const registeredUserMap = new Map()
+            if (registeredUsers) {
+                registeredUsers.forEach((u: any) => registeredUserMap.set(u.email, u))
             }
 
             // 3. Transform data for Excel
             const excelData = (regData || []).map((reg: any) => {
-                const user = reg.users || null
+                // Determine if we have matched internal Official.id account via relation OR secondary email lookup
+                const user = reg.users || registeredUserMap.get(reg.email) || null
+
                 const businessCards = user?.business_cards || []
                 const latestCard = businessCards.length > 0 ? businessCards[0] : null
+
+                const hasOfficialIdAccount = !!user
 
                 return {
                     'Nama': reg.name,
@@ -378,8 +408,8 @@ export default function EventManagementPage() {
                     'Nomor Tiket': reg.event_tickets?.[0]?.ticket_number || '-',
                     'Status Konfirmasi Kehadiran': reg.status === 'confirmed' ? 'Confirmed' : reg.status === 'pending' ? 'Pending' : 'Cancelled',
                     'Tanggal Daftar': new Date(reg.registered_at).toLocaleString('id-ID'),
-                    'Status Join di Circle': user ? (memberStatusMap.has(user.id) ? memberStatusMap.get(user.id) : 'Belum Join') : 'Belum Join',
-                    'Status Akun Official.id': user ? 'Terdaftar' : 'Belum Terdaftar'
+                    'Status Join di Circle': memberStatusMap.has(reg.email) ? memberStatusMap.get(reg.email) : 'Belum Join',
+                    'Status Akun Official.id': hasOfficialIdAccount ? 'Terdaftar' : 'Belum Terdaftar'
                 }
             })
 
