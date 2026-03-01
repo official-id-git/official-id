@@ -53,17 +53,20 @@ export default function EventManagementPage() {
         image_url: '',
     })
 
-    // Participants modal
-    const [showParticipantsModal, setShowParticipantsModal] = useState(false)
+    // Inline expandable sections (replaces modals)
+    const [expandedEvent, setExpandedEvent] = useState<string | null>(null)
+    const [expandedTab, setExpandedTab] = useState<'participants' | 'qrcode' | 'edit' | null>(null)
+
+    // Participants state
     const [selectedEvent, setSelectedEvent] = useState<CircleEvent | null>(null)
     const [registrations, setRegistrations] = useState<EventRegistration[]>([])
     const [regLoading, setRegLoading] = useState(false)
     const [selectedRegs, setSelectedRegs] = useState<string[]>([])
     const [approving, setApproving] = useState(false)
+    const [filterStatus, setFilterStatus] = useState('all')
+    const [searchQuery, setSearchQuery] = useState('')
 
-    // QR Code Modal
-    const [showQRModal, setShowQRModal] = useState(false)
-    const [qrEvent, setQrEvent] = useState<CircleEvent | null>(null)
+    // QR Code state
     const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
     const [qrGenerating, setQrGenerating] = useState(false)
     const [linkCopied, setLinkCopied] = useState(false)
@@ -152,7 +155,13 @@ export default function EventManagementPage() {
             zoom_link: event.zoom_link || '',
             image_url: event.image_url || '',
         })
-        setShowEventModal(true)
+        if (expandedEvent === event.id && expandedTab === 'edit') {
+            setExpandedEvent(null)
+            setExpandedTab(null)
+        } else {
+            setExpandedEvent(event.id)
+            setExpandedTab('edit')
+        }
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -169,7 +178,8 @@ export default function EventManagementPage() {
                 image_url: formData.image_url || null,
             })
             if (success) {
-                setShowEventModal(false)
+                setExpandedEvent(null)
+                setExpandedTab(null)
                 await loadEvents()
             }
         } else {
@@ -208,10 +218,18 @@ export default function EventManagementPage() {
     }
 
     const openParticipants = async (event: CircleEvent) => {
+        if (expandedEvent === event.id && expandedTab === 'participants') {
+            setExpandedEvent(null)
+            setExpandedTab(null)
+            return
+        }
         setSelectedEvent(event)
+        setExpandedEvent(event.id)
+        setExpandedTab('participants')
         setRegLoading(true)
-        setShowParticipantsModal(true)
-        setSelectedRegs([]) // Reset selection
+        setSelectedRegs([])
+        setFilterStatus('all')
+        setSearchQuery('')
         const regs = await fetchRegistrations(event.id)
         setRegistrations(regs)
         setRegLoading(false)
@@ -312,8 +330,14 @@ export default function EventManagementPage() {
     }
 
     const handleShowQR = async (event: CircleEvent) => {
-        setQrEvent(event)
-        setShowQRModal(true)
+        if (expandedEvent === event.id && expandedTab === 'qrcode') {
+            setExpandedEvent(null)
+            setExpandedTab(null)
+            return
+        }
+        setSelectedEvent(event)
+        setExpandedEvent(event.id)
+        setExpandedTab('qrcode')
         setQrDataUrl(null)
         setLinkCopied(false)
         setQrGenerating(true)
@@ -336,15 +360,38 @@ export default function EventManagementPage() {
     }
 
     const handleDownloadQR = async () => {
-        if (!qrEvent) return
+        if (!selectedEvent) return
         const url = getEventLandingUrl()
-        const filename = `qr-event-${qrEvent.title.replace(/\s+/g, '-').toLowerCase()}`
+        const filename = `qr-event-${selectedEvent.title.replace(/\s+/g, '-').toLowerCase()}`
         await downloadQRCode(url, filename)
     }
 
     const filteredEvents = events.filter(e =>
         activeTab === 'upcoming' ? e.status === 'upcoming' : e.status === 'past'
     )
+
+    // Filtered + sorted registrations for the participants panel
+    const filteredRegistrations = registrations
+        .filter(r => filterStatus === 'all' || r.status === filterStatus)
+        .filter(r => {
+            if (!searchQuery.trim()) return true
+            const q = searchQuery.toLowerCase()
+            return r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q)
+        })
+        .sort((a, b) => {
+            // Confirmed with tickets first (sorted by ticket number), then pending, then cancelled
+            const statusOrder: Record<string, number> = { confirmed: 0, pending: 1, cancelled: 2 }
+            const aOrder = statusOrder[a.status] ?? 1
+            const bOrder = statusOrder[b.status] ?? 1
+            if (aOrder !== bOrder) return aOrder - bOrder
+            // Within confirmed, sort by ticket number
+            if (a.status === 'confirmed' && b.status === 'confirmed') {
+                const aTicket = a.event_tickets?.[0]?.ticket_number || ''
+                const bTicket = b.event_tickets?.[0]?.ticket_number || ''
+                return aTicket.localeCompare(bTicket)
+            }
+            return 0
+        })
 
     if (authLoading || pageLoading) {
         return (
@@ -427,112 +474,415 @@ export default function EventManagementPage() {
                         filteredEvents.map((event) => {
                             const regCount = registrationCounts[event.id] || 0
                             const progress = (regCount / event.max_participants) * 100
+                            const isExpanded = expandedEvent === event.id
 
                             return (
-                                <div key={event.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
-                                    <div className="flex flex-col sm:flex-row gap-4">
-                                        {/* Image */}
-                                        {event.image_url && (
-                                            <img
-                                                src={event.image_url}
-                                                alt={event.title}
-                                                className="w-full sm:w-36 h-28 object-cover rounded-xl flex-shrink-0"
-                                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                                            />
-                                        )}
+                                <div key={event.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow overflow-hidden">
+                                    <div className="p-5">
+                                        <div className="flex flex-col sm:flex-row gap-4">
+                                            {/* Image */}
+                                            {event.image_url && (
+                                                <img
+                                                    src={event.image_url}
+                                                    alt={event.title}
+                                                    className="w-full sm:w-36 h-28 object-cover rounded-xl flex-shrink-0"
+                                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                                />
+                                            )}
 
-                                        {/* Info */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div>
-                                                    <h3 className="font-bold text-lg text-gray-900">{event.title}</h3>
-                                                    {event.description && (
-                                                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">{event.description}</p>
+                                            {/* Info */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div>
+                                                        <h3 className="font-bold text-lg text-gray-900">{event.title}</h3>
+                                                        {event.description && (
+                                                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">{event.description}</p>
+                                                        )}
+                                                    </div>
+                                                    <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full flex-shrink-0 font-medium">
+                                                        {event.category}
+                                                    </span>
+                                                </div>
+
+                                                {/* Meta */}
+                                                <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-gray-600">
+                                                    <span className="flex items-center gap-1.5">
+                                                        📅 {new Date(event.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                    </span>
+                                                    <span className="flex items-center gap-1.5">
+                                                        🕐 {event.event_time?.substring(0, 5)} WIB
+                                                    </span>
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${event.type === 'online' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                                                        }`}>
+                                                        {event.type === 'online' ? '🎥 Online' : '📍 ' + (event.location || 'Offline')}
+                                                    </span>
+                                                </div>
+
+                                                {/* Progress bar */}
+                                                <div className="mt-3">
+                                                    <div className="flex items-center justify-between text-sm mb-1">
+                                                        <span className="text-gray-600">Pendaftar</span>
+                                                        <span className="font-semibold text-gray-900">{regCount}/{event.max_participants}</span>
+                                                    </div>
+                                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                                        <div
+                                                            className={`h-2 rounded-full transition-all ${progress >= 90 ? 'bg-red-500' : progress >= 70 ? 'bg-yellow-500' : 'bg-blue-600'}`}
+                                                            style={{ width: `${Math.min(progress, 100)}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Action buttons as tabs */}
+                                                <div className="flex items-center gap-2 mt-4 flex-wrap">
+                                                    {event.type === 'online' && event.zoom_link && (
+                                                        <a href={event.zoom_link} target="_blank" rel="noopener noreferrer"
+                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Buka Zoom">
+                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                            </svg>
+                                                        </a>
                                                     )}
-                                                </div>
-                                                <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full flex-shrink-0 font-medium">
-                                                    {event.category}
-                                                </span>
-                                            </div>
-
-                                            {/* Meta */}
-                                            <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-gray-600">
-                                                <span className="flex items-center gap-1.5">
-                                                    📅 {new Date(event.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                </span>
-                                                <span className="flex items-center gap-1.5">
-                                                    🕐 {event.event_time?.substring(0, 5)} WIB
-                                                </span>
-                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${event.type === 'online' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                                                    }`}>
-                                                    {event.type === 'online' ? '🎥 Online' : '📍 ' + (event.location || 'Offline')}
-                                                </span>
-                                            </div>
-
-                                            {/* Progress bar */}
-                                            <div className="mt-3">
-                                                <div className="flex items-center justify-between text-sm mb-1">
-                                                    <span className="text-gray-600">Pendaftar</span>
-                                                    <span className="font-semibold text-gray-900">{regCount}/{event.max_participants}</span>
-                                                </div>
-                                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                                    <div
-                                                        className={`h-2 rounded-full transition-all ${progress >= 90 ? 'bg-red-500' : progress >= 70 ? 'bg-yellow-500' : 'bg-blue-600'}`}
-                                                        style={{ width: `${Math.min(progress, 100)}%` }}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* Actions */}
-                                            <div className="flex items-center gap-2 mt-4">
-                                                {event.type === 'online' && event.zoom_link && (
-                                                    <a href={event.zoom_link} target="_blank" rel="noopener noreferrer"
-                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Buka Zoom">
-                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                    {event.type === 'offline' && event.google_map_url && (
+                                                        <a href={event.google_map_url} target="_blank" rel="noopener noreferrer"
+                                                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Google Maps">
+                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            </svg>
+                                                        </a>
+                                                    )}
+                                                    <button
+                                                        onClick={() => openParticipants(event)}
+                                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium ${isExpanded && expandedTab === 'participants' ? 'bg-purple-100 text-purple-700' : 'text-purple-600 hover:bg-purple-50'}`}
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                                                         </svg>
-                                                    </a>
-                                                )}
-                                                {event.type === 'offline' && event.google_map_url && (
-                                                    <a href={event.google_map_url} target="_blank" rel="noopener noreferrer"
-                                                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Google Maps">
-                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        Peserta
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleShowQR(event)}
+                                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium ${isExpanded && expandedTab === 'qrcode' ? 'bg-indigo-100 text-indigo-700' : 'text-indigo-600 hover:bg-indigo-50'}`}
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h7v7H3V3zm11 0h7v7h-7V3zM3 14h7v7H3v-7zm14 3h.01M17 17h.01M14 14h3v3h-3v-3zm3 3h3v3h-3v-3z" />
                                                         </svg>
-                                                    </a>
-                                                )}
-                                                <button
-                                                    onClick={() => handleShowQR(event)}
-                                                    className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="QR Code Event">
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h7v7H3V3zm11 0h7v7h-7V3zM3 14h7v7H3v-7zm14 3h.01M17 17h.01M14 14h3v3h-3v-3zm3 3h3v3h-3v-3z" />
-                                                    </svg>
-                                                </button>
-                                                <button
-                                                    onClick={() => openParticipants(event)}
-                                                    className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Peserta">
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                                    </svg>
-                                                </button>
-                                                <button
-                                                    onClick={() => openEditModal(event)}
-                                                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="Edit">
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                    </svg>
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(event.id, event.title)}
-                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
-                                                </button>
+                                                        QR
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openEditModal(event)}
+                                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium ${isExpanded && expandedTab === 'edit' ? 'bg-gray-200 text-gray-800' : 'text-gray-600 hover:bg-gray-100'}`}
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(event.id, event.title)}
+                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* === INLINE EXPANDABLE SECTIONS === */}
+                                    {isExpanded && (
+                                        <div className="border-t border-gray-100">
+                                            {/* PARTICIPANTS TAB */}
+                                            {expandedTab === 'participants' && (
+                                                <div className="p-5">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <h3 className="text-lg font-bold text-gray-900">Peserta Event</h3>
+                                                        <button onClick={() => { setExpandedEvent(null); setExpandedTab(null) }} className="text-gray-400 hover:text-gray-600 text-sm">✕ Tutup</button>
+                                                    </div>
+
+                                                    {regLoading ? (
+                                                        <div className="flex items-center justify-center py-12">
+                                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                                        </div>
+                                                    ) : registrations.length === 0 ? (
+                                                        <div className="text-center py-12">
+                                                            <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            </svg>
+                                                            <p className="text-gray-500">Belum ada peserta terdaftar</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-3">
+                                                            {/* Stats */}
+                                                            <div className="grid grid-cols-3 gap-3 mb-4">
+                                                                <div className="bg-green-50 rounded-xl p-3 text-center">
+                                                                    <p className="text-2xl font-bold text-green-600">{registrations.filter(r => r.status === 'confirmed').length}</p>
+                                                                    <p className="text-xs text-green-700">Confirmed</p>
+                                                                </div>
+                                                                <div className="bg-yellow-50 rounded-xl p-3 text-center">
+                                                                    <p className="text-2xl font-bold text-yellow-600">{registrations.filter(r => r.status === 'pending').length}</p>
+                                                                    <p className="text-xs text-yellow-700">Pending</p>
+                                                                </div>
+                                                                <div className="bg-red-50 rounded-xl p-3 text-center">
+                                                                    <p className="text-2xl font-bold text-red-600">{registrations.filter(r => r.status === 'cancelled').length}</p>
+                                                                    <p className="text-xs text-red-700">Cancelled</p>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Filter + Search */}
+                                                            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                                                                <div className="flex gap-1.5 flex-wrap">
+                                                                    {(['all', 'confirmed', 'pending', 'cancelled'] as const).map(status => (
+                                                                        <button
+                                                                            key={status}
+                                                                            onClick={() => setFilterStatus(status)}
+                                                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filterStatus === status
+                                                                                ? status === 'confirmed' ? 'bg-green-600 text-white'
+                                                                                    : status === 'pending' ? 'bg-yellow-500 text-white'
+                                                                                        : status === 'cancelled' ? 'bg-red-500 text-white'
+                                                                                            : 'bg-blue-600 text-white'
+                                                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                                                }`}
+                                                                        >
+                                                                            {status === 'all' ? `Semua (${registrations.length})` : `${status.charAt(0).toUpperCase() + status.slice(1)} (${registrations.filter(r => r.status === status).length})`}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="🔍 Cari nama atau email..."
+                                                                    value={searchQuery}
+                                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                                />
+                                                            </div>
+
+                                                            {/* Bulk Actions */}
+                                                            {registrations.some(r => r.status === 'pending') && (
+                                                                <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-200">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                            onChange={(e) => {
+                                                                                const pendingIds = registrations.filter(r => r.status === 'pending').map(r => r.id)
+                                                                                setSelectedRegs(e.target.checked ? pendingIds : [])
+                                                                            }}
+                                                                            checked={
+                                                                                registrations.filter(r => r.status === 'pending').length > 0 &&
+                                                                                selectedRegs.length === registrations.filter(r => r.status === 'pending').length
+                                                                            }
+                                                                        />
+                                                                        <span className="text-sm font-medium text-gray-700">Pilih Semua ({registrations.filter(r => r.status === 'pending').length})</span>
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={handleBulkApprove}
+                                                                        disabled={selectedRegs.length === 0 || approving}
+                                                                        className="px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                                                                    >
+                                                                        {approving ? 'Memproses...' : `Setujui Terpilih (${selectedRegs.length})`}
+                                                                    </button>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Participant List */}
+                                                            {filteredRegistrations.length === 0 ? (
+                                                                <div className="text-center py-8 text-gray-400 text-sm">Tidak ada peserta yang cocok dengan filter</div>
+                                                            ) : (
+                                                                filteredRegistrations.map((reg) => (
+                                                                    <div key={reg.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 rounded-xl gap-4">
+                                                                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                                                                            {reg.status === 'pending' && (
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1 flex-shrink-0"
+                                                                                    checked={selectedRegs.includes(reg.id)}
+                                                                                    onChange={(e) => {
+                                                                                        if (e.target.checked) {
+                                                                                            setSelectedRegs([...selectedRegs, reg.id])
+                                                                                        } else {
+                                                                                            setSelectedRegs(selectedRegs.filter(id => id !== reg.id))
+                                                                                        }
+                                                                                    }}
+                                                                                />
+                                                                            )}
+                                                                            <div>
+                                                                                <p className="font-semibold text-gray-900">{reg.name}</p>
+                                                                                <p className="text-sm text-gray-500">{reg.email}</p>
+                                                                                <div className="flex flex-wrap gap-x-2 mt-1">
+                                                                                    {reg.phone && <span className="text-xs text-gray-500">📞 {reg.phone}</span>}
+                                                                                    {reg.institution && <span className="text-xs text-gray-500">🏢 {reg.institution}</span>}
+                                                                                </div>
+                                                                                {reg.event_payment_proofs && reg.event_payment_proofs.length > 0 && (
+                                                                                    <div className="mt-2">
+                                                                                        <a href={reg.event_payment_proofs[0].image_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded hover:bg-blue-100 transition-colors">
+                                                                                            📎 Lihat Bukti Bayar
+                                                                                        </a>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-end sm:block flex-shrink-0">
+                                                                            <select
+                                                                                value={reg.status}
+                                                                                onChange={(e) => handleStatusChange(reg.id, e.target.value, reg.status)}
+                                                                                className={`px-3 py-1.5 rounded-lg text-sm font-medium border-0 focus:ring-0 ${reg.status === 'confirmed' ? 'bg-green-100 text-green-700'
+                                                                                    : reg.status === 'pending' ? 'bg-yellow-100 text-yellow-700'
+                                                                                        : 'bg-red-100 text-red-700'
+                                                                                    }`}
+                                                                            >
+                                                                                <option value="confirmed">Confirmed</option>
+                                                                                <option value="pending">Pending</option>
+                                                                                <option value="cancelled">Cancelled</option>
+                                                                            </select>
+                                                                            {reg.status === 'confirmed' && reg.event_tickets && reg.event_tickets.length > 0 && (
+                                                                                <p className="text-xs font-medium text-gray-500 text-right mt-1.5">
+                                                                                    🎫 {reg.event_tickets[0].ticket_number}
+                                                                                </p>
+                                                                            )}
+                                                                            {reg.status === 'confirmed' && reg.event_rsvps && reg.event_rsvps.length > 0 && (
+                                                                                <p className="text-xs font-medium text-purple-600 text-right mt-1">
+                                                                                    {reg.event_rsvps[0].status === 'Hadir Tepat Waktu' ? '✅ Hadir' :
+                                                                                        reg.event_rsvps[0].status === 'Hadir Terlambat' ? '⏳ Terlambat' : '❌ Tidak Hadir'}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                ))
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* QR CODE TAB */}
+                                            {expandedTab === 'qrcode' && (
+                                                <div className="p-5">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <h3 className="text-lg font-bold text-gray-900">QR Code Event</h3>
+                                                        <button onClick={() => { setExpandedEvent(null); setExpandedTab(null) }} className="text-gray-400 hover:text-gray-600 text-sm">✕ Tutup</button>
+                                                    </div>
+                                                    <div className="flex flex-col items-center">
+                                                        {qrGenerating ? (
+                                                            <div className="w-[200px] h-[200px] flex items-center justify-center">
+                                                                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+                                                            </div>
+                                                        ) : qrDataUrl ? (
+                                                            <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+                                                                <Image src={qrDataUrl} alt="QR Code Event" width={200} height={200} unoptimized className="rounded-lg" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-[200px] h-[200px] flex items-center justify-center bg-gray-50 rounded-xl">
+                                                                <p className="text-gray-400 text-sm">Gagal generate QR</p>
+                                                            </div>
+                                                        )}
+                                                        <div className="w-full mt-4 bg-gray-50 rounded-xl p-3 max-w-sm">
+                                                            <p className="text-xs text-gray-500 mb-1">Landing Page URL</p>
+                                                            <p className="text-sm text-gray-800 font-mono break-all">{getEventLandingUrl()}</p>
+                                                        </div>
+                                                        <p className="text-xs text-gray-500 mt-3 text-center">Scan QR code ini untuk mengunjungi halaman event circle</p>
+                                                        <div className="flex gap-3 w-full mt-4 max-w-sm">
+                                                            <button
+                                                                onClick={handleCopyEventLink}
+                                                                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-colors ${linkCopied ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'}`}
+                                                            >
+                                                                {linkCopied ? '✓ Tersalin!' : '📋 Salin Link'}
+                                                            </button>
+                                                            <button
+                                                                onClick={handleDownloadQR}
+                                                                disabled={!qrDataUrl}
+                                                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-medium text-sm hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                                                            >
+                                                                ⬇️ Download QR
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* EDIT TAB */}
+                                            {expandedTab === 'edit' && (
+                                                <div className="p-5">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <h3 className="text-lg font-bold text-gray-900">Edit Event</h3>
+                                                        <button onClick={() => { setExpandedEvent(null); setExpandedTab(null) }} className="text-gray-400 hover:text-gray-600 text-sm">✕ Tutup</button>
+                                                    </div>
+                                                    <form onSubmit={handleSubmit} className="space-y-4">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                            <div>
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Judul Event *</label>
+                                                                <input type="text" value={formData.title} onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} required className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Kategori *</label>
+                                                                <select value={formData.category} onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                                                    <option value="Workshop">Workshop</option>
+                                                                    <option value="Seminar">Seminar</option>
+                                                                    <option value="Pelatihan">Pelatihan</option>
+                                                                    <option value="Talkshow">Talkshow</option>
+                                                                    <option value="Webinar">Webinar</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-semibold text-gray-900 mb-1">Deskripsi</label>
+                                                            <textarea value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} rows={2} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                                        </div>
+                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                                            <div>
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Tanggal *</label>
+                                                                <input type="date" value={formData.event_date} onChange={(e) => setFormData(prev => ({ ...prev, event_date: e.target.value }))} required className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Waktu *</label>
+                                                                <input type="time" value={formData.event_time} onChange={(e) => setFormData(prev => ({ ...prev, event_time: e.target.value }))} required className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Max Peserta</label>
+                                                                <input type="number" value={formData.max_participants} onChange={(e) => setFormData(prev => ({ ...prev, max_participants: parseInt(e.target.value) || 100 }))} min="1" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Tipe</label>
+                                                                <select value={formData.type} onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as 'online' | 'offline' }))} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                                                    <option value="online">🎥 Online</option>
+                                                                    <option value="offline">📍 Offline</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        {formData.type === 'online' && (
+                                                            <div>
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Link Zoom</label>
+                                                                <input type="url" value={formData.zoom_link} onChange={(e) => setFormData(prev => ({ ...prev, zoom_link: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="https://zoom.us/j/..." />
+                                                            </div>
+                                                        )}
+                                                        {formData.type === 'offline' && (
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                <div>
+                                                                    <label className="block text-sm font-semibold text-gray-900 mb-1">Lokasi</label>
+                                                                    <input type="text" value={formData.location} onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-sm font-semibold text-gray-900 mb-1">Google Maps URL</label>
+                                                                    <input type="url" value={formData.google_map_url} onChange={(e) => setFormData(prev => ({ ...prev, google_map_url: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <label className="block text-sm font-semibold text-gray-900 mb-1">URL Gambar Event</label>
+                                                            <input type="url" value={formData.image_url} onChange={(e) => setFormData(prev => ({ ...prev, image_url: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                                        </div>
+                                                        <div className="flex gap-3 pt-1">
+                                                            <button type="button" onClick={() => { setExpandedEvent(null); setExpandedTab(null) }} className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors">Batal</button>
+                                                            <button type="submit" disabled={loading} className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                                                                {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )
                         })
@@ -737,257 +1087,6 @@ export default function EventManagementPage() {
                 </div>
             )}
 
-            {/* Participants Modal */}
-            {showParticipantsModal && selectedEvent && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-                        <div className="p-6 border-b">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-xl font-bold text-gray-900">Peserta Event</h2>
-                                    <p className="text-sm text-gray-500 mt-1">{selectedEvent.title}</p>
-                                </div>
-                                <button onClick={() => setShowParticipantsModal(false)} className="text-gray-400 hover:text-gray-600">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-6">
-                            {regLoading ? (
-                                <div className="flex items-center justify-center py-12">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                                </div>
-                            ) : registrations.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                    <p className="text-gray-500">Belum ada peserta terdaftar</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {/* Stats */}
-                                    <div className="grid grid-cols-3 gap-3 mb-4">
-                                        <div className="bg-green-50 rounded-xl p-3 text-center">
-                                            <p className="text-2xl font-bold text-green-600">{registrations.filter(r => r.status === 'confirmed').length}</p>
-                                            <p className="text-xs text-green-700">Confirmed</p>
-                                        </div>
-                                        <div className="bg-yellow-50 rounded-xl p-3 text-center">
-                                            <p className="text-2xl font-bold text-yellow-600">{registrations.filter(r => r.status === 'pending').length}</p>
-                                            <p className="text-xs text-yellow-700">Pending</p>
-                                        </div>
-                                        <div className="bg-red-50 rounded-xl p-3 text-center flex-1">
-                                            <p className="text-2xl font-bold text-red-600">{registrations.filter(r => r.status === 'cancelled').length}</p>
-                                            <p className="text-xs text-red-700">Cancelled</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Bulk Actions */}
-                                    {registrations.some(r => r.status === 'pending') && (
-                                        <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-200">
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="checkbox"
-                                                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                    onChange={(e) => {
-                                                        const pendingIds = registrations.filter(r => r.status === 'pending').map(r => r.id)
-                                                        setSelectedRegs(e.target.checked ? pendingIds : [])
-                                                    }}
-                                                    checked={
-                                                        registrations.filter(r => r.status === 'pending').length > 0 &&
-                                                        selectedRegs.length === registrations.filter(r => r.status === 'pending').length
-                                                    }
-                                                />
-                                                <span className="text-sm font-medium text-gray-700">Pilih Semua ({registrations.filter(r => r.status === 'pending').length})</span>
-                                            </div>
-                                            <button
-                                                onClick={handleBulkApprove}
-                                                disabled={selectedRegs.length === 0 || approving}
-                                                className="px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                                            >
-                                                {approving ? 'Memproses...' : `Setujui Terpilih (${selectedRegs.length})`}
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {/* List */}
-                                    {registrations.map((reg) => (
-                                        <div key={reg.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 rounded-xl gap-4">
-                                            <div className="flex items-start gap-3 min-w-0 flex-1">
-                                                {reg.status === 'pending' && (
-                                                    <input
-                                                        type="checkbox"
-                                                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1 flex-shrink-0"
-                                                        checked={selectedRegs.includes(reg.id)}
-                                                        onChange={(e) => {
-                                                            if (e.target.checked) {
-                                                                setSelectedRegs([...selectedRegs, reg.id])
-                                                            } else {
-                                                                setSelectedRegs(selectedRegs.filter(id => id !== reg.id))
-                                                            }
-                                                        }}
-                                                    />
-                                                )}
-                                                <div>
-                                                    <p className="font-semibold text-gray-900">{reg.name}</p>
-                                                    <p className="text-sm text-gray-500">{reg.email}</p>
-                                                    <div className="flex flex-wrap gap-x-2 mt-1">
-                                                        {reg.phone && <span className="text-xs text-gray-500">📞 {reg.phone}</span>}
-                                                        {reg.institution && <span className="text-xs text-gray-500">🏢 {reg.institution}</span>}
-                                                    </div>
-
-                                                    {/* Payment Proof Link */}
-                                                    {reg.event_payment_proofs && reg.event_payment_proofs.length > 0 && (
-                                                        <div className="mt-2">
-                                                            <a href={reg.event_payment_proofs[0].image_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded hover:bg-blue-100 transition-colors">
-                                                                📎 Lihat Bukti Bayar
-                                                            </a>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center justify-end sm:block flex-shrink-0">
-                                                <select
-                                                    value={reg.status}
-                                                    onChange={(e) => handleStatusChange(reg.id, e.target.value, reg.status)}
-                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium border-0 focus:ring-0 ${reg.status === 'confirmed' ? 'bg-green-100 text-green-700'
-                                                        : reg.status === 'pending' ? 'bg-yellow-100 text-yellow-700'
-                                                            : 'bg-red-100 text-red-700'
-                                                        }`}
-                                                >
-                                                    <option value="confirmed">Confirmed</option>
-                                                    <option value="pending">Pending</option>
-                                                    <option value="cancelled">Cancelled</option>
-                                                </select>
-
-                                                {/* Ticket info if confirmed */}
-                                                {reg.status === 'confirmed' && reg.event_tickets && reg.event_tickets.length > 0 && (
-                                                    <p className="text-xs font-medium text-gray-500 text-right mt-1.5">
-                                                        🎫 {reg.event_tickets[0].ticket_number}
-                                                    </p>
-                                                )}
-
-                                                {/* RSVP Status */}
-                                                {reg.status === 'confirmed' && reg.event_rsvps && reg.event_rsvps.length > 0 && (
-                                                    <p className="text-xs font-medium text-purple-600 text-right mt-1">
-                                                        {reg.event_rsvps[0].status === 'Hadir Tepat Waktu' ? '✅ Hadir' :
-                                                            reg.event_rsvps[0].status === 'Hadir Terlambat' ? '⏳ Terlambat' : '❌ Tidak Hadir'}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* QR Code Modal */}
-            {showQRModal && qrEvent && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl max-w-sm w-full overflow-hidden">
-                        {/* Header */}
-                        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-5">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-white/20 p-2 rounded-xl">
-                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h7v7H3V3zm11 0h7v7h-7V3zM3 14h7v7H3v-7zm14 3h.01M17 17h.01M14 14h3v3h-3v-3zm3 3h3v3h-3v-3z" />
-                                        </svg>
-                                    </div>
-                                    <h3 className="text-lg font-bold text-white">QR Code Event</h3>
-                                </div>
-                                <button
-                                    onClick={() => setShowQRModal(false)}
-                                    className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-                                >
-                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <p className="text-white/80 text-sm mt-2 line-clamp-1">{qrEvent.title}</p>
-                        </div>
-
-                        {/* QR Code */}
-                        <div className="p-6 flex flex-col items-center">
-                            {qrGenerating ? (
-                                <div className="w-[200px] h-[200px] flex items-center justify-center">
-                                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
-                                </div>
-                            ) : qrDataUrl ? (
-                                <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-                                    <Image
-                                        src={qrDataUrl}
-                                        alt="QR Code Event"
-                                        width={200}
-                                        height={200}
-                                        unoptimized
-                                        className="rounded-lg"
-                                    />
-                                </div>
-                            ) : (
-                                <div className="w-[200px] h-[200px] flex items-center justify-center bg-gray-50 rounded-xl">
-                                    <p className="text-gray-400 text-sm">Gagal generate QR</p>
-                                </div>
-                            )}
-
-                            {/* URL Display */}
-                            <div className="w-full mt-4 bg-gray-50 rounded-xl p-3">
-                                <p className="text-xs text-gray-500 mb-1">Landing Page URL</p>
-                                <p className="text-sm text-gray-800 font-mono break-all">{getEventLandingUrl()}</p>
-                            </div>
-
-                            <p className="text-xs text-gray-500 mt-3 text-center">
-                                Scan QR code ini untuk mengunjungi halaman event circle
-                            </p>
-
-                            {/* Actions */}
-                            <div className="flex gap-3 w-full mt-4">
-                                <button
-                                    onClick={handleCopyEventLink}
-                                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-colors ${linkCopied
-                                        ? 'bg-green-100 text-green-700 border border-green-200'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
-                                        }`}
-                                >
-                                    {linkCopied ? (
-                                        <>
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            Tersalin!
-                                        </>
-                                    ) : (
-                                        <>
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                            </svg>
-                                            Salin Link
-                                        </>
-                                    )}
-                                </button>
-                                <button
-                                    onClick={handleDownloadQR}
-                                    disabled={!qrDataUrl}
-                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-medium text-sm hover:bg-indigo-700 transition-colors disabled:opacity-50"
-                                >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                    </svg>
-                                    Download QR
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Confirmation & Alert Custom Modal */}
             {confirmConfig.isOpen && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[70] p-4 backdrop-blur-sm animate-in fade-in duration-200">
@@ -1045,3 +1144,4 @@ export default function EventManagementPage() {
         </div>
     )
 }
+
