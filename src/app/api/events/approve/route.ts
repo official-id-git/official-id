@@ -115,7 +115,66 @@ export async function POST(request: NextRequest) {
 
                 if (ticketError) throw ticketError
 
-                // 4. Send Email
+                // 4. Auto-add participant to circle membership (BEFORE sending email so we can include status)
+                const orgId = event.organization_id
+                let addedToCircle = false
+                let userHasAccount = false
+
+                // Check if the participant has an Official.id account
+                const { data: participantUser } = await adminSupabase
+                    .from('users')
+                    .select('id')
+                    .eq('email', reg.email)
+                    .single()
+
+                if (participantUser) {
+                    userHasAccount = true
+                    // User has an account — add directly to organization_members
+                    const { error: memberError } = await adminSupabase
+                        .from('organization_members')
+                        .insert({
+                            organization_id: orgId,
+                            user_id: participantUser.id,
+                            status: 'APPROVED',
+                            joined_at: new Date().toISOString()
+                        })
+                        .select()
+
+                    if (!memberError) {
+                        addedToCircle = true
+                    } else if (memberError.code === '23505') {
+                        // Already a member — that's fine
+                        addedToCircle = true
+                    } else {
+                        console.warn('Failed to auto-add user to circle:', memberError)
+                    }
+                } else {
+                    // User doesn't have an account — create an auto-approved organization_request
+                    // The existing check_approved_requests() DB trigger will auto-add them
+                    // to organization_members when they create an account later
+                    const { error: reqError } = await adminSupabase
+                        .from('organization_requests')
+                        .insert({
+                            organization_id: orgId,
+                            email: reg.email,
+                            message: `Auto-approved via event registration: ${event.title}`,
+                            status: 'APPROVED',
+                            reviewed_at: new Date().toISOString(),
+                            reviewed_by: user.id
+                        })
+                        .select()
+
+                    if (!reqError) {
+                        addedToCircle = true
+                    } else if (reqError.code === '23505') {
+                        // Already has a request — that's fine
+                        addedToCircle = true
+                    } else {
+                        console.warn('Failed to create auto-approved org request:', reqError)
+                    }
+                }
+
+                // 5. Send Email (with circle membership info)
                 const orgName = orgData.name || 'Circle'
                 const orgUsername = orgData.username || ''
                 const circleUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'}/o/${orgUsername}`
@@ -131,6 +190,8 @@ export async function POST(request: NextRequest) {
                     ticketNumber,
                     organizationName: orgName,
                     circleUrl,
+                    addedToCircle,
+                    userHasAccount,
                 })
 
                 await sendEmail({

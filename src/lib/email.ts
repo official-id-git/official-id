@@ -1119,8 +1119,11 @@ export function getEventApprovalTemplate(data: {
   ticketNumber: string
   organizationName: string
   circleUrl: string
+  addedToCircle?: boolean
+  userHasAccount?: boolean
 }): { subject: string; html: string } {
   const year = new Date().getFullYear()
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'
   const formattedDate = new Date(data.eventDate).toLocaleDateString('id-ID', {
     weekday: 'long',
     day: 'numeric',
@@ -1128,6 +1131,53 @@ export function getEventApprovalTemplate(data: {
     year: 'numeric',
   })
   const formattedTime = data.eventTime?.substring(0, 5)
+
+  // Circle membership section
+  const circleMembershipSection = data.addedToCircle ? (data.userHasAccount ? `
+                <!-- Circle Membership Banner (Existing User) -->
+                <tr>
+                  <td style="padding: 0 30px 25px;">
+                    <div style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); border-radius: 16px; padding: 24px; border: 1px solid #bbf7d0;">
+                      <p style="margin: 0 0 4px; font-size: 20px; text-align: center;">🎉</p>
+                      <h3 style="margin: 0 0 8px; color: #166534; font-size: 16px; font-weight: 700; text-align: center;">Anda Telah Tergabung di Circle ${data.organizationName}!</h3>
+                      <p style="margin: 0 0 16px; color: #374151; font-size: 14px; line-height: 1.6; text-align: center;">
+                        Sebagai peserta event ini, Anda otomatis menjadi anggota Circle. Kunjungi halaman Circle untuk membuat kartu bisnis digital dan terhubung dengan anggota lainnya.
+                      </p>
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td style="text-align: center;">
+                            <a href="${data.circleUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 12px 24px; border-radius: 10px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                              Lihat Circle ${data.organizationName}
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+  ` : `
+                <!-- Circle Membership Banner (No Account Yet) -->
+                <tr>
+                  <td style="padding: 0 30px 25px;">
+                    <div style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); border-radius: 16px; padding: 24px; border: 1px solid #bbf7d0;">
+                      <p style="margin: 0 0 4px; font-size: 20px; text-align: center;">🎉</p>
+                      <h3 style="margin: 0 0 8px; color: #166534; font-size: 16px; font-weight: 700; text-align: center;">Bergabunglah dengan Circle ${data.organizationName}!</h3>
+                      <p style="margin: 0 0 16px; color: #374151; font-size: 14px; line-height: 1.6; text-align: center;">
+                        Anda telah disetujui sebagai anggota Circle. Buat akun Official.id untuk melihat profil Anda di halaman Circle, mendapatkan kartu bisnis digital, dan terhubung dengan anggota lainnya.
+                      </p>
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td style="text-align: center;">
+                            <a href="${siteUrl}/register" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 12px 24px; border-radius: 10px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                              Buat Akun Official.id Sekarang
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+  `) : ''
 
   return {
     subject: `🎟️ Tiket Event Disetujui - ${data.eventTitle}`,
@@ -1239,6 +1289,8 @@ export function getEventApprovalTemplate(data: {
                     </div>
                   </td>
                 </tr>
+
+                ${circleMembershipSection}
                 
                 <!-- Footer -->
                 <tr>

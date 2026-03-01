@@ -61,12 +61,24 @@ export async function POST(request: NextRequest) {
             )
         }
 
+        // Use account name if user has an Official.id account (prevents name mismatch)
+        let registrantName = name
+        const { data: existingUser } = await supabase
+            .from('users')
+            .select('id, full_name')
+            .eq('email', email)
+            .maybeSingle()
+
+        if (existingUser?.full_name) {
+            registrantName = existingUser.full_name
+        }
+
         // Insert registration
         const { data: registration, error: regError } = await supabase
             .from('event_registrations')
             .insert({
                 event_id,
-                name,
+                name: registrantName,
                 email,
                 phone: phone || null,
                 institution: institution || null,

@@ -1067,11 +1067,12 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                 }} className="p-6 space-y-4">
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-900 mb-1">Nama Lengkap <span className="text-red-600">*</span></label>
-                                        <input type="text" required value={regForm.name} onChange={(e) => setRegForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                        <input type="text" required value={regForm.name} onChange={(e) => setRegForm(prev => ({ ...prev, name: e.target.value }))} disabled={!!user} className={`w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${user ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : ''}`} />
+                                        {user && <p className="text-xs text-gray-400 mt-1">Menggunakan nama dari akun Official.id Anda</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-900 mb-1">Email <span className="text-red-600">*</span></label>
-                                        <input type="email" required value={regForm.email} onChange={(e) => setRegForm(prev => ({ ...prev, email: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                        <input type="email" required value={regForm.email} onChange={(e) => setRegForm(prev => ({ ...prev, email: e.target.value }))} disabled={!!user} className={`w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${user ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : ''}`} />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-900 mb-1">Nomor Telepon</label>
