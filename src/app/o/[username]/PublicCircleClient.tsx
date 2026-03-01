@@ -75,7 +75,7 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
     const [eventCounts, setEventCounts] = useState<Record<string, number>>({})
     const [showRegModal, setShowRegModal] = useState(false)
     const [regEventId, setRegEventId] = useState<string | null>(null)
-    const [regForm, setRegForm] = useState({ name: '', email: '', phone: '', institution: '', payment_proof: '' })
+    const [regForm, setRegForm] = useState({ name: '', email: '', phone: '', institution: '', job_title: '', city: '', payment_proof: '' })
     const [paymentFile, setPaymentFile] = useState<File | null>(null)
     const [regSubmitting, setRegSubmitting] = useState(false)
     const [regSuccess, setRegSuccess] = useState(false)
@@ -628,6 +628,8 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                                                 email: user.email || '',
                                                                 phone: user.phone || '',
                                                                 institution: user.company || '',
+                                                                job_title: '',
+                                                                city: '',
                                                                 payment_proof: '',
                                                             })
                                                             setRegSuccess(false)
@@ -684,6 +686,8 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                                                 email: user.email || '',
                                                                 phone: user.phone || '',
                                                                 institution: user.company || '',
+                                                                job_title: '',
+                                                                city: '',
                                                                 payment_proof: '',
                                                             })
                                                             setRegSuccess(false)
@@ -1117,6 +1121,8 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                                 email: regForm.email,
                                                 phone: regForm.phone || null,
                                                 institution: regForm.institution || null,
+                                                job_title: regForm.job_title || null,
+                                                city: regForm.city || null,
                                                 payment_proof_url: paymentProofUrl,
                                             }),
                                         })
@@ -1142,12 +1148,22 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                         <input type="email" required value={regForm.email} onChange={(e) => setRegForm(prev => ({ ...prev, email: e.target.value }))} disabled={!!user} className={`w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${user ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : ''}`} />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-semibold text-gray-900 mb-1">Nomor Telepon</label>
-                                        <input type="tel" value={regForm.phone} onChange={(e) => setRegForm(prev => ({ ...prev, phone: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                        <label className="block text-sm font-semibold text-gray-900 mb-1">Nomor Telepon (WhatsApp) <span className="text-red-600">*</span></label>
+                                        <input type="tel" required pattern="[0-9+]*" title="Format nomor telepon hanya angka dan +" value={regForm.phone} onChange={(e) => setRegForm(prev => ({ ...prev, phone: e.target.value.replace(/[^0-9+]/g, '') }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Contoh: 08123456789" />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-900 mb-1">Institusi/Perusahaan</label>
                                         <input type="text" value={regForm.institution} onChange={(e) => setRegForm(prev => ({ ...prev, institution: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row gap-4">
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-semibold text-gray-900 mb-1">Jabatan <span className="text-red-600">*</span></label>
+                                            <input type="text" required value={regForm.job_title} onChange={(e) => setRegForm(prev => ({ ...prev, job_title: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Contoh: CEO, Mahasiswa" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-semibold text-gray-900 mb-1">Kota <span className="text-red-600">*</span></label>
+                                            <input type="text" required value={regForm.city} onChange={(e) => setRegForm(prev => ({ ...prev, city: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Contoh: Jakarta" />
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-900 mb-1">Bukti Pembayaran (Opsional)</label>

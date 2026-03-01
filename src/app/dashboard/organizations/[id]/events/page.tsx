@@ -340,6 +340,7 @@ export default function EventManagementPage() {
                     event_rsvps(status),
                     users:user_id(
                         id,
+                        phone,
                         business_cards(job_title, city)
                     )
                 `)
@@ -362,7 +363,7 @@ export default function EventManagementPage() {
             }
 
             // 3. Transform data for Excel
-            const excelData = (regData || []).map(reg => {
+            const excelData = (regData || []).map((reg: any) => {
                 const user = reg.users || null
                 const businessCards = user?.business_cards || []
                 const latestCard = businessCards.length > 0 ? businessCards[0] : null
@@ -370,10 +371,10 @@ export default function EventManagementPage() {
                 return {
                     'Nama': reg.name,
                     'Email': reg.email,
-                    'Mobile Phone': reg.phone || '-',
-                    'Jabatan': latestCard?.job_title || '-',
+                    'Mobile Phone': reg.phone || user?.phone || '-',
+                    'Jabatan': reg.job_title || latestCard?.job_title || '-',
                     'Nama Instansi': reg.institution || '-',
-                    'Kota': latestCard?.city || '-',
+                    'Kota': reg.city || latestCard?.city || '-',
                     'Nomor Tiket': reg.event_tickets?.[0]?.ticket_number || '-',
                     'Status Konfirmasi Kehadiran': reg.status === 'confirmed' ? 'Confirmed' : reg.status === 'pending' ? 'Pending' : 'Cancelled',
                     'Tanggal Daftar': new Date(reg.registered_at).toLocaleString('id-ID'),

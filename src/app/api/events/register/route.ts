@@ -8,7 +8,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { event_id, name, email, phone, institution, payment_proof_url } = body
+        const { event_id, name, email, phone, institution, payment_proof_url, job_title, city } = body
 
         if (!event_id || !name || !email) {
             return NextResponse.json(
@@ -78,10 +78,13 @@ export async function POST(request: NextRequest) {
             .from('event_registrations')
             .insert({
                 event_id,
+                user_id: existingUser?.id || null,
                 name: registrantName,
                 email,
                 phone: phone || null,
                 institution: institution || null,
+                job_title: job_title || null,
+                city: city || null,
                 status: 'pending',
             })
             .select()
@@ -143,13 +146,13 @@ export async function POST(request: NextRequest) {
             from: EMAIL_SENDERS.circle,
         })
 
-        // Progressively enrich user profile with phone and company
-        // Only update fields that are currently empty in the user's profile
-        if (phone || institution) {
+        // Progressively enrich user profile with phone, company, job_title and city
+        if (existingUser?.id && (phone || institution || job_title || city)) {
+            // 1. Update users table if fields are missing
             const { data: userProfile } = await supabase
                 .from('users')
                 .select('id, phone, company')
-                .eq('email', email)
+                .eq('id', existingUser.id)
                 .maybeSingle()
 
             if (userProfile) {
@@ -161,8 +164,47 @@ export async function POST(request: NextRequest) {
                     await supabase
                         .from('users')
                         .update(updates)
-                        .eq('id', userProfile.id)
+                        .eq('id', existingUser.id)
                 }
+            }
+
+            // 2. Update or create default business_card if applicable
+            // This ensures their 'profile' for circles gets city and job_title right away.
+            const { data: userCards } = await supabase
+                .from('business_cards')
+                .select('id, job_title, city, company, phone')
+                .eq('user_id', existingUser.id)
+                .order('created_at', { ascending: true })
+
+            if (userCards && userCards.length > 0) {
+                // Update the oldest/primary card if it's missing these fields
+                const primaryCard = userCards[0]
+                const cardUpdates: Record<string, string> = {}
+                if (job_title && !primaryCard.job_title) cardUpdates.job_title = job_title
+                if (city && !primaryCard.city) cardUpdates.city = city
+                if (institution && !primaryCard.company) cardUpdates.company = institution
+                if (phone && !primaryCard.phone) cardUpdates.phone = phone
+
+                if (Object.keys(cardUpdates).length > 0) {
+                    await supabase
+                        .from('business_cards')
+                        .update(cardUpdates)
+                        .eq('id', primaryCard.id)
+                }
+            } else {
+                // Create a basic business card so their profile is populated immediately
+                await supabase
+                    .from('business_cards')
+                    .insert({
+                        user_id: existingUser.id,
+                        full_name: existingUser.full_name || name,
+                        email: email,
+                        phone: phone || '',
+                        company: institution || null,
+                        job_title: job_title || null,
+                        city: city || null,
+                        is_public: true
+                    })
             }
         }
 
