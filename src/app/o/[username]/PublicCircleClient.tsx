@@ -80,6 +80,15 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
     const [regSubmitting, setRegSubmitting] = useState(false)
     const [regSuccess, setRegSuccess] = useState(false)
 
+    // Auto-join + event prompt state (new flow)
+    const [showEventPrompt, setShowEventPrompt] = useState(false)
+    const [autoJoinDone, setAutoJoinDone] = useState(false)
+    const [promptEventId, setPromptEventId] = useState<string | null>(null)
+    const [promptRegForm, setPromptRegForm] = useState({ phone: '', institution: '', job_title: '', city: '' })
+    const [promptPaymentFile, setPromptPaymentFile] = useState<File | null>(null)
+    const [promptRegSubmitting, setPromptRegSubmitting] = useState(false)
+    const [promptRegSuccess, setPromptRegSuccess] = useState(false)
+
     // Filtered and sorted members
     const filteredMembers = useMemo(() => {
         let result = [...members]
@@ -139,6 +148,41 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
             setRsvpTicket(ticket)
         }
     }, [searchParams])
+
+    // Auto-join circle when returning from registration
+    useEffect(() => {
+        const circleJoin = searchParams.get('circle_join')
+        if (circleJoin === 'pending' && user && org && !autoJoinDone) {
+            setAutoJoinDone(true)
+                ; (async () => {
+                    try {
+                        // Check if already a member
+                        const membership = await checkMembership(org.id)
+                        if (membership.status === 'APPROVED' || membership.status === 'PENDING') {
+                            setMembershipStatus(membership.status)
+                        } else {
+                            // Auto-join the circle
+                            const success = await joinOrganization(org.id)
+                            if (success) {
+                                const newMembership = await checkMembership(org.id)
+                                setMembershipStatus(newMembership.status)
+                            }
+                        }
+                        // Show event registration prompt if there are upcoming events
+                        if (circleEvents.length > 0) {
+                            setShowEventPrompt(true)
+                        }
+                    } catch (err) {
+                        console.error('Auto-join failed:', err)
+                    }
+                    // Clean up URL params
+                    const url = new URL(window.location.href)
+                    url.searchParams.delete('circle_join')
+                    url.searchParams.delete('circle_name')
+                    window.history.replaceState({}, '', url.toString())
+                })()
+        }
+    }, [user, org, circleEvents, searchParams, autoJoinDone])
 
     const handleRSVPSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -259,6 +303,13 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
             const data = await res.json()
             if (!res.ok) throw new Error(data.error || 'Gagal mengirim permintaan')
 
+            // If user does NOT have an account, redirect to register page with circle context
+            if (!data.userExists) {
+                const registerUrl = `/register?redirect=${encodeURIComponent(`/o/${circleUsername}?circle_join=pending`)}&email=${encodeURIComponent(requestEmail)}&circle_name=${encodeURIComponent(org.name)}`
+                router.push(registerUrl)
+                return
+            }
+
             setRequestSuccess(true)
             setRequestUserExists(data.userExists || false)
             setRequestEmail('')
@@ -267,6 +318,55 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
             alert(err.message)
         } finally {
             setRequesting(false)
+        }
+    }
+
+    // Handle inline event registration from the prompt
+    const handlePromptEventRegister = async (eventId: string) => {
+        if (!user || !org) return
+        setPromptRegSubmitting(true)
+        try {
+            // Upload payment proof if provided
+            let paymentProofUrl: string | null = null
+            if (promptPaymentFile) {
+                const cloudFormData = new FormData()
+                cloudFormData.append('file', promptPaymentFile)
+                cloudFormData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'officialiddata')
+                cloudFormData.append('folder', 'official-id/events/payment_proofs')
+                const cloudRes = await fetch(
+                    `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+                    { method: 'POST', body: cloudFormData }
+                )
+                if (cloudRes.ok) {
+                    const cloudData = await cloudRes.json()
+                    paymentProofUrl = cloudData.secure_url
+                }
+            }
+
+            const res = await fetch('/api/events/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    event_id: eventId,
+                    name: user.full_name || '',
+                    email: user.email || '',
+                    phone: promptRegForm.phone || null,
+                    institution: promptRegForm.institution || null,
+                    job_title: promptRegForm.job_title || null,
+                    city: promptRegForm.city || null,
+                    payment_proof_url: paymentProofUrl,
+                }),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Gagal mendaftar')
+            setPromptRegSuccess(true)
+            // Update count
+            const newCount = await fetchRegistrationCount(eventId)
+            setEventCounts(prev => ({ ...prev, [eventId]: newCount }))
+        } catch (err: any) {
+            alert(err.message || 'Gagal mendaftar event')
+        } finally {
+            setPromptRegSubmitting(false)
         }
     }
 
@@ -413,22 +513,6 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                                     </svg>
                                                     <p className="text-sm font-medium">Permintaan berhasil dikirim! Silakan periksa email Anda nanti untuk update status.</p>
                                                 </div>
-                                                {!requestUserExists && (
-                                                    <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl">
-                                                        <p className="text-sm text-amber-800 mb-3">
-                                                            <strong>📋 Penting:</strong> Anda belum memiliki akun Official.id. Silakan daftar agar setelah disetujui admin, profil Anda langsung tampil di halaman Circle.
-                                                        </p>
-                                                        <a
-                                                            href="/register"
-                                                            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-medium rounded-xl hover:from-green-600 hover:to-green-700 transition-all"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                                                            </svg>
-                                                            Buat Akun Official.id Sekarang
-                                                        </a>
-                                                    </div>
-                                                )}
                                             </div>
                                         ) : (
                                             <form onSubmit={handleRequestJoin} className="space-y-3">
@@ -466,6 +550,130 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                         </div>
                     </div>
                 </div>
+
+                {/* Event Registration Prompt (shown after auto-join from registration) */}
+                {showEventPrompt && circleEvents.length > 0 && user && (
+                    <div className="bg-white rounded-3xl shadow-lg overflow-hidden border-2 border-green-200">
+                        <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6">
+                            <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                                🎉 Selamat Datang di {org.name}!
+                            </h2>
+                            <p className="text-white/90 text-sm mt-1">Permintaan bergabung Anda sudah dikirim. Sambil menunggu persetujuan admin, ingin langsung daftar event mendatang?</p>
+                        </div>
+                        <div className="p-6">
+                            {promptRegSuccess ? (
+                                <div className="text-center py-6">
+                                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-900 mb-2">Pendaftaran Event Berhasil!</h3>
+                                    <p className="text-gray-600 text-sm">Email konfirmasi telah dikirim ke <strong>{user.email}</strong>.</p>
+                                    <button
+                                        onClick={() => setShowEventPrompt(false)}
+                                        className="mt-4 px-6 py-2.5 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors"
+                                    >
+                                        Tutup
+                                    </button>
+                                </div>
+                            ) : promptEventId ? (
+                                /* Event registration form */
+                                <div>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <button onClick={() => { setPromptEventId(null); setPromptRegForm({ phone: '', institution: '', job_title: '', city: '' }); setPromptPaymentFile(null) }} className="text-gray-400 hover:text-gray-600">
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                        </button>
+                                        <h3 className="text-lg font-bold text-gray-900">Form Pendaftaran - {circleEvents.find(e => e.id === promptEventId)?.title}</h3>
+                                    </div>
+                                    <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                                        <div className="grid grid-cols-2 gap-2 text-sm">
+                                            <div><span className="text-gray-500">Nama:</span> <strong>{user.full_name}</strong></div>
+                                            <div><span className="text-gray-500">Email:</span> <strong>{user.email}</strong></div>
+                                        </div>
+                                    </div>
+                                    <form onSubmit={(e) => { e.preventDefault(); handlePromptEventRegister(promptEventId!) }} className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-900 mb-1">Nomor Telepon (WhatsApp) <span className="text-red-600">*</span></label>
+                                            <input type="tel" required pattern="[0-9+]*" title="Format nomor telepon hanya angka dan +" value={promptRegForm.phone} onChange={(e) => setPromptRegForm(prev => ({ ...prev, phone: e.target.value.replace(/[^0-9+]/g, '') }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Contoh: 08123456789" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-900 mb-1">Institusi/Perusahaan</label>
+                                            <input type="text" value={promptRegForm.institution} onChange={(e) => setPromptRegForm(prev => ({ ...prev, institution: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent" />
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row gap-4">
+                                            <div className="flex-1">
+                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Jabatan <span className="text-red-600">*</span></label>
+                                                <input type="text" required value={promptRegForm.job_title} onChange={(e) => setPromptRegForm(prev => ({ ...prev, job_title: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Contoh: CEO, Mahasiswa" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Kota <span className="text-red-600">*</span></label>
+                                                <input type="text" required value={promptRegForm.city} onChange={(e) => setPromptRegForm(prev => ({ ...prev, city: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Contoh: Jakarta" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-900 mb-1">Bukti Pembayaran (Opsional)</label>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0]
+                                                    setPromptPaymentFile(file || null)
+                                                }}
+                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                                            />
+                                            <p className="text-xs text-gray-500 mt-1">Sertakan jika event ini mewajibkan biaya registrasi.</p>
+                                        </div>
+                                        <div className="flex gap-3 pt-2">
+                                            <button type="button" onClick={() => { setPromptEventId(null); setPromptRegForm({ phone: '', institution: '', job_title: '', city: '' }); setPromptPaymentFile(null) }} className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors">
+                                                Batal
+                                            </button>
+                                            <button type="submit" disabled={promptRegSubmitting} className="flex-1 px-4 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 disabled:opacity-50 transition-colors">
+                                                {promptRegSubmitting ? 'Mendaftar...' : 'Daftar Event'}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            ) : (
+                                /* Event selection list */
+                                <div className="space-y-4">
+                                    {circleEvents.map((event) => {
+                                        const eCount = eventCounts[event.id] || 0
+                                        const isFull = eCount >= event.max_participants
+                                        return (
+                                            <div key={event.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="font-bold text-gray-900 truncate">{event.title}</h4>
+                                                    <div className="flex flex-wrap gap-2 text-sm text-gray-600 mt-1">
+                                                        <span>📅 {new Date(event.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                                        <span>🕐 {event.event_time?.substring(0, 5)} WIB</span>
+                                                    </div>
+                                                    <span className="text-xs text-gray-500 mt-1">{eCount}/{event.max_participants} pendaftar</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => setPromptEventId(event.id)}
+                                                    disabled={isFull}
+                                                    className={`px-5 py-2.5 rounded-xl font-medium text-sm flex-shrink-0 transition-colors ${isFull
+                                                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                            : 'bg-green-600 text-white hover:bg-green-700'
+                                                        }`}
+                                                >
+                                                    {isFull ? 'Kuota Penuh' : 'Ya, Daftarkan Saya'}
+                                                </button>
+                                            </div>
+                                        )
+                                    })}
+                                    <button
+                                        onClick={() => setShowEventPrompt(false)}
+                                        className="w-full py-3 border border-gray-300 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-colors text-sm"
+                                    >
+                                        Tidak, Terima Kasih
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Upcoming Events Section */}
                 {circleEvents.length > 0 && (

@@ -233,22 +233,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // Sign in with Google
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (redirectTo?: string) => {
+    const callbackUrl = redirectTo
+      ? `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(redirectTo)}`
+      : `${window.location.origin}/api/auth/callback`
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
+        redirectTo: callbackUrl,
       },
     })
     if (error) throw new Error(error.message)
   }
 
   // Sign in with LinkedIn
-  const signInWithLinkedIn = async () => {
+  const signInWithLinkedIn = async (redirectTo?: string) => {
+    const callbackUrl = redirectTo
+      ? `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(redirectTo)}`
+      : `${window.location.origin}/api/auth/callback`
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'linkedin_oidc',
       options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
+        redirectTo: callbackUrl,
       },
     })
     if (error) throw new Error(error.message)

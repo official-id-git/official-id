@@ -1,13 +1,27 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2D7C88]"></div></div>}>
+      <RegisterContent />
+    </Suspense>
+  )
+}
+
+function RegisterContent() {
+  const searchParams = useSearchParams()
+  const redirectParam = searchParams.get('redirect') || ''
+  const emailParam = searchParams.get('email') || ''
+  const circleNameParam = searchParams.get('circle_name') || ''
+
   const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(emailParam)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -45,7 +59,8 @@ export default function RegisterPage() {
 
   const handleGoogleLogin = async () => {
     try {
-      await signInWithGoogle()
+      // Pass redirect URL through Google OAuth so callback redirects to circle page
+      await signInWithGoogle(redirectParam || undefined)
     } catch (err: any) {
       setError(err.message || 'Failed to login with Google')
     }
@@ -53,7 +68,7 @@ export default function RegisterPage() {
 
   const handleLinkedInLogin = async () => {
     try {
-      await signInWithLinkedIn()
+      await signInWithLinkedIn(redirectParam || undefined)
     } catch (err: any) {
       setError(err.message || 'Failed to login with LinkedIn')
     }
@@ -72,8 +87,13 @@ export default function RegisterPage() {
           <p className="text-gray-600 mb-6">
             Please check your email to verify your account.
           </p>
+          {circleNameParam && (
+            <p className="text-sm text-blue-700 bg-blue-50 rounded-xl p-3 mb-4">
+              Setelah verifikasi email, silakan login untuk melanjutkan bergabung dengan <strong>{circleNameParam}</strong>.
+            </p>
+          )}
           <Link
-            href="/login"
+            href={redirectParam ? `/login?redirect=${encodeURIComponent(redirectParam)}` : '/login'}
             className="inline-block w-full py-3 text-white rounded-xl font-medium transition-transform hover:-translate-y-0.5"
             style={{
               background: 'linear-gradient(135deg, #2D7C88 0%, #236B76 100%)',
@@ -207,6 +227,15 @@ export default function RegisterPage() {
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
               {error}
+            </div>
+          )}
+
+          {/* Circle context banner */}
+          {circleNameParam && (
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <p className="text-sm text-blue-800">
+                👋 Anda sedang mendaftar untuk bergabung dengan circle <strong>{circleNameParam}</strong>. Buat akun terlebih dahulu untuk melanjutkan.
+              </p>
             </div>
           )}
 
