@@ -168,10 +168,6 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                 setMembershipStatus(newMembership.status)
                             }
                         }
-                        // Show event registration prompt if there are upcoming events
-                        if (circleEvents.length > 0) {
-                            setShowEventPrompt(true)
-                        }
                     } catch (err) {
                         console.error('Auto-join failed:', err)
                     }
@@ -182,7 +178,14 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                     window.history.replaceState({}, '', url.toString())
                 })()
         }
-    }, [user, org, circleEvents, searchParams, autoJoinDone])
+    }, [user, org, searchParams, autoJoinDone])
+
+    // Show event prompt AFTER auto-join is done AND events have loaded
+    useEffect(() => {
+        if (autoJoinDone && circleEvents.length > 0 && !showEventPrompt) {
+            setShowEventPrompt(true)
+        }
+    }, [autoJoinDone, circleEvents])
 
     const handleRSVPSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -654,8 +657,8 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                                     onClick={() => setPromptEventId(event.id)}
                                                     disabled={isFull}
                                                     className={`px-5 py-2.5 rounded-xl font-medium text-sm flex-shrink-0 transition-colors ${isFull
-                                                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                                            : 'bg-green-600 text-white hover:bg-green-700'
+                                                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                        : 'bg-green-600 text-white hover:bg-green-700'
                                                         }`}
                                                 >
                                                     {isFull ? 'Kuota Penuh' : 'Ya, Daftarkan Saya'}
