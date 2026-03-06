@@ -1205,7 +1205,7 @@ export default function EventManagementPage() {
             {/* Confirmation & Alert Custom Modal */}
             {confirmConfig.isOpen && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[70] p-4 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl animate-in zoom-in-95 duration-200 border border-gray-100">
+                    <div className="bg-white rounded-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto p-6 text-center shadow-2xl animate-in zoom-in-95 duration-200 border border-gray-100">
                         <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ${confirmConfig.type === 'alert'
                             ? (confirmConfig.title === 'Gagal' || confirmConfig.title === 'Error' ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500')
                             : (confirmConfig.confirmColor === 'red' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500')

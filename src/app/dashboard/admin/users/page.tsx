@@ -311,7 +311,7 @@ export default function UserManagementPage() {
       {/* Delete Confirmation Modal */}
       {showModal && selectedUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Hapus User?</h3>
             <p className="text-gray-600 mb-6">
               Yakin ingin menghapus <strong>{selectedUser.full_name}</strong>?

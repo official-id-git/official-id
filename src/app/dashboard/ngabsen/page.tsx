@@ -287,7 +287,7 @@ export default function NgabsenPage() {
                             exit={{ opacity: 0, scale: 0.9 }}
                             className="fixed inset-0 z-50 flex items-center justify-center p-4"
                         >
-                            <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+                            <div className="bg-white rounded-2xl p-6 max-w-sm w-full max-h-[90vh] overflow-y-auto shadow-xl">
                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Hapus Acara?</h3>
                                 <p className="text-gray-600 mb-6">
                                     Semua data peserta yang sudah mendaftar akan ikut terhapus. Tindakan ini tidak dapat dibatalkan.
