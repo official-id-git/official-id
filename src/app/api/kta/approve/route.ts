@@ -239,17 +239,22 @@ export async function POST(request: NextRequest) {
         if (updateError) throw updateError
 
         // Also update applicant's user profile with the finalized data
-        await adminSupabase
-            .from('users')
-            .update({
-                birth_place: finalData.birthPlace || undefined,
-                birth_date: finalData.birthDate || undefined,
-                province: finalData.province || undefined,
-                professional_competency: finalData.professionalCompetency || undefined,
-                phone: finalData.whatsappNumber || undefined,
-                company: finalData.company || undefined,
-            })
-            .eq('id', application.user_id)
+        // Wrapped in try catch because migration might not be pushed to production yet
+        try {
+            await adminSupabase
+                .from('users')
+                .update({
+                    birth_place: finalData.birthPlace || undefined,
+                    birth_date: finalData.birthDate || undefined,
+                    province: finalData.province || undefined,
+                    professional_competency: finalData.professionalCompetency || undefined,
+                    phone: finalData.whatsappNumber || undefined,
+                    company: finalData.company || undefined,
+                })
+                .eq('id', application.user_id)
+        } catch (e) {
+            console.warn('Could not update users table, columns might be missing:', e)
+        }
 
         // Sync finalized KTA data to the user's business card
         // Fetch their email for the card

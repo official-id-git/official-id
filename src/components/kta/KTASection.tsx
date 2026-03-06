@@ -62,10 +62,10 @@ export default function KTASection({ organizationId, organizationName, isMember 
                     const { createClient } = await import('@/lib/supabase/client')
                     const supabase = createClient()
 
-                    // Fetch full user profile
+                    // Fetch full user profile (omitting new KTA fields in case production migration isn't applied yet)
                     const { data: profile } = await supabase
                         .from('users')
-                        .select('full_name, email, phone, company, city, avatar_url, birth_place, birth_date, province, professional_competency')
+                        .select('full_name, email, phone, company, city, avatar_url')
                         .eq('id', user.id)
                         .maybeSingle()
 

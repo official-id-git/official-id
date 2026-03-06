@@ -124,17 +124,21 @@ export async function POST(request: NextRequest) {
         }
 
         // Update user profile with the new data
-        await adminSupabase
-            .from('users')
-            .update({
-                birth_place: birthPlace || undefined,
-                birth_date: birthDate || undefined,
-                province: province || undefined,
-                professional_competency: professionalCompetency || undefined,
-                phone: whatsappNumber || undefined,
-                company: company || undefined,
-            })
-            .eq('id', user.id)
+        try {
+            await adminSupabase
+                .from('users')
+                .update({
+                    birth_place: birthPlace || undefined,
+                    birth_date: birthDate || undefined,
+                    province: province || undefined,
+                    professional_competency: professionalCompetency || undefined,
+                    phone: whatsappNumber || undefined,
+                    company: company || undefined,
+                })
+                .eq('id', user.id)
+        } catch (e) {
+            console.warn('Could not update users table, columns might be missing:', e)
+        }
 
         // Auto-create a primary digital business card if they don't have one
         const { data: existingCards } = await adminSupabase
