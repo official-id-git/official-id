@@ -229,7 +229,6 @@ export async function POST(request: NextRequest) {
                 status: 'GENERATED',
                 gdrive_file_id: gdriveResult.fileId || null,
                 gdrive_pdf_url: gdriveResult.webViewLink || null,
-                gdrive_image_url: gdriveImageResult.webViewLink || null,
                 updated_at: new Date().toISOString(),
             })
             .eq('id', applicationId)
@@ -238,22 +237,28 @@ export async function POST(request: NextRequest) {
 
         if (updateError) throw updateError
 
-        // Also update applicant's user profile with the finalized data
-        // Wrapped in try catch because migration might not be pushed to production yet
+        // Try to update gdrive_image_url separately (column may not exist if migration 037 hasn't been applied)
+        if (gdriveImageResult.webViewLink) {
+            try {
+                await adminSupabase
+                    .from('kta_applications')
+                    .update({ gdrive_image_url: gdriveImageResult.webViewLink })
+                    .eq('id', applicationId)
+            } catch (e) {
+                console.warn('Could not update gdrive_image_url, migration 037 may not be applied:', e)
+            }
+        }
+
+        // Update user's full_name on the users table (safe columns only)
         try {
             await adminSupabase
                 .from('users')
                 .update({
-                    birth_place: finalData.birthPlace || undefined,
-                    birth_date: finalData.birthDate || undefined,
-                    province: finalData.province || undefined,
-                    professional_competency: finalData.professionalCompetency || undefined,
-                    phone: finalData.whatsappNumber || undefined,
-                    company: finalData.company || undefined,
+                    full_name: finalData.fullName,
                 })
                 .eq('id', application.user_id)
         } catch (e) {
-            console.warn('Could not update users table, columns might be missing:', e)
+            console.warn('Could not update users table:', e)
         }
 
         // Sync finalized KTA data to the user's business card

@@ -61,19 +61,26 @@ export async function generateKTAImage(
     data: KTAData
 ): Promise<Buffer> {
     // Dynamically import canvas for server-side rendering
-    // We use a try-catch approach to handle both environments
+    // Try @napi-rs/canvas first (works on Vercel serverless), then native canvas
     let createCanvas: any, loadImage: any
 
     try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const canvasModule = require('canvas')
-        createCanvas = canvasModule.createCanvas
-        loadImage = canvasModule.loadImage
+        const napiCanvas = require('@napi-rs/canvas')
+        createCanvas = napiCanvas.createCanvas
+        loadImage = napiCanvas.loadImage
+        console.log('KTA Generator: Using @napi-rs/canvas')
     } catch {
-        // If canvas is not available, use a simpler approach with sharp or built-in
-        // Fallback: generate a simple card without canvas
-        console.warn('canvas module not available, using fallback generation')
-        return generateKTAImageFallback(templateUrl, fieldPositions, data)
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const canvasModule = require('canvas')
+            createCanvas = canvasModule.createCanvas
+            loadImage = canvasModule.loadImage
+            console.log('KTA Generator: Using native canvas')
+        } catch {
+            console.warn('KTA Generator: No canvas module available, using fallback')
+            return generateKTAImageFallback(templateUrl, fieldPositions, data)
+        }
     }
 
     // Create canvas at KTA dimensions
