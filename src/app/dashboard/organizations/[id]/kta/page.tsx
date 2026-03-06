@@ -56,7 +56,7 @@ export default function KTAManagementPage() {
     // Applications state
     const [applications, setApplications] = useState<KTAApplication[]>([])
     const pendingApps = applications.filter(a => a.status === 'PENDING')
-    const generatedApps = applications.filter(a => a.status === 'GENERATED' || a.status === 'FAILED')
+    const generatedApps = applications.filter(a => a.status === 'GENERATED')
 
     // Approval Modal state
     const [approvalModalApp, setApprovalModalApp] = useState<KTAApplication | null>(null)
