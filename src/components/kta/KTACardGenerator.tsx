@@ -105,21 +105,29 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                     }}
                 >
                     {/* Background Template */}
-                    <img
-                        src={templateUrl}
-                        alt="Template"
-                        crossOrigin="anonymous"
+                    <div
                         style={{
                             width: '100%',
                             height: '100%',
-                            objectFit: 'cover',
                             position: 'absolute',
                             top: 0,
                             left: 0,
                             zIndex: 0,
+                            backgroundImage: `url(${templateUrl})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
                         }}
-                        onLoad={() => setIsReady(true)}
-                    />
+                    >
+                        {/* We use an invisible image just to safely track onload for the promise if needed, 
+                            though backgroundImage loading can be trickier, we'll keep the onload logic simple */}
+                        <img
+                            src={templateUrl}
+                            style={{ display: 'none' }}
+                            onLoad={() => setIsReady(true)}
+                            alt=""
+                            crossOrigin="anonymous"
+                        />
+                    </div>
 
                     {/* Name */}
                     <div
@@ -174,14 +182,14 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                         }}
                     >
                         {userData.photoUrl && (
-                            <img
-                                src={userData.photoUrl}
-                                crossOrigin="anonymous"
-                                alt="Photo"
+                            <div
                                 style={{
                                     width: '100%',
                                     height: '100%',
-                                    objectFit: 'cover',
+                                    backgroundImage: `url(${userData.photoUrl})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    backgroundColor: '#e5e7eb', // gray-200 placeholder
                                 }}
                             />
                         )}
@@ -201,14 +209,14 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                         }}
                     >
                         {userData.qrCodeDataUrl && (
-                            <img
-                                src={userData.qrCodeDataUrl}
-                                alt="QR Code"
-                                crossOrigin="anonymous"
+                            <div
                                 style={{
                                     width: '100%',
                                     height: '100%',
-                                    objectFit: 'contain',
+                                    backgroundImage: `url(${userData.qrCodeDataUrl})`,
+                                    backgroundSize: 'contain',
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'center',
                                 }}
                             />
                         )}

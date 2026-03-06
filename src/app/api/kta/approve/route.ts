@@ -123,26 +123,25 @@ export async function POST(request: NextRequest) {
         console.log(`KTA Approve: Image buffer size: ${ktaImageBuffer.length} bytes`)
         console.log(`KTA Approve: PDF buffer size: ${pdfBuffer.length} bytes`)
 
-        // Upload to Cloudinary instead of Google Drive
-        let cloudinaryPdfResult = { secure_url: '', public_id: '' }
+        // Upload to Cloudinary for Image, Google Drive for PDF
+        let gdrivePdfResult = { webViewLink: '', fileId: '' }
         let cloudinaryImageResult = { secure_url: '', public_id: '' }
 
         try {
             const { uploadBufferToCloudinary } = await import('@/lib/cloudinary')
+            const { uploadToGDrive } = await import('@/lib/gdrive')
             const targetFolderName = `official-id_kta/KTA_${circleName.replace(/[^a-zA-Z0-9_-]/g, '_')}`
 
-            // Upload PDF
+            // Upload PDF to Google Drive to avoid Cloudinary PDF blocks
             const safeFileNamePDF = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}_pdf.pdf`
-            console.log(`KTA Approve: Uploading PDF (${pdfBuffer.length} bytes) as "${safeFileNamePDF}" to Cloudinary folder ${targetFolderName}`)
+            console.log(`KTA Approve: Uploading PDF (${pdfBuffer.length} bytes) as "${safeFileNamePDF}" to Google Drive`)
 
-            // Cloudinary expects raw data URIs for PDF/Image uploads from backend APIs
-            cloudinaryPdfResult = await uploadBufferToCloudinary(
-                pdfBuffer,
-                'application/pdf',
-                safeFileNamePDF,
-                targetFolderName
-            )
-            console.log(`KTA Approve: PDF uploaded successfully. URL: ${cloudinaryPdfResult.secure_url}`)
+            const gdriveUpload = await uploadToGDrive(pdfBuffer, safeFileNamePDF, 'application/pdf')
+            gdrivePdfResult = {
+                webViewLink: gdriveUpload.webViewLink,
+                fileId: gdriveUpload.fileId
+            }
+            console.log(`KTA Approve: PDF uploaded successfully. URL: ${gdrivePdfResult.webViewLink}`)
 
             // Upload Image
             const safeFileNameImage = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}_image.png`
@@ -183,9 +182,9 @@ export async function POST(request: NextRequest) {
                 province: finalData.province || null,
                 whatsapp_number: finalData.whatsappNumber || null,
                 status: 'GENERATED',
-                // Re-using the gdrive_ columns to store Cloudinary info so we don't need a DB migration right now
-                gdrive_file_id: cloudinaryPdfResult.public_id || null, // Storing public_id just in case
-                gdrive_pdf_url: cloudinaryPdfResult.secure_url || null, // Cloudinary PDF link
+                // Re-using the gdrive_ columns to store info
+                gdrive_file_id: gdrivePdfResult.fileId || null,
+                gdrive_pdf_url: gdrivePdfResult.webViewLink || null, // GDrive PDF link
                 updated_at: new Date().toISOString(),
             })
             .eq('id', applicationId)
@@ -299,8 +298,8 @@ export async function POST(request: NextRequest) {
             data: {
                 ...updatedApp,
                 ktaNumber: ktaNumberString,
-                downloadUrl: cloudinaryPdfResult.secure_url || null,
-                viewUrl: cloudinaryPdfResult.secure_url || null,
+                downloadUrl: gdrivePdfResult.webViewLink || null,
+                viewUrl: gdrivePdfResult.webViewLink || null,
             }
         })
     } catch (error: any) {

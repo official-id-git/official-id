@@ -6,12 +6,15 @@ import Link from 'next/link'
 import Image from 'next/image'
 import ReactQRCode from 'react-qr-code'
 import QRCode from 'qrcode'
+import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
 import { useOrganizations } from '@/hooks/useOrganizations'
 import { useKTA, KTATemplate, KTAApplication, KTANumberStats } from '@/hooks/useKTA'
 import { uploadToCloudinary } from '@/lib/cloudinary'
 import BottomNavigation from '@/components/layout/BottomNavigation'
 import KTACardGenerator, { KTACardGeneratorRef } from '@/components/kta/KTACardGenerator'
+import ConfirmModal from '@/components/ui/ConfirmModal'
+import PromptModal from '@/components/ui/PromptModal'
 
 export default function KTAManagementPage() {
     const params = useParams()
@@ -79,6 +82,10 @@ export default function KTAManagementPage() {
     const [rejectionReason, setRejectionReason] = useState('')
     const [showRejectInput, setShowRejectInput] = useState(false)
 
+    // Modal states
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: () => { }, isDestructive: false })
+    const [promptModal, setPromptModal] = useState({ isOpen: false, title: '', message: '', onConfirm: (val: string) => { } })
+
     // Refs
     const templateInputRef = useRef<HTMLInputElement>(null)
     const numbersInputRef = useRef<HTMLInputElement>(null)
@@ -140,7 +147,7 @@ export default function KTAManagementPage() {
 
         // Validate PNG
         if (!file.type.includes('png')) {
-            alert('Hanya file PNG yang diperbolehkan')
+            toast.error('Hanya file PNG yang diperbolehkan')
             return
         }
 
@@ -151,29 +158,40 @@ export default function KTAManagementPage() {
             const expectedRatio = 8.7 / 5.5
             // Allow some tolerance
             if (Math.abs(ratio - expectedRatio) > 0.3) {
-                const proceed = confirm(
-                    `Rasio template (${ratio.toFixed(2)}) berbeda dari yang direkomendasikan (${expectedRatio.toFixed(2)} untuk 8.7cm × 5.5cm). Lanjutkan?`
-                )
-                if (!proceed) return
-            }
-
-            setUploadingTemplate(true)
-            try {
-                const result = await uploadToCloudinary(file, 'official-id/kta-templates')
-                setTemplateImageUrl(result.secure_url)
-            } catch (err: any) {
-                alert('Gagal upload template: ' + err.message)
-            } finally {
-                setUploadingTemplate(false)
+                setConfirmModal({
+                    isOpen: true,
+                    title: 'Peringatan Dimensi Template',
+                    message: `Rasio template (${ratio.toFixed(2)}) berbeda dari yang direkomendasikan (${expectedRatio.toFixed(2)} untuk 8.7cm × 5.5cm). Lanjutkan?`,
+                    isDestructive: false,
+                    onConfirm: () => {
+                        setConfirmModal(prev => ({ ...prev, isOpen: false }))
+                        proceedUploadFlow(file)
+                    }
+                })
+            } else {
+                proceedUploadFlow(file)
             }
         }
         img.src = URL.createObjectURL(file)
     }
 
+    const proceedUploadFlow = async (file: File) => {
+        setUploadingTemplate(true)
+        try {
+            const result = await uploadToCloudinary(file, 'official-id/kta-templates')
+            setTemplateImageUrl(result.secure_url)
+            toast.success('Template berhasil diunggah')
+        } catch (err: any) {
+            toast.error('Gagal upload template: ' + err.message)
+        } finally {
+            setUploadingTemplate(false)
+        }
+    }
+
     // Save template config
     const handleSaveTemplate = async () => {
         if (!templateImageUrl) {
-            alert('Upload template image terlebih dahulu')
+            toast.error('Upload template image terlebih dahulu')
             return
         }
 
@@ -183,8 +201,7 @@ export default function KTAManagementPage() {
             const result = await saveTemplate(orgId, templateImageUrl, fieldPositions)
             if (result) {
                 setTemplate(result)
-                setTemplateSuccess('Template berhasil disimpan!')
-                setTimeout(() => setTemplateSuccess(''), 3000)
+                toast.success('Template berhasil disimpan!')
             }
         } finally {
             setSavingTemplate(false)
@@ -219,15 +236,28 @@ export default function KTAManagementPage() {
 
     // Handle delete unused numbers
     const handleDeleteUnused = async () => {
-        if (!confirm('Hapus semua nomor KTA yang belum digunakan?')) return
-        const success = await deleteUnusedNumbers(orgId)
-        if (success) {
-            const numbersData = await fetchNumberStats(orgId)
-            if (numbersData) {
-                setNumberStats(numbersData.stats)
-                setNumbersList(numbersData.numbers)
+        setConfirmModal({
+            isOpen: true,
+            title: 'Hapus Nomor Belum Digunakan',
+            message: 'Apakah Anda yakin ingin menghapus semua nomor KTA yang belum digunakan?',
+            isDestructive: true,
+            onConfirm: async () => {
+                setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: true }))
+                try {
+                    const success = await deleteUnusedNumbers(orgId)
+                    if (success) {
+                        toast.success('Nomor KTA yang belum digunakan berhasil dihapus')
+                        const numbersData = await fetchNumberStats(orgId)
+                        if (numbersData) {
+                            setNumberStats(numbersData.stats)
+                            setNumbersList(numbersData.numbers)
+                        }
+                    }
+                } finally {
+                    setConfirmModal(prev => ({ ...prev, isLoading: false }))
+                }
             }
-        }
+        })
     }
 
     const handleAddManualNumber = async () => {
@@ -326,14 +356,14 @@ export default function KTAManagementPage() {
             }
 
             if (!chosenKtaNum) {
-                alert('Tidak ada nomor KTA yang tersedia. Silakan ketik/tambah nomor baru.')
+                toast.error('Tidak ada nomor KTA yang tersedia. Silakan ketik/tambah nomor baru.')
                 return
             }
 
             // 1. Generate PNG and PDF on the client directly
             const files = await generateClientFiles(approvalModalApp, chosenKtaNum)
             if (!files) {
-                alert("Gagal merender file KTA pada browser Anda.")
+                toast.error("Gagal merender file KTA pada browser Anda.")
                 return
             }
 
@@ -347,12 +377,12 @@ export default function KTAManagementPage() {
             )
 
             if (result) {
-                alert('KTA Berhasil Diterbitkan!')
+                toast.success('KTA Berhasil Diterbitkan!')
                 setApprovalModalApp(null)
                 loadData()
             }
         } catch (err: any) {
-            alert('Terjadi kesalahan: ' + err.message)
+            toast.error('Terjadi kesalahan: ' + err.message)
         } finally {
             setValidatingApproval(false)
             setGeneratingAppId(null)
@@ -370,7 +400,7 @@ export default function KTAManagementPage() {
         try {
             const success = await rejectKTA(approvalModalApp.id, rejectionReason)
             if (success) {
-                alert('Pengajuan KTA berhasil ditolak/dibatalkan.')
+                toast.success('Pengajuan KTA berhasil ditolak/dibatalkan.')
                 setApprovalModalApp(null)
                 setShowRejectInput(false)
                 setRejectionReason('')
@@ -1286,7 +1316,7 @@ export default function KTAManagementPage() {
                                                     <button
                                                         onClick={() => {
                                                             if (!template) {
-                                                                alert('Template tidak ditemukan.')
+                                                                toast.error('Template tidak ditemukan.')
                                                                 return
                                                             }
                                                             setSelectedAppForRegenerate(app)
@@ -1307,20 +1337,26 @@ export default function KTAManagementPage() {
 
                                                 {app.status === 'GENERATED' && (
                                                     <button
-                                                        onClick={async () => {
-                                                            const reason = prompt('Masukkan alasan pembatalan KTA ini:');
-                                                            if (reason) {
-                                                                setIsRejecting(true);
-                                                                try {
-                                                                    const success = await rejectKTA(app.id, reason);
-                                                                    if (success) {
-                                                                        alert('KTA Berhasil Dibatalkan.');
-                                                                        loadData();
+                                                        onClick={() => {
+                                                            setPromptModal({
+                                                                isOpen: true,
+                                                                title: 'Batalkan KTA',
+                                                                message: 'Masukkan alasan pembatalan KTA ini:',
+                                                                onConfirm: async (reason: string) => {
+                                                                    setPromptModal(prev => ({ ...prev, isLoading: true }))
+                                                                    try {
+                                                                        const success = await rejectKTA(app.id, reason)
+                                                                        if (success) {
+                                                                            toast.success('KTA Berhasil Dibatalkan.')
+                                                                            loadData()
+                                                                            setPromptModal(prev => ({ ...prev, isOpen: false }))
+                                                                        }
+                                                                    } catch (err: any) {
+                                                                        toast.error('Terjadi kesalahan: ' + err.message)
+                                                                        setPromptModal(prev => ({ ...prev, isLoading: false }))
                                                                     }
-                                                                } finally {
-                                                                    setIsRejecting(false);
                                                                 }
-                                                            }
+                                                            })
                                                         }}
                                                         disabled={isRejecting}
                                                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
@@ -1391,20 +1427,20 @@ export default function KTAManagementPage() {
                                         // Render client-side
                                         const files = await generateClientFiles(selectedAppForRegenerate, selectedAppForRegenerate.kta_numbers?.kta_number!)
                                         if (!files) {
-                                            alert("Gagal merender file KTA pada browser Anda.")
+                                            toast.error("Gagal merender file KTA pada browser Anda.")
                                             setRegeneratingAppId(null)
                                             return
                                         }
 
                                         const success = await regenerateKTA(selectedAppForRegenerate.id, files.base64Image, files.base64Pdf)
                                         if (success) {
-                                            alert('KTA Berhasil di-regenerate!')
+                                            toast.success('KTA Berhasil di-regenerate!')
                                             loadData()
                                             setIsRegenerateModalOpen(false)
                                             setSelectedAppForRegenerate(null)
                                         }
                                     } catch (err: any) {
-                                        alert('Terjadi kesalahan: ' + err.message)
+                                        toast.error('Terjadi kesalahan: ' + err.message)
                                     } finally {
                                         setRegeneratingAppId(null)
                                         setGeneratorUserData(null)
@@ -1436,6 +1472,28 @@ export default function KTAManagementPage() {
                     userData={generatorUserData}
                 />
             )}
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                isDestructive={confirmModal.isDestructive}
+                isLoading={'isLoading' in confirmModal ? (confirmModal as any).isLoading : false}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+            />
+
+            <PromptModal
+                isOpen={promptModal.isOpen}
+                title={promptModal.title}
+                message={promptModal.message}
+                isLoading={'isLoading' in promptModal ? (promptModal as any).isLoading : false}
+                confirmText={'Batalkan'}
+                inputType="textarea"
+                placeholder="Tuliskan alasan..."
+                onConfirm={promptModal.onConfirm}
+                onCancel={() => setPromptModal(prev => ({ ...prev, isOpen: false }))}
+            />
         </div>
     )
 }

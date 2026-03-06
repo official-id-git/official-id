@@ -63,11 +63,13 @@ export async function uploadBufferToCloudinary(
   formData.append('upload_preset', UPLOAD_PRESET)
   formData.append('folder', folder)
 
-  // Determine resource type based on mime (Cloudinary Free restricts PDF delivery if uploaded as 'image')
-  const resourceType = mimeType === 'application/pdf' ? 'raw' : 'image'
+  // Upload as 'image' resource type even for PDFs to bypass Cloudinary's raw delivery restriction.
+  // This treats the PDF as a multi-page document, allowing it to be loaded inline in browsers.
+  const resourceType = 'image'
 
-  // For 'raw' files, keep the extension in the public_id
-  const finalPublicId = resourceType === 'raw' ? fileName : fileName.replace(/\.[^/.]+$/, '')
+  // We keep the original filename including extension, so Cloudinary properly identifies the format (e.g. .pdf)
+  // when storing it as an image resource.
+  const finalPublicId = fileName
   formData.append('public_id', finalPublicId)
 
   const response = await fetch(

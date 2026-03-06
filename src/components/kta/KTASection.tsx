@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import QRCode from 'react-qr-code'
+import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
 import { useKTA, KTAApplication, KTATemplate } from '@/hooks/useKTA'
 
@@ -131,7 +132,7 @@ export default function KTASection({ organizationId, organizationName, isMember 
                 throw new Error('Upload gagal')
             }
         } catch (err: any) {
-            alert('Gagal upload foto: ' + err.message)
+            toast.error('Gagal upload foto: ' + err.message)
         } finally {
             setUploadingPhoto(false)
         }
@@ -140,7 +141,7 @@ export default function KTASection({ organizationId, organizationName, isMember 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!formData.fullName || !formData.photoUrl) {
-            alert('Nama lengkap dan foto wajib diisi')
+            toast.error('Nama lengkap dan foto wajib diisi')
             return
         }
 

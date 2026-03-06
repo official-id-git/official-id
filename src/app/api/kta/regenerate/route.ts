@@ -86,25 +86,25 @@ export async function POST(request: NextRequest) {
         console.log(`KTA Regenerate: Image buffer size: ${ktaImageBuffer.length} bytes`)
         console.log(`KTA Regenerate: PDF buffer size: ${pdfBuffer.length} bytes`)
 
-        // Upload to Cloudinary instead of Google Drive
-        let cloudinaryPdfResult = { secure_url: '', public_id: '' }
+        // Upload to Cloudinary for Image, Google Drive for PDF
+        let gdrivePdfResult = { webViewLink: '', fileId: '' }
         let cloudinaryImageResult = { secure_url: '', public_id: '' }
 
         try {
             const { uploadBufferToCloudinary } = await import('@/lib/cloudinary')
+            const { uploadToGDrive } = await import('@/lib/gdrive')
             const targetFolderName = `official-id_kta/KTA_${circleName.replace(/[^a-zA-Z0-9_-]/g, '_')}`
 
-            // Upload PDF
+            // Upload PDF to Google Drive
             const safeFileNamePDF = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}_pdf.pdf`
-            console.log(`KTA Regenerate: Uploading PDF to Cloudinary folder ${targetFolderName}`)
+            console.log(`KTA Regenerate: Uploading PDF to Google Drive`)
 
-            cloudinaryPdfResult = await uploadBufferToCloudinary(
-                pdfBuffer,
-                'application/pdf',
-                safeFileNamePDF,
-                targetFolderName
-            )
-            console.log(`KTA Regenerate: PDF uploaded successfully. URL: ${cloudinaryPdfResult.secure_url}`)
+            const gdriveUpload = await uploadToGDrive(pdfBuffer, safeFileNamePDF, 'application/pdf')
+            gdrivePdfResult = {
+                webViewLink: gdriveUpload.webViewLink,
+                fileId: gdriveUpload.fileId
+            }
+            console.log(`KTA Regenerate: PDF uploaded successfully. URL: ${gdrivePdfResult.webViewLink}`)
 
             // Upload Image
             const safeFileNameImage = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}_image.png`
@@ -127,8 +127,8 @@ export async function POST(request: NextRequest) {
         const { data: updatedApp, error: updateError } = await adminSupabase
             .from('kta_applications')
             .update({
-                gdrive_file_id: cloudinaryPdfResult.public_id || null, // Storing Cloudinary public_id
-                gdrive_pdf_url: cloudinaryPdfResult.secure_url || null, // Cloudinary secure PDF URL
+                gdrive_file_id: gdrivePdfResult.fileId || null, // Storing GDrive fileId
+                gdrive_pdf_url: gdrivePdfResult.webViewLink || null, // GDrive view link
                 updated_at: new Date().toISOString(),
             })
             .eq('id', applicationId)
