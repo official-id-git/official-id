@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
+import QRCode from 'react-qr-code'
 import { useAuth } from '@/hooks/useAuth'
-import { useKTA, KTAApplication } from '@/hooks/useKTA'
+import { useKTA, KTAApplication, KTATemplate } from '@/hooks/useKTA'
 
 interface KTASectionProps {
     organizationId: string
@@ -22,6 +23,7 @@ export default function KTASection({ organizationId, organizationName, isMember 
     } = useKTA()
 
     const [hasTemplate, setHasTemplate] = useState(false)
+    const [templateData, setTemplateData] = useState<KTATemplate | null>(null)
     const [myKTA, setMyKTA] = useState<KTAApplication | null>(null)
     const [showForm, setShowForm] = useState(false)
     const [formSubmitting, setFormSubmitting] = useState(false)
@@ -50,6 +52,7 @@ export default function KTASection({ organizationId, organizationName, isMember 
         // Check if template exists
         const template = await fetchTemplate(organizationId)
         setHasTemplate(!!template)
+        setTemplateData(template)
 
         // If user is member, check their KTA and fetch profile data
         if (user && isMember) {
@@ -193,34 +196,110 @@ export default function KTASection({ organizationId, organizationName, isMember 
 
                 {/* Member: Already has KTA */}
                 {isMember && myKTA && myKTA.status === 'GENERATED' && (
-                    <div className="space-y-4">
+                    <div className="space-y-5">
+                        {/* Success Badge */}
                         <div className="bg-green-50 p-4 rounded-xl border border-green-200 flex items-center gap-3">
-                            <div className="bg-green-100 p-2 rounded-full">
+                            <div className="bg-green-100 p-2.5 rounded-full">
                                 <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
                             </div>
                             <div className="flex-1">
-                                <p className="font-medium text-green-800">KTA Anda sudah terbit!</p>
+                                <p className="font-semibold text-green-800">KTA Anda sudah terbit!</p>
                                 <p className="text-sm text-green-600">
-                                    No. KTA: <strong className="font-mono">{myKTA.kta_numbers?.kta_number || '-'}</strong>
+                                    No. KTA: <strong className="font-mono tracking-wide">{myKTA.kta_numbers?.kta_number || '-'}</strong>
                                 </p>
                             </div>
                         </div>
 
-                        {/* Download Links */}
-                        <div className="flex gap-3">
+                        {/* KTA Card Visual Preview */}
+                        {templateData && (
+                            <div className="flex flex-col items-center">
+                                <div className="relative border border-gray-200 shadow-lg rounded-xl overflow-hidden bg-white" style={{ width: 372, height: 234 }}>
+                                    {/* Template Background */}
+                                    <Image src={templateData.template_image_url} alt="KTA" fill className="object-cover" unoptimized />
+
+                                    {/* Name Overlay */}
+                                    <div className="absolute font-bold whitespace-nowrap overflow-hidden text-ellipsis flex items-center p-1" style={{
+                                        top: `${(templateData.field_positions.name.y / 312) * 100}%`,
+                                        left: `${(templateData.field_positions.name.x / 496) * 100}%`,
+                                        width: `${(templateData.field_positions.name.width / 496) * 100}%`,
+                                        height: `${(templateData.field_positions.name.height / 312) * 100}%`,
+                                        color: templateData.field_positions.name.fontColor || '#000',
+                                        fontSize: `${(templateData.field_positions.name.fontSize || 14) * 0.75}px`,
+                                    }}>
+                                        {myKTA.full_name}
+                                    </div>
+
+                                    {/* KTA Number Overlay */}
+                                    <div className="absolute whitespace-nowrap overflow-hidden text-ellipsis flex items-center p-1" style={{
+                                        top: `${(templateData.field_positions.kta_number.y / 312) * 100}%`,
+                                        left: `${(templateData.field_positions.kta_number.x / 496) * 100}%`,
+                                        width: `${(templateData.field_positions.kta_number.width / 496) * 100}%`,
+                                        height: `${(templateData.field_positions.kta_number.height / 312) * 100}%`,
+                                        color: templateData.field_positions.kta_number.fontColor || '#333',
+                                        fontSize: `${(templateData.field_positions.kta_number.fontSize || 11) * 0.75}px`,
+                                    }}>
+                                        {myKTA.kta_numbers?.kta_number || ''}
+                                    </div>
+
+                                    {/* Photo Overlay */}
+                                    <div className="absolute bg-gray-200 overflow-hidden rounded-[6px]" style={{
+                                        top: `${(templateData.field_positions.photo.y / 312) * 100}%`,
+                                        left: `${(templateData.field_positions.photo.x / 496) * 100}%`,
+                                        width: `${(templateData.field_positions.photo.width / 496) * 100}%`,
+                                        height: `${(templateData.field_positions.photo.height / 312) * 100}%`,
+                                    }}>
+                                        {myKTA.photo_url && (
+                                            <Image src={myKTA.photo_url} alt="Foto KTA" fill className="object-cover" unoptimized />
+                                        )}
+                                    </div>
+
+                                    {/* QR Code Overlay */}
+                                    <div className="absolute bg-white flex items-center justify-center p-1" style={{
+                                        top: `${(templateData.field_positions.qrcode.y / 312) * 100}%`,
+                                        left: `${(templateData.field_positions.qrcode.x / 496) * 100}%`,
+                                        width: `${(templateData.field_positions.qrcode.width / 496) * 100}%`,
+                                        height: `${(templateData.field_positions.qrcode.height / 312) * 100}%`,
+                                    }}>
+                                        <QRCode
+                                            value={`https://official.id/o/${organizationId}/verify/${myKTA.verification_token}`}
+                                            size={256}
+                                            style={{ width: '100%', height: '100%' }}
+                                            viewBox="0 0 256 256"
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-2 text-center">Kartu Tanda Anggota resmi Anda</p>
+                            </div>
+                        )}
+
+                        {/* Download Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-3">
                             {myKTA.gdrive_pdf_url && (
                                 <a
                                     href={myKTA.gdrive_pdf_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                                    className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg"
                                 >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
-                                    Download KTA (PDF)
+                                    Download PDF
+                                </a>
+                            )}
+                            {myKTA.gdrive_image_url && (
+                                <a
+                                    href={myKTA.gdrive_image_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-medium hover:from-emerald-600 hover:to-teal-600 transition-all shadow-md hover:shadow-lg"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    Download PNG
                                 </a>
                             )}
                         </div>
