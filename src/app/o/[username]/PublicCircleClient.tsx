@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, Suspense } from 'react'
+import { useEffect, useState, useMemo, useRef, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -54,9 +54,15 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
     const [requestSuccess, setRequestSuccess] = useState(false)
     const [requestUserExists, setRequestUserExists] = useState(true)
 
-    // Search and Sort state
+    // Search, Filter, and Pagination state
     const [searchQuery, setSearchQuery] = useState('')
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+    const [jobTitleFilter, setJobTitleFilter] = useState('')
+    const [cityFilter, setCityFilter] = useState('')
+    const [currentPage, setCurrentPage] = useState(1)
+    const ITEMS_PER_PAGE = 6
+    const [isUserIdle, setIsUserIdle] = useState(true)
+    const idleTimerRef = useRef<NodeJS.Timeout | null>(null)
+    const membersSectionRef = useRef<HTMLDivElement>(null)
 
     // Message modal state
     const [messageModalOpen, setMessageModalOpen] = useState(false)
@@ -98,40 +104,103 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
             const query = searchQuery.toLowerCase()
             result = result.filter((member: any) => {
                 const businessCards = member.users?.business_cards || []
-
                 const userNameRaw = member.users?.full_name || (businessCards.length > 0 && businessCards[0].full_name ? businessCards[0].full_name : '')
                 const userName = userNameRaw.toLowerCase()
-
                 const companyMatch = businessCards.some((card: any) =>
                     card.company?.toLowerCase().includes(query) ||
                     card.city?.toLowerCase().includes(query) ||
+                    card.job_title?.toLowerCase().includes(query) ||
                     (card.business_description && card.business_description.toLowerCase().includes(query))
                 )
-
                 return userName.includes(query) || companyMatch
             })
         }
 
-        // Sort by name
+        // Filter by job title
+        if (jobTitleFilter) {
+            result = result.filter((member: any) => {
+                const businessCards = member.users?.business_cards || []
+                return businessCards.some((card: any) =>
+                    card.job_title?.toLowerCase() === jobTitleFilter.toLowerCase()
+                )
+            })
+        }
+
+        // Filter by city
+        if (cityFilter) {
+            result = result.filter((member: any) => {
+                const businessCards = member.users?.business_cards || []
+                return businessCards.some((card: any) =>
+                    card.city?.toLowerCase() === cityFilter.toLowerCase()
+                )
+            })
+        }
+
+        // Sort by approval date (joined_at) descending — newest first
         result.sort((a: any, b: any) => {
-            const aBusinessCards = a.users?.business_cards || []
-            const bBusinessCards = b.users?.business_cards || []
-
-            const nameARaw = a.users?.full_name || (aBusinessCards.length > 0 && aBusinessCards[0].full_name ? aBusinessCards[0].full_name : '')
-            const nameBRaw = b.users?.full_name || (bBusinessCards.length > 0 && bBusinessCards[0].full_name ? bBusinessCards[0].full_name : '')
-
-            const nameA = nameARaw.toLowerCase()
-            const nameB = nameBRaw.toLowerCase()
-
-            if (sortOrder === 'asc') {
-                return nameA.localeCompare(nameB)
-            } else {
-                return nameB.localeCompare(nameA)
-            }
+            const dateA = a.joined_at ? new Date(a.joined_at).getTime() : 0
+            const dateB = b.joined_at ? new Date(b.joined_at).getTime() : 0
+            return dateB - dateA
         })
 
         return result
-    }, [members, searchQuery, sortOrder])
+    }, [members, searchQuery, jobTitleFilter, cityFilter])
+
+    // Extract unique job titles and cities from all members for filter dropdowns
+    const { jobTitles, cities } = useMemo(() => {
+        const jobSet = new Set<string>()
+        const citySet = new Set<string>()
+        members.forEach((member: any) => {
+            const cards = member.users?.business_cards || []
+            cards.forEach((card: any) => {
+                if (card.job_title?.trim()) jobSet.add(card.job_title.trim())
+                if (card.city?.trim()) citySet.add(card.city.trim())
+            })
+        })
+        return {
+            jobTitles: Array.from(jobSet).sort((a, b) => a.localeCompare(b)),
+            cities: Array.from(citySet).sort((a, b) => a.localeCompare(b))
+        }
+    }, [members])
+
+    // Pagination
+    const totalPages = Math.max(1, Math.ceil(filteredMembers.length / ITEMS_PER_PAGE))
+    const paginatedMembers = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE
+        return filteredMembers.slice(start, start + ITEMS_PER_PAGE)
+    }, [filteredMembers, currentPage, ITEMS_PER_PAGE])
+
+    // Reset page when filters change
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [searchQuery, jobTitleFilter, cityFilter])
+
+    // Idle detection for auto-paging
+    const resetIdleTimer = useCallback(() => {
+        setIsUserIdle(false)
+        if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+        idleTimerRef.current = setTimeout(() => setIsUserIdle(true), 5000)
+    }, [])
+
+    useEffect(() => {
+        const events = ['scroll', 'touchstart', 'mousemove', 'keydown']
+        events.forEach(e => window.addEventListener(e, resetIdleTimer, { passive: true }))
+        // Start idle immediately
+        idleTimerRef.current = setTimeout(() => setIsUserIdle(true), 5000)
+        return () => {
+            events.forEach(e => window.removeEventListener(e, resetIdleTimer))
+            if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+        }
+    }, [resetIdleTimer])
+
+    // Auto-paging when idle
+    useEffect(() => {
+        if (!isUserIdle || totalPages <= 1) return
+        const interval = setInterval(() => {
+            setCurrentPage(prev => prev >= totalPages ? 1 : prev + 1)
+        }, 5000)
+        return () => clearInterval(interval)
+    }, [isUserIdle, totalPages])
 
     const handleOpenMessageModal = (recipientId: string, recipientName: string) => {
         setSelectedRecipient({ id: recipientId, name: recipientName })
@@ -919,136 +988,198 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                 )}
 
                 {/* Members List - Always visible */}
-                <div className="bg-white rounded-2xl shadow-lg p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900">Anggota Circle</h2>
-
-                        {/* Search and Sort Controls */}
-                        <div className="flex flex-col sm:flex-row gap-3">
-                            {/* Search Input */}
-                            <div className="relative">
-                                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                                <input
-                                    type="text"
-                                    placeholder="Cari anggota..."
-                                    value={searchQuery}
-                                    onChange={async (e) => {
-                                        const val = e.target.value
-                                        const isValid = await validateInput(val)
-                                        if (isValid) setSearchQuery(val)
-                                    }}
-                                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-48"
-                                />
-                            </div>
-
-                            {/* Sort Dropdown */}
-                            <select
-                                value={sortOrder}
-                                onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-                                className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                            >
-                                <option value="asc">A - Z</option>
-                                <option value="desc">Z - A</option>
-                            </select>
+                <div ref={membersSectionRef} className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+                    <div className="flex flex-col gap-4 mb-6">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Anggota Circle</h2>
+                            <span className="text-sm text-gray-500">{filteredMembers.length} anggota</span>
                         </div>
+
+                        {/* Search Input */}
+                        <div className="relative">
+                            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <input
+                                type="text"
+                                placeholder="Cari nama, perusahaan, jabatan, kota..."
+                                value={searchQuery}
+                                onChange={async (e) => {
+                                    const val = e.target.value
+                                    const isValid = await validateInput(val)
+                                    if (isValid) setSearchQuery(val)
+                                }}
+                                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                            />
+                        </div>
+
+                        {/* Filter Dropdowns */}
+                        {(jobTitles.length > 0 || cities.length > 0) && (
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                {jobTitles.length > 0 && (
+                                    <select
+                                        value={jobTitleFilter}
+                                        onChange={(e) => setJobTitleFilter(e.target.value)}
+                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm text-gray-700"
+                                    >
+                                        <option value="">Semua Jabatan</option>
+                                        {jobTitles.map(jt => (
+                                            <option key={jt} value={jt}>{jt}</option>
+                                        ))}
+                                    </select>
+                                )}
+                                {cities.length > 0 && (
+                                    <select
+                                        value={cityFilter}
+                                        onChange={(e) => setCityFilter(e.target.value)}
+                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm text-gray-700"
+                                    >
+                                        <option value="">Semua Kota</option>
+                                        {cities.map(c => (
+                                            <option key={c} value={c}>{c}</option>
+                                        ))}
+                                    </select>
+                                )}
+                                {(jobTitleFilter || cityFilter) && (
+                                    <button
+                                        onClick={() => { setJobTitleFilter(''); setCityFilter('') }}
+                                        className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-red-200"
+                                    >
+                                        Reset
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {members.length === 0 ? (
                         <p className="text-gray-500 text-center py-8">Belum ada anggota yang bergabung</p>
                     ) : filteredMembers.length === 0 ? (
-                        <p className="text-gray-500 text-center py-8">Tidak ada anggota yang sesuai dengan pencarian "{searchQuery}"</p>
+                        <p className="text-gray-500 text-center py-8">Tidak ada anggota yang sesuai dengan pencarian</p>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {filteredMembers.map((member: any) => {
-                                const userData = member.users || {}
-                                const businessCards = userData.business_cards || []
-                                const userName = userData.full_name || (businessCards.length > 0 && businessCards[0].full_name ? businessCards[0].full_name : 'Anonymous')
-                                // Prioritize business card photo (Cloudinary) over avatar_url (LinkedIn, ORB blocked)
-                                const cardPhoto = businessCards.length > 0
-                                    ? businessCards[0].profile_photo_url
-                                    : null
-                                const userAvatar = cardPhoto || userData.avatar_url
-                                const userId = userData.id
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {paginatedMembers.map((member: any) => {
+                                    const userData = member.users || {}
+                                    const businessCards = userData.business_cards || []
+                                    const userName = userData.full_name || (businessCards.length > 0 && businessCards[0].full_name ? businessCards[0].full_name : 'Anonymous')
+                                    const cardPhoto = businessCards.length > 0
+                                        ? businessCards[0].profile_photo_url
+                                        : null
+                                    const userAvatar = cardPhoto || userData.avatar_url
+                                    const userId = userData.id
 
-                                // Link directly to business card using user_id
-                                const cardLink = userId ? `/c/${userId}` : null
-
-                                return (
-                                    <div
-                                        key={member.id}
-                                        className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
-                                    >
-                                        {/* Header Info */}
-                                        <div className="p-4 flex items-center gap-3 border-b border-gray-100">
-                                            <div className="w-10 h-10 rounded-full flex-shrink-0 relative">
-                                                {/* Always render initials as base layer */}
-                                                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
-                                                    <span className="text-white font-semibold text-sm">
-                                                        {userName.charAt(0) || '?'}
-                                                    </span>
+                                    return (
+                                        <div
+                                            key={member.id}
+                                            className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+                                        >
+                                            {/* Header Info */}
+                                            <div className="p-4 flex items-center gap-3 border-b border-gray-100">
+                                                <div className="w-10 h-10 rounded-full flex-shrink-0 relative">
+                                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+                                                        <span className="text-white font-semibold text-sm">
+                                                            {userName.charAt(0) || '?'}
+                                                        </span>
+                                                    </div>
+                                                    {userAvatar && (
+                                                        <img
+                                                            src={userAvatar}
+                                                            alt={userName}
+                                                            width={40}
+                                                            height={40}
+                                                            className="w-10 h-10 rounded-full object-cover absolute inset-0"
+                                                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                                        />
+                                                    )}
                                                 </div>
-                                                {/* Overlay photo on top */}
-                                                {userAvatar && (
-                                                    <img
-                                                        src={userAvatar}
-                                                        alt={userName}
-                                                        width={40}
-                                                        height={40}
-                                                        className="w-10 h-10 rounded-full object-cover absolute inset-0"
-                                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-semibold text-gray-900 truncate text-sm">
+                                                        {userName}
+                                                    </p>
+                                                    {member.is_admin && (
+                                                        <span className="text-[10px] text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full">Admin</span>
+                                                    )}
+                                                </div>
+                                                {userId && (
+                                                    <button
+                                                        onClick={() => {
+                                                            if (user) {
+                                                                handleOpenMessageModal(userId, userName)
+                                                            } else {
+                                                                setPublicContactRecipient({ id: userId, name: userName })
+                                                                setPublicContactOpen(true)
+                                                                setPublicContactSuccess(false)
+                                                                setPublicContactError('')
+                                                                setPublicContactForm({ sender_name: '', sender_email: '', purpose: 'bermitra', message: '' })
+                                                            }
+                                                        }}
+                                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        title="Kirim Pesan"
+                                                    >
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                        </svg>
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Cards Carousel */}
+                                            <div className="relative">
+                                                {userData.business_cards && userData.business_cards.length > 0 ? (
+                                                    <MemberToCardCarousel
+                                                        cards={userData.business_cards}
+                                                        userId={userId}
                                                     />
+                                                ) : (
+                                                    <div className="p-8 text-center text-gray-400 text-sm bg-gray-50">
+                                                        Belum ada kartu nama
+                                                    </div>
                                                 )}
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-semibold text-gray-900 truncate text-sm">
-                                                    {userName}
-                                                </p>
-                                                {member.is_admin && (
-                                                    <span className="text-[10px] text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full">Admin</span>
-                                                )}
-                                            </div>
-                                            {userId && (
-                                                <button
-                                                    onClick={() => {
-                                                        if (user) {
-                                                            handleOpenMessageModal(userId, userName)
-                                                        } else {
-                                                            setPublicContactRecipient({ id: userId, name: userName })
-                                                            setPublicContactOpen(true)
-                                                            setPublicContactSuccess(false)
-                                                            setPublicContactError('')
-                                                            setPublicContactForm({ sender_name: '', sender_email: '', purpose: 'bermitra', message: '' })
-                                                        }
-                                                    }}
-                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                    title="Kirim Pesan"
-                                                >
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                                    </svg>
-                                                </button>
-                                            )}
                                         </div>
+                                    )
+                                })}
+                            </div>
 
-                                        {/* Cards Carousel */}
-                                        <div className="relative">
-                                            {userData.business_cards && userData.business_cards.length > 0 ? (
-                                                <MemberToCardCarousel
-                                                    cards={userData.business_cards}
-                                                    userId={userId}
-                                                />
-                                            ) : (
-                                                <div className="p-8 text-center text-gray-400 text-sm bg-gray-50">
-                                                    Belum ada kartu nama
-                                                </div>
-                                            )}
-                                        </div>
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="flex flex-col items-center gap-3 mt-6 pt-4 border-t border-gray-100">
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                            disabled={currentPage === 1}
+                                            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                        </button>
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                            <button
+                                                key={page}
+                                                onClick={() => setCurrentPage(page)}
+                                                className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${page === currentPage
+                                                        ? 'bg-blue-600 text-white shadow-sm'
+                                                        : 'text-gray-600 hover:bg-gray-100'
+                                                    }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        ))}
+                                        <button
+                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                            disabled={currentPage === totalPages}
+                                            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                        </button>
                                     </div>
-                                )
-                            })}
-                        </div>
+                                    <p className="text-xs text-gray-400">
+                                        Halaman {currentPage} dari {totalPages}
+                                        {isUserIdle && totalPages > 1 && ' • Auto-scroll aktif'}
+                                    </p>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
