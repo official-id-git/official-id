@@ -285,7 +285,7 @@ export default function OrganizationDetailPage() {
 
       {/* Event Management Button - Between header and main content */}
       {membership.isAdmin && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-3">
           <Link
             href={`/dashboard/organizations/${org.id}/events`}
             className="group relative flex items-center gap-4 p-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] overflow-hidden"
@@ -317,6 +317,29 @@ export default function OrganizationDetailPage() {
               <p className="text-white/80 text-sm">Kelola event, peserta, dan pendaftaran</p>
             </div>
 
+            <svg className="w-6 h-6 text-white/80 group-hover:translate-x-1 transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+
+          {/* KTA Management Button */}
+          <Link
+            href={`/dashboard/organizations/${org.id}/kta`}
+            className="group relative flex items-center gap-4 p-4 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+            <div className="relative flex-shrink-0">
+              <div className="absolute inset-0 bg-white/30 rounded-xl animate-ping" style={{ animationDuration: '2s' }} />
+              <div className="relative w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-white group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0" />
+                </svg>
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-white font-bold text-lg">KTA Management</h3>
+              <p className="text-white/80 text-sm">Kelola Kartu Tanda Anggota, template, dan nomor KTA</p>
+            </div>
             <svg className="w-6 h-6 text-white/80 group-hover:translate-x-1 transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>

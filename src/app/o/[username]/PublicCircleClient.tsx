@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useOrganizations } from '@/hooks/useOrganizations'
 import { useEvents } from '@/hooks/useEvents'
 import SendMessageModal from '@/components/messages/SendMessageModal'
+import KTASection from '@/components/kta/KTASection'
 import type { Organization, OrganizationMember, CircleEvent } from '@/types'
 
 interface PublicCircleClientProps {
@@ -987,6 +988,15 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                     </div>
                 )}
 
+                {/* KTA Section - For approved members */}
+                {org && (
+                    <KTASection
+                        organizationId={org.id}
+                        organizationName={org.name}
+                        isMember={isMember}
+                    />
+                )}
+
                 {/* Members List - Always visible */}
                 <div ref={membersSectionRef} className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
                     <div className="flex flex-col gap-4 mb-6">
@@ -1158,8 +1168,8 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                                 key={page}
                                                 onClick={() => setCurrentPage(page)}
                                                 className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${page === currentPage
-                                                        ? 'bg-blue-600 text-white shadow-sm'
-                                                        : 'text-gray-600 hover:bg-gray-100'
+                                                    ? 'bg-blue-600 text-white shadow-sm'
+                                                    : 'text-gray-600 hover:bg-gray-100'
                                                     }`}
                                             >
                                                 {page}
