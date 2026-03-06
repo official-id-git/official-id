@@ -51,19 +51,48 @@ export default function KTASection({ organizationId, organizationName, isMember 
         const template = await fetchTemplate(organizationId)
         setHasTemplate(!!template)
 
-        // If user is member, check their KTA
+        // If user is member, check their KTA and fetch profile data
         if (user && isMember) {
             const kta = await fetchMyKTA(organizationId)
             setMyKTA(kta)
 
-            // Pre-fill form from user profile
+            // Pre-fill form from user profile + business card data
             if (!kta) {
-                setFormData(prev => ({
-                    ...prev,
-                    fullName: user.full_name || '',
-                    company: (user as any).company || '',
-                    whatsappNumber: (user as any).phone || '',
-                }))
+                try {
+                    // Fetch full user profile from Supabase
+                    const profileRes = await fetch(`/api/kta/profile?userId=${user.id}`)
+                    const profileData = await profileRes.json()
+
+                    if (profileData.success && profileData.data) {
+                        const p = profileData.data.profile || {}
+                        const card = profileData.data.businessCard || {}
+
+                        setFormData(prev => ({
+                            ...prev,
+                            fullName: p.full_name || card.full_name || user.full_name || '',
+                            company: p.company || card.company || '',
+                            birthPlace: p.birth_place || '',
+                            birthDate: p.birth_date || '',
+                            professionalCompetency: p.professional_competency || card.job_title || '',
+                            city: p.city || card.city || '',
+                            province: p.province || '',
+                            whatsappNumber: p.phone || card.phone || '',
+                            photoUrl: card.profile_photo_url || p.avatar_url || '',
+                        }))
+                    } else {
+                        // Fallback to basic user data
+                        setFormData(prev => ({
+                            ...prev,
+                            fullName: user.full_name || '',
+                        }))
+                    }
+                } catch {
+                    // Fallback
+                    setFormData(prev => ({
+                        ...prev,
+                        fullName: user.full_name || '',
+                    }))
+                }
             }
         }
     }
