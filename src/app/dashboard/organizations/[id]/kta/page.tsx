@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import QRCode from 'react-qr-code'
 import { useAuth } from '@/hooks/useAuth'
 import { useOrganizations } from '@/hooks/useOrganizations'
 import { useKTA, KTATemplate, KTAApplication, KTANumberStats } from '@/hooks/useKTA'
@@ -299,9 +300,9 @@ export default function KTAManagementPage() {
         )
     }
 
-    // Preview dimensions (400px wide preview)
-    const PREVIEW_WIDTH = 400
-    const PREVIEW_HEIGHT = Math.round(400 * (5.5 / 8.7))
+    // Template editing constants
+    const PREVIEW_WIDTH = 496
+    const PREVIEW_HEIGHT = 312
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24">
@@ -786,8 +787,8 @@ export default function KTAManagementPage() {
                                                                 }
                                                             }}
                                                             className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-all flex items-center justify-center gap-2 ${isExpanded
-                                                                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700'
+                                                                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                                : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700'
                                                                 }`}
                                                         >
                                                             {isExpanded ? 'Batal Tinjau' : 'Tinjau & Setujui'}
@@ -859,15 +860,20 @@ export default function KTAManagementPage() {
                                                                                 )}
                                                                             </div>
 
-                                                                            {/* QRCode Placeholder */}
+                                                                            {/* QRCode */}
                                                                             <div className="absolute bg-white flex items-center justify-center p-1 shadow-sm" style={{
                                                                                 top: `${(fieldPositions.qrcode.y / 312) * 100}%`,
                                                                                 left: `${(fieldPositions.qrcode.x / 496) * 100}%`,
                                                                                 width: `${(fieldPositions.qrcode.width / 496) * 100}%`,
                                                                                 height: `${(fieldPositions.qrcode.height / 312) * 100}%`
                                                                             }}>
-                                                                                <div className="w-full h-full bg-black/10 rounded-sm border border-black/20 flex items-center justify-center">
-                                                                                    <svg className="w-2/3 h-2/3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                                                                                <div className="w-full h-full bg-white flex items-center justify-center p-1 border border-gray-100">
+                                                                                    <QRCode
+                                                                                        value={`https://official.id/o/${org?.slug || 'preview'}/verify/preview-123`}
+                                                                                        size={256}
+                                                                                        style={{ width: '100%', height: '100%' }}
+                                                                                        viewBox={`0 0 256 256`}
+                                                                                    />
                                                                                 </div>
                                                                             </div>
                                                                         </>
