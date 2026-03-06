@@ -170,12 +170,12 @@ export async function POST(request: NextRequest) {
                 console.log(`KTA Approve: PDF uploaded successfully. File ID: ${gdriveResult.fileId}`)
 
                 // Upload Image to the Member's Subfolder
-                const safeFileNameImage = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}.jpg`
-                console.log(`KTA Approve: Uploading JPG (${ktaImageBuffer.length} bytes) as "${safeFileNameImage}" to folder ${memberFolderId}`)
+                const safeFileNameImage = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}.png`
+                console.log(`KTA Approve: Uploading PNG (${ktaImageBuffer.length} bytes) as "${safeFileNameImage}" to folder ${memberFolderId}`)
                 gdriveImageResult = await uploadToGDrive(
                     ktaImageBuffer,
                     safeFileNameImage,
-                    'image/jpeg',
+                    'image/png',
                     memberFolderId
                 )
                 console.log(`KTA Approve: PNG uploaded successfully. File ID: ${gdriveImageResult.fileId}`)
@@ -191,12 +191,12 @@ export async function POST(request: NextRequest) {
                         'application/pdf'
                     )
 
-                    const safeFileNameImage = `KTA_${finalData.fullName.replace(/[^a-zA-Z0-9]/g, '_')}_${ktaNumberString}.jpg`
-                    console.log(`KTA Approve: Fallback - uploading JPG to root folder`)
+                    const safeFileNameImage = `KTA_${finalData.fullName.replace(/[^a-zA-Z0-9]/g, '_')}_${ktaNumberString}.png`
+                    console.log(`KTA Approve: Fallback - uploading PNG to root folder`)
                     gdriveImageResult = await uploadToGDrive(
                         ktaImageBuffer,
                         safeFileNameImage,
-                        'image/jpeg'
+                        'image/png'
                     )
                     console.log('KTA Approve: Fallback uploads succeeded')
                 } catch (fallbackErr: any) {

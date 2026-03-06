@@ -125,9 +125,9 @@ export async function POST(request: NextRequest) {
                 gdriveResult = await uploadToGDrive(pdfBuffer, safeFileNamePDF, 'application/pdf', memberFolderId)
 
                 // Upload Image
-                const safeFileNameImage = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}.jpg`
-                console.log(`KTA Regenerate: Uploading JPG to folder ${memberFolderId}`)
-                gdriveImageResult = await uploadToGDrive(ktaImageBuffer, safeFileNameImage, 'image/jpeg', memberFolderId)
+                const safeFileNameImage = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}.png`
+                console.log(`KTA Regenerate: Uploading PNG to folder ${memberFolderId}`)
+                gdriveImageResult = await uploadToGDrive(ktaImageBuffer, safeFileNameImage, 'image/png', memberFolderId)
             } catch (err: any) {
                 console.error('KTA Regenerate: Folder/file operations failed:', err?.message || err)
                 // Fallback to root
@@ -135,8 +135,8 @@ export async function POST(request: NextRequest) {
                     const safeFileNamePDF = `KTA_${application.full_name.replace(/[^a-zA-Z0-9]/g, '_')}_${ktaNumberString}.pdf`
                     gdriveResult = await uploadToGDrive(pdfBuffer, safeFileNamePDF, 'application/pdf')
 
-                    const safeFileNameImage = `KTA_${application.full_name.replace(/[^a-zA-Z0-9]/g, '_')}_${ktaNumberString}.jpg`
-                    gdriveImageResult = await uploadToGDrive(ktaImageBuffer, safeFileNameImage, 'image/jpeg')
+                    const safeFileNameImage = `KTA_${application.full_name.replace(/[^a-zA-Z0-9]/g, '_')}_${ktaNumberString}.png`
+                    gdriveImageResult = await uploadToGDrive(ktaImageBuffer, safeFileNameImage, 'image/png')
                 } catch (fallbackErr: any) {
                     console.error('KTA Regenerate: Fallback upload failed:', fallbackErr?.message || fallbackErr)
                 }

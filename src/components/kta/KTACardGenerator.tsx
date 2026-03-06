@@ -40,8 +40,8 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                 if (!containerRef.current) return null
 
                 try {
-                    // 1. Generate JPEG base64 (compressed to save payload)
-                    const dataUrl = await htmlToImage.toJpeg(containerRef.current, {
+                    // 1. Generate PNG base64
+                    const dataUrl = await htmlToImage.toPng(containerRef.current, {
                         quality: 0.9,
                         width: KTA_WIDTH_PX,
                         height: KTA_HEIGHT_PX,
@@ -57,11 +57,11 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                     const page = pdfDoc.addPage([widthPt, heightPt])
 
                     // Remove data URI prefix for pdf-lib
-                    const base64Data = dataUrl.replace(/^data:image\/jpeg;base64,/, '')
+                    const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '')
                     const imgBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))
 
-                    const jpgImage = await pdfDoc.embedJpg(imgBuffer)
-                    page.drawImage(jpgImage, {
+                    const pngImage = await pdfDoc.embedPng(imgBuffer)
+                    page.drawImage(pngImage, {
                         x: 0,
                         y: 0,
                         width: widthPt,
