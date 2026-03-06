@@ -74,6 +74,8 @@ export default function KTAManagementPage() {
     // Rejection & Regeneration state
     const [isRejecting, setIsRejecting] = useState(false)
     const [regeneratingAppId, setRegeneratingAppId] = useState<string | null>(null)
+    const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false)
+    const [selectedAppForRegenerate, setSelectedAppForRegenerate] = useState<KTAApplication | null>(null)
     const [rejectionReason, setRejectionReason] = useState('')
     const [showRejectInput, setShowRejectInput] = useState(false)
 
@@ -1282,33 +1284,13 @@ export default function KTAManagementPage() {
 
                                                 {app.status === 'GENERATED' && (
                                                     <button
-                                                        onClick={async () => {
+                                                        onClick={() => {
                                                             if (!template) {
                                                                 alert('Template tidak ditemukan.')
                                                                 return
                                                             }
-                                                            if (confirm('Regenerate ulang gambar KTA dan file PDF? Penguraian gambar akan dilakukan di browser Anda lalu di-upload ke GDrive.')) {
-                                                                setRegeneratingAppId(app.id)
-                                                                try {
-                                                                    // Render client-side
-                                                                    const files = await generateClientFiles(app, app.kta_numbers?.kta_number!)
-                                                                    if (!files) {
-                                                                        alert("Gagal merender file KTA pada browser Anda.")
-                                                                        return
-                                                                    }
-
-                                                                    const success = await regenerateKTA(app.id, files.base64Image, files.base64Pdf)
-                                                                    if (success) {
-                                                                        alert('KTA Berhasil di-regenerate!')
-                                                                        loadData()
-                                                                    }
-                                                                } catch (err: any) {
-                                                                    alert('Terjadi kesalahan: ' + err.message)
-                                                                } finally {
-                                                                    setRegeneratingAppId(null)
-                                                                    setGeneratorUserData(null)
-                                                                }
-                                                            }
+                                                            setSelectedAppForRegenerate(app)
+                                                            setIsRegenerateModalOpen(true)
                                                         }}
                                                         disabled={regeneratingAppId === app.id}
                                                         className="px-3 py-1.5 text-xs font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
@@ -1360,6 +1342,90 @@ export default function KTAManagementPage() {
             {/* Approval UI has been moved inline within the pending tab */}
 
             <BottomNavigation variant="organizations" />
+
+            {/* Regenerate Confirmation Modal */}
+            {isRegenerateModalOpen && selectedAppForRegenerate && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-gray-900">Konfirmasi Regenerate</h3>
+                            <button
+                                onClick={() => {
+                                    setIsRegenerateModalOpen(false)
+                                    setSelectedAppForRegenerate(null)
+                                }}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                                disabled={regeneratingAppId !== null}
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 className="font-medium text-gray-900 leading-tight">Regenerate KTA {selectedAppForRegenerate.full_name}?</h4>
+                                    <p className="text-sm text-gray-500 mt-1">Penguraian gambar akan dilakukan di browser Anda lalu otomatis di-upload ke sistem (Cloudinary).</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3 flex-wrap sm:flex-nowrap">
+                            <button
+                                onClick={() => {
+                                    setIsRegenerateModalOpen(false)
+                                    setSelectedAppForRegenerate(null)
+                                }}
+                                disabled={regeneratingAppId !== null}
+                                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    setRegeneratingAppId(selectedAppForRegenerate.id)
+                                    try {
+                                        // Render client-side
+                                        const files = await generateClientFiles(selectedAppForRegenerate, selectedAppForRegenerate.kta_numbers?.kta_number!)
+                                        if (!files) {
+                                            alert("Gagal merender file KTA pada browser Anda.")
+                                            setRegeneratingAppId(null)
+                                            return
+                                        }
+
+                                        const success = await regenerateKTA(selectedAppForRegenerate.id, files.base64Image, files.base64Pdf)
+                                        if (success) {
+                                            alert('KTA Berhasil di-regenerate!')
+                                            loadData()
+                                            setIsRegenerateModalOpen(false)
+                                            setSelectedAppForRegenerate(null)
+                                        }
+                                    } catch (err: any) {
+                                        alert('Terjadi kesalahan: ' + err.message)
+                                    } finally {
+                                        setRegeneratingAppId(null)
+                                        setGeneratorUserData(null)
+                                    }
+                                }}
+                                disabled={regeneratingAppId !== null}
+                                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {regeneratingAppId === selectedAppForRegenerate.id ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        <span>Memproses...</span>
+                                    </>
+                                ) : (
+                                    <span>Ya, Regenerate</span>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Hidden Offline KTA Generator DOM */}
             {template && generatorUserData && (
