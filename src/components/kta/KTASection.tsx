@@ -59,35 +59,42 @@ export default function KTASection({ organizationId, organizationName, isMember 
             // Pre-fill form from user profile + business card data
             if (!kta) {
                 try {
-                    // Fetch full user profile from Supabase
-                    const profileRes = await fetch(`/api/kta/profile?userId=${user.id}`)
-                    const profileData = await profileRes.json()
+                    const { createClient } = await import('@/lib/supabase/client')
+                    const supabase = createClient()
 
-                    if (profileData.success && profileData.data) {
-                        const p = profileData.data.profile || {}
-                        const card = profileData.data.businessCard || {}
+                    // Fetch full user profile
+                    const { data: profile } = await supabase
+                        .from('users')
+                        .select('full_name, email, phone, company, city, avatar_url, birth_place, birth_date, province, professional_competency')
+                        .eq('id', user.id)
+                        .maybeSingle()
 
-                        setFormData(prev => ({
-                            ...prev,
-                            fullName: p.full_name || card.full_name || user.full_name || '',
-                            company: p.company || card.company || '',
-                            birthPlace: p.birth_place || '',
-                            birthDate: p.birth_date || '',
-                            professionalCompetency: p.professional_competency || card.job_title || '',
-                            city: p.city || card.city || '',
-                            province: p.province || '',
-                            whatsappNumber: p.phone || card.phone || '',
-                            photoUrl: card.profile_photo_url || p.avatar_url || '',
-                        }))
-                    } else {
-                        // Fallback to basic user data
-                        setFormData(prev => ({
-                            ...prev,
-                            fullName: user.full_name || '',
-                        }))
-                    }
-                } catch {
-                    // Fallback
+                    // Fetch primary business card
+                    const { data: cards } = await supabase
+                        .from('business_cards')
+                        .select('full_name, company, job_title, phone, city, profile_photo_url, email')
+                        .eq('user_id', user.id)
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+
+                    const p: any = profile || {}
+                    const card: any = (cards && cards.length > 0) ? cards[0] : {}
+
+                    setFormData(prev => ({
+                        ...prev,
+                        fullName: p.full_name || card.full_name || user.full_name || '',
+                        company: p.company || card.company || '',
+                        birthPlace: p.birth_place || '',
+                        birthDate: p.birth_date || '',
+                        professionalCompetency: p.professional_competency || card.job_title || '',
+                        city: p.city || card.city || '',
+                        province: p.province || '',
+                        whatsappNumber: p.phone || card.phone || '',
+                        photoUrl: card.profile_photo_url || p.avatar_url || '',
+                    }))
+                } catch (err) {
+                    console.error('Error fetching profile data for KTA:', err)
+                    // Fallback to basic user data
                     setFormData(prev => ({
                         ...prev,
                         fullName: user.full_name || '',
