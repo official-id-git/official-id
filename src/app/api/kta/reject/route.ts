@@ -39,16 +39,8 @@ export async function POST(request: NextRequest) {
         const organizationId = application.organization_id
 
         // Ensure current user is an admin of this circle
-        const { data: membership } = await supabase
-            .from('organization_members')
-            .select('role, status')
-            .eq('organization_id', organizationId)
-            .eq('user_id', user.id)
-            .eq('status', 'APPROVED')
-            .in('role', ['ADMIN', 'OWNER'])
-            .single()
-
-        if (!membership) {
+        const isAdmin = await checkCircleAdmin(supabase, organizationId, user.id)
+        if (!isAdmin) {
             return NextResponse.json({ success: false, error: 'You are not authorized to perform this action' }, { status: 403 })
         }
 
@@ -125,4 +117,32 @@ export async function POST(request: NextRequest) {
             { status: 500 }
         )
     }
+}
+
+async function checkCircleAdmin(supabase: any, organizationId: string, userId: string): Promise<boolean> {
+    const { data: org } = await supabase
+        .from('organizations')
+        .select('owner_id')
+        .eq('id', organizationId)
+        .single()
+
+    if (org?.owner_id === userId) return true
+
+    const { data: member } = await supabase
+        .from('organization_members')
+        .select('is_admin, role')
+        .eq('organization_id', organizationId)
+        .eq('user_id', userId)
+        .eq('status', 'APPROVED')
+        .single()
+
+    if (member?.is_admin || member?.role === 'ADMIN' || member?.role === 'OWNER') return true
+
+    const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .single()
+
+    return userData?.role === 'APP_ADMIN'
 }

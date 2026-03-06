@@ -855,9 +855,9 @@ export default function KTAManagementPage() {
                                                     {app.status === 'GENERATED' ? 'Terbit' : app.status === 'PENDING' ? 'Proses' : 'Gagal'}
                                                 </span>
 
-                                                {app.photo_url && (
+                                                {app.gdrive_image_url && (
                                                     <a
-                                                        href={app.photo_url}
+                                                        href={app.gdrive_image_url}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-1.5"

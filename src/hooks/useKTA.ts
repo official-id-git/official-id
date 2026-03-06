@@ -41,6 +41,7 @@ export interface KTAApplication {
     generated_card_url: string | null
     gdrive_file_id: string | null
     gdrive_pdf_url: string | null
+    gdrive_image_url: string | null
     verification_token: string
     created_at: string
     updated_at: string
