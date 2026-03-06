@@ -66,6 +66,29 @@ export async function createGDriveFolder(folderName: string, parentFolderId?: st
 }
 
 /**
+ * Find a subfolder by name in the target GDrive folder
+ */
+export async function findGDriveFolderByName(folderName: string, parentFolderId?: string): Promise<string | null> {
+    const drive = getDriveClient()
+    const parent = parentFolderId || GDRIVE_FOLDER_ID
+
+    // Prevent SQL injection-style string breaks in Google Drive query by escaping single quotes
+    const safeFolderName = folderName.replace(/'/g, "\\'")
+
+    const response = await drive.files.list({
+        q: `'${parent}' in parents and name = '${safeFolderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+        fields: 'files(id)',
+        spaces: 'drive',
+    })
+
+    if (response.data.files && response.data.files.length > 0) {
+        return response.data.files[0].id || null
+    }
+
+    return null
+}
+
+/**
  * Upload a file buffer to Google Drive
  */
 export async function uploadToGDrive(

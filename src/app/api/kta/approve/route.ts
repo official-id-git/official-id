@@ -149,20 +149,49 @@ export async function POST(request: NextRequest) {
         // Upload to Google Drive
         let gdriveResult = { fileId: '', webViewLink: '', webContentLink: '' }
         try {
-            let circleFolderId: string | undefined
-            try {
-                circleFolderId = await createGDriveFolder(`KTA_${circleName}`)
-            } catch {
-                console.warn('Could not create circle subfolder, using root folder')
-            }
+            const { uploadToGDrive, createGDriveFolder, findGDriveFolderByName } = await import('@/lib/gdrive')
 
-            const safeFileName = `KTA_${finalData.fullName.replace(/[^a-zA-Z0-9]/g, '_')}_${ktaNumberString}.pdf`
-            gdriveResult = await uploadToGDrive(
-                pdfBuffer,
-                safeFileName,
-                'application/pdf',
-                circleFolderId
-            )
+            let circleFolderId: string | undefined
+            const targetFolderName = `KTA_${circleName}`
+
+            try {
+                // 1. Find or create Circle Folder
+                const existingOrgFolderId = await findGDriveFolderByName(targetFolderName)
+                if (existingOrgFolderId) {
+                    circleFolderId = existingOrgFolderId
+                } else {
+                    circleFolderId = await createGDriveFolder(targetFolderName)
+                }
+
+                // 2. Find or create Member Subfolder inside Circle Folder
+                const memberFolderName = `${ktaNumberString} - ${finalData.fullName}`
+                const existingMemberFolderId = await findGDriveFolderByName(memberFolderName, circleFolderId)
+
+                let memberFolderId: string
+                if (existingMemberFolderId) {
+                    memberFolderId = existingMemberFolderId
+                } else {
+                    memberFolderId = await createGDriveFolder(memberFolderName, circleFolderId)
+                }
+
+                // Upload to the Member's Subfolder
+                const safeFileName = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}.pdf`
+                gdriveResult = await uploadToGDrive(
+                    pdfBuffer,
+                    safeFileName,
+                    'application/pdf',
+                    memberFolderId
+                )
+            } catch (err) {
+                console.warn('Could not construct full folder hierarchy, using root folder', err)
+                // Fallback upload to root if folders fail
+                const safeFileName = `KTA_${finalData.fullName.replace(/[^a-zA-Z0-9]/g, '_')}_${ktaNumberString}.pdf`
+                gdriveResult = await uploadToGDrive(
+                    pdfBuffer,
+                    safeFileName,
+                    'application/pdf'
+                )
+            }
         } catch (gdriveError) {
             console.error('Google Drive upload failed:', gdriveError)
         }
