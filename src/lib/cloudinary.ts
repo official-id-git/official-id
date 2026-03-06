@@ -62,10 +62,13 @@ export async function uploadBufferToCloudinary(
   formData.append('file', fileUri)
   formData.append('upload_preset', UPLOAD_PRESET)
   formData.append('folder', folder)
-  formData.append('public_id', fileName.replace(/\.[^/.]+$/, '')) // Remove extension from public_id
 
-  // Determine resource type based on mime
-  const resourceType = mimeType === 'application/pdf' ? 'image' : 'image'
+  // Determine resource type based on mime (Cloudinary Free restricts PDF delivery if uploaded as 'image')
+  const resourceType = mimeType === 'application/pdf' ? 'raw' : 'image'
+
+  // For 'raw' files, keep the extension in the public_id
+  const finalPublicId = resourceType === 'raw' ? fileName : fileName.replace(/\.[^/.]+$/, '')
+  formData.append('public_id', finalPublicId)
 
   const response = await fetch(
     `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`,

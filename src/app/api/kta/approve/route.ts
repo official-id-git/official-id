@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
             const targetFolderName = `official-id_kta/KTA_${circleName.replace(/[^a-zA-Z0-9_-]/g, '_')}`
 
             // Upload PDF
-            const safeFileNamePDF = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}.pdf`
+            const safeFileNamePDF = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}_pdf.pdf`
             console.log(`KTA Approve: Uploading PDF (${pdfBuffer.length} bytes) as "${safeFileNamePDF}" to Cloudinary folder ${targetFolderName}`)
 
             // Cloudinary expects raw data URIs for PDF/Image uploads from backend APIs
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
             console.log(`KTA Approve: PDF uploaded successfully. URL: ${cloudinaryPdfResult.secure_url}`)
 
             // Upload Image
-            const safeFileNameImage = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}.png`
+            const safeFileNameImage = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}_image.png`
             console.log(`KTA Approve: Uploading PNG (${ktaImageBuffer.length} bytes) as "${safeFileNameImage}" to Cloudinary folder ${targetFolderName}`)
 
             cloudinaryImageResult = await uploadBufferToCloudinary(

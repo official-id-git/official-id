@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
             const targetFolderName = `official-id_kta/KTA_${circleName.replace(/[^a-zA-Z0-9_-]/g, '_')}`
 
             // Upload PDF
-            const safeFileNamePDF = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}.pdf`
+            const safeFileNamePDF = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}_pdf.pdf`
             console.log(`KTA Regenerate: Uploading PDF to Cloudinary folder ${targetFolderName}`)
 
             cloudinaryPdfResult = await uploadBufferToCloudinary(
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
             console.log(`KTA Regenerate: PDF uploaded successfully. URL: ${cloudinaryPdfResult.secure_url}`)
 
             // Upload Image
-            const safeFileNameImage = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}.png`
+            const safeFileNameImage = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}_image.png`
             console.log(`KTA Regenerate: Uploading PNG to Cloudinary folder ${targetFolderName}`)
 
             cloudinaryImageResult = await uploadBufferToCloudinary(
