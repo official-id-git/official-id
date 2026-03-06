@@ -99,31 +99,55 @@ export async function uploadToGDrive(
 ): Promise<{ fileId: string; webViewLink: string; webContentLink: string }> {
     const drive = getDriveClient()
 
-    // Convert buffer to readable stream - ensure a proper copy for googleapis
-    const bufferCopy = Buffer.from(fileBuffer)
-    const stream = new Readable({
-        read() {
-            this.push(bufferCopy)
-            this.push(null)
+    console.log(`GDrive: Uploading file "${fileName}" (${fileBuffer.length} bytes) to folder ${folderId || GDRIVE_FOLDER_ID} using native fetch`)
+
+    const auth = getAuth()
+    const token = await auth.getAccessToken()
+    if (!token) throw new Error("Could not get Google Drive access token")
+
+    const boundary = "-------314159265358979323846"
+    const delimiter = "\r\n--" + boundary + "\r\n"
+    const closeDelimiter = "\r\n--" + boundary + "--"
+
+    const metadata = JSON.stringify({
+        name: fileName,
+        parents: [folderId || GDRIVE_FOLDER_ID]
+    })
+
+    const bodyChunks = []
+    bodyChunks.push(Buffer.from(delimiter + "Content-Type: application/json; charset=UTF-8\r\n\r\n" + metadata + "\r\n"))
+    bodyChunks.push(Buffer.from("--" + boundary + "\r\nContent-Type: " + mimeType + "\r\n\r\n"))
+    bodyChunks.push(fileBuffer)
+    bodyChunks.push(Buffer.from(closeDelimiter))
+
+    const body = Buffer.concat(bodyChunks)
+
+    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'multipart/related; boundary=' + boundary,
+            'Content-Length': body.length.toString()
+        },
+        body: body,
+        cache: 'no-store'
+    })
+
+    if (!res.ok) {
+        const errorText = await res.text()
+        console.error("GDrive upload failed with status", res.status, errorText)
+        throw new Error('Failed to upload file to Google Drive: ' + errorText)
+    }
+
+    const uploadData = await res.json()
+    if (!uploadData.id) {
+        throw new Error('Failed to get file ID from upload response')
+    }
+
+    const response = {
+        data: {
+            id: uploadData.id
         }
-    })
-
-    console.log(`GDrive: Uploading file "${fileName}" (${bufferCopy.length} bytes) to folder ${folderId || GDRIVE_FOLDER_ID}`)
-
-    const response = await drive.files.create({
-        requestBody: {
-            name: fileName,
-            parents: [folderId || GDRIVE_FOLDER_ID],
-        },
-        media: {
-            mimeType,
-            body: stream,
-        },
-        fields: 'id,webViewLink,webContentLink',
-    })
-
-    if (!response.data.id) {
-        throw new Error('Failed to upload file to Google Drive')
     }
 
     // Make file accessible via link
