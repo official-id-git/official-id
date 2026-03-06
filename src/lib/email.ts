@@ -1518,3 +1518,62 @@ export function getKTAAdminNotificationTemplate(data: {
     `
   }
 }
+
+interface RejectedKTAParams {
+  memberName: string
+  organizationName: string
+  rejectionReason: string
+  recipientEmail: string
+}
+
+export const getKtaRejectedEmailTemplate = (data: RejectedKTAParams) => {
+  const year = new Date().getFullYear()
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://official.id'
+
+  return {
+    subject: `Status Pengajuan KTA - ${data.organizationName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f5f5f5;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #EF4444, #B91C1C); border-radius: 16px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 28px;">❌</span>
+            </div>
+            <h1 style="color: #1a1a1a; font-size: 24px; margin: 0;">Pengajuan KTA Ditolak</h1>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">Halo <strong>${data.memberName}</strong>,</p>
+          <p style="color: #666; line-height: 1.6;">
+            Mohon maaf, pengajuan Kartu Tanda Anggota (KTA) Anda untuk Circle <strong>${data.organizationName}</strong> saat ini belum dapat disetujui atau dibatalkan oleh Admin.
+          </p>
+          
+          <div style="background: #fef2f2; border-radius: 12px; padding: 16px; margin: 20px 0; border-left: 4px solid #EF4444;">
+            <p style="margin: 0 0 8px; color: #7f1d1d; font-weight: 600;">Alasan Pembatalan / Penolakan:</p>
+            <p style="margin: 0; color: #991b1b; white-space: pre-wrap;">${data.rejectionReason}</p>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">
+            Silakan perbaiki data Anda atau hubungi Admin Circle secara langsung untuk informasi lebih lanjut jika diperlukan, lalu Anda dapat mengajukan ulang KTA.
+          </p>
+          
+          <div style="text-align: center; margin: 24px 0;">
+             <a href="${siteUrl}/dashboard" style="display: inline-block; background: #f3f4f6; color: #374151; padding: 14px 24px; border-radius: 12px; text-decoration: none; font-weight: 600;">
+              Masuk ke Dashboard
+            </a>
+          </div>
+          
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 32px;">
+            © ${year} Official ID. All rights reserved.
+          </p>
+        </div>
+      </body>
+      </html>
+    `
+  }
+}

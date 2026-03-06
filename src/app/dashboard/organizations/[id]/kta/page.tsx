@@ -25,6 +25,7 @@ export default function KTAManagementPage() {
         deleteUnusedNumbers,
         fetchAllApplications,
         approveKTA,
+        rejectKTA,
     } = useKTA()
 
     const orgId = params.id as string
@@ -61,6 +62,11 @@ export default function KTAManagementPage() {
     const [approvalModalApp, setApprovalModalApp] = useState<KTAApplication | null>(null)
     const [editFormData, setEditFormData] = useState<any>({})
     const [validatingApproval, setValidatingApproval] = useState(false)
+
+    // Rejection state
+    const [isRejecting, setIsRejecting] = useState(false)
+    const [rejectionReason, setRejectionReason] = useState('')
+    const [showRejectInput, setShowRejectInput] = useState(false)
 
     // Refs
     const templateInputRef = useRef<HTMLInputElement>(null)
@@ -257,6 +263,28 @@ export default function KTAManagementPage() {
             }
         } finally {
             setValidatingApproval(false)
+        }
+    }
+
+    const handleReject = async () => {
+        if (!approvalModalApp || !rejectionReason.trim()) return
+
+        if (!confirm('Apakah Anda yakin ingin menolak / membatalkan pengajuan KTA ini?')) {
+            return
+        }
+
+        setIsRejecting(true)
+        try {
+            const success = await rejectKTA(approvalModalApp.id, rejectionReason)
+            if (success) {
+                alert('Pengajuan KTA berhasil ditolak/dibatalkan.')
+                setApprovalModalApp(null)
+                setShowRejectInput(false)
+                setRejectionReason('')
+                loadData()
+            }
+        } finally {
+            setIsRejecting(false)
         }
     }
 
@@ -840,6 +868,31 @@ export default function KTAManagementPage() {
                                                         </svg>
                                                     </a>
                                                 )}
+
+                                                {app.status === 'GENERATED' && (
+                                                    <button
+                                                        onClick={async () => {
+                                                            const reason = prompt('Masukkan alasan pembatalan KTA ini:');
+                                                            if (reason) {
+                                                                setIsRejecting(true);
+                                                                try {
+                                                                    const success = await rejectKTA(app.id, reason);
+                                                                    if (success) {
+                                                                        alert('KTA Berhasil Dibatalkan.');
+                                                                        loadData();
+                                                                    }
+                                                                } finally {
+                                                                    setIsRejecting(false);
+                                                                }
+                                                            }
+                                                        }}
+                                                        disabled={isRejecting}
+                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                                        title="Batalkan KTA"
+                                                    >
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -869,11 +922,95 @@ export default function KTAManagementPage() {
                             </button>
                         </div>
 
-                        <div className="p-6 overflow-y-auto flex-1">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
-                                {/* Left Col - Photo & Info */}
-                                <div className="space-y-6">
-                                    {/* Edit Photo */}
+                        <div className="p-6 overflow-y-auto flex-1 bg-gray-50/30">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+                                {/* Left Col - Visual KTA Preview */}
+                                <div className="hidden lg:flex flex-col items-center justify-start space-y-4">
+                                    <h4 className="text-sm font-semibold text-gray-700 w-full text-center">Preview KTA</h4>
+                                    <div className="relative sticky top-0 border border-gray-200 shadow-sm rounded-xl overflow-hidden bg-white" style={{
+                                        width: PREVIEW_WIDTH,
+                                        height: PREVIEW_HEIGHT
+                                    }}>
+                                        {templateImageUrl ? (
+                                            <>
+                                                <Image src={templateImageUrl} alt="KTA Template" fill className="object-cover" />
+
+                                                {/* Text Overlays - Name */}
+                                                <div className="absolute font-bold whitespace-nowrap overflow-hidden text-ellipsis flex items-center p-1" style={{
+                                                    top: `${(fieldPositions.name.y / 312) * 100}%`,
+                                                    left: `${(fieldPositions.name.x / 496) * 100}%`,
+                                                    width: `${(fieldPositions.name.width / 496) * 100}%`,
+                                                    height: `${(fieldPositions.name.height / 312) * 100}%`,
+                                                    color: fieldPositions.name.fontColor,
+                                                    fontSize: `${fieldPositions.name.fontSize}px`,
+                                                    fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif"
+                                                }}>
+                                                    {editFormData.fullName || '-- NAMA LENGKAP --'}
+                                                </div>
+
+                                                {/* Text Overlays - KTA Number */}
+                                                <div className="absolute whitespace-nowrap overflow-hidden text-ellipsis flex items-center p-1" style={{
+                                                    top: `${(fieldPositions.kta_number.y / 312) * 100}%`,
+                                                    left: `${(fieldPositions.kta_number.x / 496) * 100}%`,
+                                                    width: `${(fieldPositions.kta_number.width / 496) * 100}%`,
+                                                    height: `${(fieldPositions.kta_number.height / 312) * 100}%`,
+                                                    color: fieldPositions.kta_number.fontColor,
+                                                    fontSize: `${fieldPositions.kta_number.fontSize}px`,
+                                                    fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif"
+                                                }}>
+                                                    {(() => {
+                                                        const numId = editFormData.assignedNumberId;
+                                                        if (numId) {
+                                                            const num = numbersList.find(n => n.id === numId);
+                                                            return num ? num.kta_number : '1234.5678.9012';
+                                                        }
+                                                        return approvalModalApp?.kta_numbers?.kta_number || '1234.5678.9012';
+                                                    })()}
+                                                </div>
+
+                                                {/* Photo Overlay */}
+                                                <div className="absolute bg-gray-200 overflow-hidden" style={{
+                                                    top: `${(fieldPositions.photo.y / 312) * 100}%`,
+                                                    left: `${(fieldPositions.photo.x / 496) * 100}%`,
+                                                    width: `${(fieldPositions.photo.width / 496) * 100}%`,
+                                                    height: `${(fieldPositions.photo.height / 312) * 100}%`
+                                                }}>
+                                                    {editFormData.photoUrl ? (
+                                                        <Image src={editFormData.photoUrl} alt="Photo" fill className="object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-[10px]">
+                                                            FOTO
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* QRCode Placeholder */}
+                                                <div className="absolute bg-white flex items-center justify-center p-1 shadow-sm" style={{
+                                                    top: `${(fieldPositions.qrcode.y / 312) * 100}%`,
+                                                    left: `${(fieldPositions.qrcode.x / 496) * 100}%`,
+                                                    width: `${(fieldPositions.qrcode.width / 496) * 100}%`,
+                                                    height: `${(fieldPositions.qrcode.height / 312) * 100}%`
+                                                }}>
+                                                    <div className="w-full h-full bg-black/10 rounded-sm border border-black/20 flex items-center justify-center">
+                                                        <svg className="w-2/3 h-2/3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-2 bg-gray-50">
+                                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                                <span className="text-sm">Template belum diatur</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-gray-500 text-center max-w-sm mt-3 bg-white px-3 py-2 rounded-lg border border-gray-100 shadow-sm">
+                                        Ini adalah perkiraan hasil gambar dari KTA yang akan diterbitkan
+                                    </p>
+                                </div>
+
+                                {/* Right Col - Edit Fields */}
+                                <div className="space-y-6 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm overflow-y-auto max-h-[60vh] pr-4 custom-scrollbar lg:col-span-1">
+                                    <h4 className="text-sm font-semibold text-gray-700 border-b pb-2 mb-4">Edit Data KTA</h4>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Foto KTA</label>
                                         <div className="flex items-start gap-4">
@@ -970,31 +1107,81 @@ export default function KTAManagementPage() {
                             </div>
                         </div>
 
-                        <div className="px-6 py-4 border-t bg-gray-50 flex items-center justify-end gap-3 mt-auto">
-                            <button
-                                onClick={() => setApprovalModalApp(null)}
-                                disabled={validatingApproval}
-                                className="px-5 py-2.5 text-gray-600 font-medium hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
-                            >
-                                Batal
-                            </button>
-                            <button
-                                onClick={handleApprove}
-                                disabled={validatingApproval || !editFormData.fullName || !editFormData.photoUrl}
-                                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-sm disabled:opacity-50 transition-all flex items-center gap-2"
-                            >
-                                {validatingApproval ? (
-                                    <>
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                        Memproses...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                        Setujui & Terbitkan KTA
-                                    </>
+                        <div className="px-6 py-4 border-t bg-gray-50 flex flex-col gap-3 mt-auto">
+                            {showRejectInput ? (
+                                <div className="space-y-3 pb-2 border-b border-gray-200">
+                                    <label className="block text-sm font-medium text-red-700">Alasan Penolakan / Pembatalan</label>
+                                    <textarea
+                                        value={rejectionReason}
+                                        onChange={e => setRejectionReason(e.target.value)}
+                                        placeholder="Pesan ini akan dikirim ke email anggota..."
+                                        rows={3}
+                                        className="w-full px-3 py-2 text-sm border border-red-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all resize-none"
+                                    />
+                                    <div className="flex justify-end gap-2">
+                                        <button
+                                            onClick={() => {
+                                                setShowRejectInput(false)
+                                                setRejectionReason('')
+                                            }}
+                                            disabled={isRejecting}
+                                            className="px-3 py-1.5 text-sm text-gray-600 font-medium hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+                                        >
+                                            Batal
+                                        </button>
+                                        <button
+                                            onClick={handleReject}
+                                            disabled={isRejecting || !rejectionReason.trim()}
+                                            className="px-4 py-1.5 text-sm bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 shadow-sm disabled:opacity-50 flex items-center gap-2 transition-colors"
+                                        >
+                                            {isRejecting ? 'Memproses...' : 'Kirim Penolakan'}
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : null}
+
+                            <div className="flex items-center justify-between">
+                                {!showRejectInput && (
+                                    <button
+                                        onClick={() => setShowRejectInput(true)}
+                                        disabled={validatingApproval}
+                                        className="px-4 py-2 text-red-600 font-medium hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50 text-sm flex items-center gap-2"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                        Tolak / Batalkan
+                                    </button>
                                 )}
-                            </button>
+                                <div className="flex items-center gap-3 ml-auto">
+                                    <button
+                                        onClick={() => {
+                                            setApprovalModalApp(null)
+                                            setShowRejectInput(false)
+                                            setRejectionReason('')
+                                        }}
+                                        disabled={validatingApproval || isRejecting}
+                                        className="px-5 py-2.5 text-gray-600 font-medium hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
+                                    >
+                                        Tutup
+                                    </button>
+                                    <button
+                                        onClick={handleApprove}
+                                        disabled={validatingApproval || isRejecting || !editFormData.fullName || !editFormData.photoUrl}
+                                        className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-sm disabled:opacity-50 transition-all flex items-center gap-2"
+                                    >
+                                        {validatingApproval ? (
+                                            <>
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                Memproses...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                                Setujui & Terbitkan KTA
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

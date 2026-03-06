@@ -253,6 +253,27 @@ export function useKTA() {
         }
     }, [])
 
+    // Reject/Cancel KTA (admin)
+    const rejectKTA = useCallback(async (applicationId: string, rejectionReason: string): Promise<boolean> => {
+        try {
+            setLoading(true)
+            setError(null)
+            const res = await fetch('/api/kta/reject', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ applicationId, rejectionReason }),
+            })
+            const data = await res.json()
+            if (!data.success) throw new Error(data.error)
+            return true
+        } catch (err: any) {
+            setError(err.message)
+            return false
+        } finally {
+            setLoading(false)
+        }
+    }, [])
+
     return {
         loading,
         error,
@@ -265,5 +286,6 @@ export function useKTA() {
         fetchMyKTA,
         fetchAllApplications,
         approveKTA,
+        rejectKTA,
     }
 }
