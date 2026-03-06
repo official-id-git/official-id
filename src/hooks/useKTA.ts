@@ -161,6 +161,29 @@ export function useKTA() {
         }
     }, [])
 
+    // Add a single KTA number manually
+    const addSingleNumber = useCallback(async (organizationId: string, ktaNumber: string): Promise<{ success: boolean; error?: string }> => {
+        try {
+            setLoading(true)
+            setError(null)
+            const res = await fetch('/api/kta/numbers', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ organizationId, ktaNumber }),
+            })
+            const data = await res.json()
+            if (!data.success) {
+                return { success: false, error: data.error }
+            }
+            return { success: true }
+        } catch (err: any) {
+            setError(err.message)
+            return { success: false, error: err.message }
+        } finally {
+            setLoading(false)
+        }
+    }, [])
+
     // Apply for KTA (member)
     const applyForKTA = useCallback(async (
         organizationId: string,
@@ -283,6 +306,7 @@ export function useKTA() {
         uploadNumbers,
         fetchNumberStats,
         deleteUnusedNumbers,
+        addSingleNumber,
         applyForKTA,
         fetchMyKTA,
         fetchAllApplications,

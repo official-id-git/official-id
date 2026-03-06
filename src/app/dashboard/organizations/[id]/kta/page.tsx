@@ -24,6 +24,7 @@ export default function KTAManagementPage() {
         uploadNumbers,
         fetchNumberStats,
         deleteUnusedNumbers,
+        addSingleNumber,
         fetchAllApplications,
         approveKTA,
         rejectKTA,
@@ -53,6 +54,9 @@ export default function KTAManagementPage() {
     const [numbersList, setNumbersList] = useState<any[]>([])
     const [uploadingNumbers, setUploadingNumbers] = useState(false)
     const [numbersSuccess, setNumbersSuccess] = useState('')
+    const [manualNumber, setManualNumber] = useState('')
+    const [manualNumberError, setManualNumberError] = useState('')
+    const [addingManualNumber, setAddingManualNumber] = useState(false)
 
     // Applications state
     const [applications, setApplications] = useState<KTAApplication[]>([])
@@ -218,6 +222,26 @@ export default function KTAManagementPage() {
                 setNumbersList(numbersData.numbers)
             }
         }
+    }
+
+    const handleAddManualNumber = async () => {
+        if (!manualNumber.trim()) return
+        setAddingManualNumber(true)
+        setManualNumberError('')
+        setNumbersSuccess('')
+        const result = await addSingleNumber(orgId, manualNumber.trim())
+        if (result.success) {
+            setManualNumber('')
+            setNumbersSuccess(`Nomor KTA "${manualNumber.trim()}" berhasil ditambahkan`)
+            const numbersData = await fetchNumberStats(orgId)
+            if (numbersData) {
+                setNumberStats(numbersData.stats)
+                setNumbersList(numbersData.numbers)
+            }
+        } else {
+            setManualNumberError(result.error || 'Gagal menambahkan nomor')
+        }
+        setAddingManualNumber(false)
     }
 
     // Field drag handlers
@@ -664,6 +688,43 @@ export default function KTAManagementPage() {
                             {numbersSuccess && (
                                 <div className="mt-4 p-3 bg-green-50 text-green-700 text-sm rounded-xl border border-green-200">
                                     {numbersSuccess}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Manual Add Single Number */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <h2 className="text-lg font-semibold text-gray-900 mb-2">Tambah Nomor KTA Manual</h2>
+                            <p className="text-sm text-gray-500 mb-4">
+                                Tambahkan nomor KTA satu per satu. Nomor harus unik, tidak boleh sama dengan yang sudah ada.
+                            </p>
+                            <div className="flex gap-3">
+                                <input
+                                    type="text"
+                                    value={manualNumber}
+                                    onChange={(e) => { setManualNumber(e.target.value); setManualNumberError('') }}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddManualNumber() }}
+                                    placeholder="Ketik nomor KTA, mis. IPTIKI00100"
+                                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                />
+                                <button
+                                    onClick={handleAddManualNumber}
+                                    disabled={addingManualNumber || !manualNumber.trim()}
+                                    className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm flex items-center gap-2"
+                                >
+                                    {addingManualNumber ? (
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                    ) : (
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                    )}
+                                    Tambah
+                                </button>
+                            </div>
+                            {manualNumberError && (
+                                <div className="mt-3 p-3 bg-red-50 text-red-700 text-sm rounded-xl border border-red-200">
+                                    {manualNumberError}
                                 </div>
                             )}
                         </div>

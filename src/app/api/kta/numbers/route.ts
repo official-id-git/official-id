@@ -1,6 +1,8 @@
 // KTA Numbers API Route
 // POST: Upload KTA numbers from Excel
+// PUT: Add a single KTA number manually
 // GET: Fetch KTA number stats
+// DELETE: Remove all unused KTA numbers
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
@@ -150,14 +152,111 @@ export async function POST(request: NextRequest) {
     }
 }
 
-// DELETE: Remove all unused KTA numbers for a circle
-export async function DELETE(request: NextRequest) {
+// PUT: Add a single KTA number manually
+export async function PUT(request: NextRequest) {
     try {
         const supabase = await createClient() as any
         const adminSupabase = createAdminClient() as any
 
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            )
+        }
+
+        const body = await request.json()
+        const { organizationId, ktaNumber } = body
+
+        if (!organizationId || !ktaNumber) {
+            return NextResponse.json(
+                { success: false, error: 'organizationId and ktaNumber are required' },
+                { status: 400 }
+            )
+        }
+
+        const trimmedNumber = String(ktaNumber).trim()
+        if (!trimmedNumber) {
+            return NextResponse.json(
+                { success: false, error: 'KTA number cannot be empty' },
+                { status: 400 }
+            )
+        }
+
+        const isAdmin = await checkCircleAdmin(supabase, organizationId, user.id)
+        if (!isAdmin) {
+            return NextResponse.json(
+                { success: false, error: 'Only circle admins can add KTA numbers' },
+                { status: 403 }
+            )
+        }
+
+        // Check for duplicate
+        const { data: existing } = await adminSupabase
+            .from('kta_numbers')
+            .select('id')
+            .eq('organization_id', organizationId)
+            .eq('kta_number', trimmedNumber)
+            .maybeSingle()
+
+        if (existing) {
+            return NextResponse.json(
+                { success: false, error: `Nomor KTA "${trimmedNumber}" sudah ada dalam daftar` },
+                { status: 409 }
+            )
+        }
+
+        // Get current max order_index
+        const { data: lastNum } = await adminSupabase
+            .from('kta_numbers')
+            .select('order_index')
+            .eq('organization_id', organizationId)
+            .order('order_index', { ascending: false })
+            .limit(1)
+
+        const nextIndex = lastNum && lastNum.length > 0 ? lastNum[0].order_index + 1 : 0
+
+        const { data: inserted, error: insertError } = await adminSupabase
+            .from('kta_numbers')
+            .insert({
+                organization_id: organizationId,
+                kta_number: trimmedNumber,
+                order_index: nextIndex,
+            })
+            .select()
+            .single()
+
+        if (insertError) throw insertError
+
+        return NextResponse.json({
+            success: true,
+            data: inserted
+        })
+    } catch (error: any) {
+        console.error('PUT /api/kta/numbers error:', error)
+        return NextResponse.json(
+            { success: false, error: error.message },
+            { status: 500 }
+        )
+    }
+}
+
+// DELETE: Remove all unused KTA numbers for a circle
+export async function DELETE(request: NextRequest) {
+    try {
+        const supabase = await createClient() as any
+        const adminSupabase = createAdminClient() as any
+
+        // Try getting user from cookie-based client first
+        let userId: string | null = null
+
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+            userId = user.id
+        }
+
+        if (!userId) {
             return NextResponse.json(
                 { success: false, error: 'Unauthorized' },
                 { status: 401 }
@@ -174,7 +273,9 @@ export async function DELETE(request: NextRequest) {
             )
         }
 
-        const isAdmin = await checkCircleAdmin(supabase, organizationId, user.id)
+        // Use adminSupabase for checking admin status since regular supabase 
+        // might have RLS issues with cookie-based auth on DELETE
+        const isAdmin = await checkCircleAdminWithAdmin(adminSupabase, organizationId, userId)
         if (!isAdmin) {
             return NextResponse.json(
                 { success: false, error: 'Only circle admins can delete KTA numbers' },
@@ -211,15 +312,44 @@ async function checkCircleAdmin(supabase: any, organizationId: string, userId: s
 
     const { data: member } = await supabase
         .from('organization_members')
-        .select('is_admin')
+        .select('is_admin, role')
         .eq('organization_id', organizationId)
         .eq('user_id', userId)
         .eq('status', 'APPROVED')
         .single()
 
-    if (member?.is_admin) return true
+    if (member?.is_admin || member?.role === 'ADMIN' || member?.role === 'OWNER') return true
 
     const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .single()
+
+    return userData?.role === 'APP_ADMIN'
+}
+
+// Same as checkCircleAdmin but uses adminSupabase (bypasses RLS)
+async function checkCircleAdminWithAdmin(adminSupabase: any, organizationId: string, userId: string): Promise<boolean> {
+    const { data: org } = await adminSupabase
+        .from('organizations')
+        .select('owner_id')
+        .eq('id', organizationId)
+        .single()
+
+    if (org?.owner_id === userId) return true
+
+    const { data: member } = await adminSupabase
+        .from('organization_members')
+        .select('is_admin, role')
+        .eq('organization_id', organizationId)
+        .eq('user_id', userId)
+        .eq('status', 'APPROVED')
+        .single()
+
+    if (member?.is_admin || member?.role === 'ADMIN' || member?.role === 'OWNER') return true
+
+    const { data: userData } = await adminSupabase
         .from('users')
         .select('role')
         .eq('id', userId)
