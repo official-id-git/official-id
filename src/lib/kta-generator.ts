@@ -91,10 +91,10 @@ export async function generateKTAImage(
         ctx.fillRect(0, 0, KTA_WIDTH_PX, KTA_HEIGHT_PX)
     }
 
-    // Scale factor: field positions are stored relative to a preview (e.g., 400px wide)
-    // We scale them up to the actual card dimensions
-    const PREVIEW_WIDTH = 400
-    const PREVIEW_HEIGHT = Math.round(400 * (5.5 / 8.7))
+    // Scale factor: field positions are stored relative to a preview
+    // The frontend template editor uses a fixed 496x312 preview box.
+    const PREVIEW_WIDTH = 496
+    const PREVIEW_HEIGHT = 312
     const scaleX = KTA_WIDTH_PX / PREVIEW_WIDTH
     const scaleY = KTA_HEIGHT_PX / PREVIEW_HEIGHT
 

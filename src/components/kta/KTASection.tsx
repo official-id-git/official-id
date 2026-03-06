@@ -235,10 +235,19 @@ export default function KTASection({ organizationId, organizationName, isMember 
                     </div>
                 )}
 
-                {/* Member: No KTA yet - Show Apply Button */}
-                {isMember && !myKTA && !showForm && !formSuccess && (
+                {/* Member: No KTA yet or Previous was Rejected - Show Apply Button */}
+                {isMember && (!myKTA || myKTA.status === 'FAILED') && !showForm && !formSuccess && (
                     <div className="text-center py-6">
-                        <p className="text-gray-600 mb-4">Anda belum memiliki KTA untuk circle ini.</p>
+                        {myKTA?.status === 'FAILED' ? (
+                            <div className="mb-6 p-4 bg-red-50 rounded-xl border border-red-200">
+                                <p className="text-red-800 font-medium mb-1">Pengajuan KTA Anda sebelumnya dibatalkan</p>
+                                {/* We don't have rejection_reason in KTAApplication type yet, but if it exists it would be nice. 
+                                    For now just a generic message. */}
+                                <p className="text-sm text-red-600">Admin Circle telah menolak atau membatalkan KTA Anda. Silakan periksa kembali data Anda dan ajukan ulang.</p>
+                            </div>
+                        ) : (
+                            <p className="text-gray-600 mb-4">Anda belum memiliki KTA untuk circle ini.</p>
+                        )}
                         <button
                             onClick={() => setShowForm(true)}
                             className="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 transition-all shadow-md hover:shadow-lg"
