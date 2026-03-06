@@ -109,9 +109,7 @@ export default function KTAVerifyClient({ username, token }: Props) {
             <div className="bg-white border-b shadow-sm">
                 <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">O</span>
-                        </div>
+                        <Image src="/logo.png" alt="Official.id" width={32} height={32} className="w-8 h-8 rounded-lg" unoptimized />
                         <span className="font-bold text-gray-900">Official.id</span>
                     </Link>
                     <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-medium">
@@ -136,26 +134,23 @@ export default function KTAVerifyClient({ username, token }: Props) {
                 {/* KTA Details Card */}
                 <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
                     {/* Organization Header */}
-                    <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-5 flex items-center gap-4">
+                    <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6 flex flex-col items-center justify-center text-center gap-4">
                         {organization.logo_url ? (
-                            <div className="w-14 h-14 rounded-xl overflow-hidden border-2 border-white/30">
-                                <Image
+                            <div className="h-20 max-w-[240px] relative flex justify-center bg-white p-2 rounded-xl shadow-md">
+                                <img
                                     src={organization.logo_url}
                                     alt={organization.name}
-                                    width={56}
-                                    height={56}
-                                    className="w-full h-full object-cover"
-                                    unoptimized
+                                    className="h-full w-auto object-contain"
                                 />
                             </div>
                         ) : (
-                            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                                <span className="text-2xl font-bold text-white">{organization.name.charAt(0)}</span>
+                            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center shadow-inner">
+                                <span className="text-3xl font-bold text-white">{organization.name.charAt(0)}</span>
                             </div>
                         )}
                         <div>
-                            <h2 className="text-xl font-bold text-white">{organization.name}</h2>
-                            <p className="text-white/80 text-sm">Kartu Tanda Anggota</p>
+                            <h2 className="text-xl font-bold text-white leading-tight">{organization.name}</h2>
+                            <p className="text-white/80 text-sm mt-1">Kartu Tanda Anggota</p>
                         </div>
                     </div>
 
