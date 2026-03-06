@@ -136,6 +136,37 @@ export async function POST(request: NextRequest) {
             })
             .eq('id', user.id)
 
+        // Auto-create a primary digital business card if they don't have one
+        const { data: existingCards } = await adminSupabase
+            .from('business_cards')
+            .select('id')
+            .eq('user_id', user.id)
+            .limit(1)
+
+        if (!existingCards || existingCards.length === 0) {
+            // Pick a default template to use for auto-creation
+            const { data: defaultTemplate } = await adminSupabase
+                .from('card_templates')
+                .select('id')
+                .eq('is_premium', false)
+                .limit(1)
+                .maybeSingle()
+
+            await adminSupabase
+                .from('business_cards')
+                .insert({
+                    user_id: user.id,
+                    template_id: defaultTemplate?.id || null, // Will fall back to whatever default layout if not found
+                    full_name: fullName,
+                    company: company || '',
+                    job_title: professionalCompetency || '',
+                    phone: whatsappNumber || '',
+                    city: city || '',
+                    profile_photo_url: photoUrl,
+                    email: user.email, // Best effort from their login profile
+                })
+        }
+
         // Send Email Notifications
         try {
             const { sendEmail } = await import('@/lib/email')

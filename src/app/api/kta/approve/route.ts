@@ -251,6 +251,58 @@ export async function POST(request: NextRequest) {
             })
             .eq('id', application.user_id)
 
+        // Sync finalized KTA data to the user's business card
+        // Fetch their email for the card
+        const { data: userData } = await adminSupabase
+            .from('users')
+            .select('email')
+            .eq('id', application.user_id)
+            .single()
+
+        const { data: existingCards } = await adminSupabase
+            .from('business_cards')
+            .select('id')
+            .eq('user_id', application.user_id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+
+        if (existingCards && existingCards.length > 0) {
+            // Update their primary business card with the approved data
+            await adminSupabase
+                .from('business_cards')
+                .update({
+                    full_name: finalData.fullName,
+                    company: finalData.company || undefined,
+                    job_title: finalData.professionalCompetency || undefined,
+                    phone: finalData.whatsappNumber || undefined,
+                    city: finalData.city || undefined,
+                    profile_photo_url: finalData.photoUrl,
+                })
+                .eq('id', existingCards[0].id)
+        } else {
+            // Auto-create a digital business card if they still don't have one
+            const { data: defaultTemplate } = await adminSupabase
+                .from('card_templates')
+                .select('id')
+                .eq('is_premium', false)
+                .limit(1)
+                .maybeSingle()
+
+            await adminSupabase
+                .from('business_cards')
+                .insert({
+                    user_id: application.user_id,
+                    template_id: defaultTemplate?.id || null,
+                    full_name: finalData.fullName,
+                    company: finalData.company || '',
+                    job_title: finalData.professionalCompetency || '',
+                    phone: finalData.whatsappNumber || '',
+                    city: finalData.city || '',
+                    profile_photo_url: finalData.photoUrl,
+                    email: userData?.email,
+                })
+        }
+
         // 7. Send "KTA Approved" Email
         try {
             const { sendEmail, getKTAApprovedEmailTemplate } = await import('@/lib/email')
