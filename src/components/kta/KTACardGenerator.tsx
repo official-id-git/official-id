@@ -30,6 +30,12 @@ export interface KTACardGeneratorRef {
 const KTA_WIDTH_PX = 870
 const KTA_HEIGHT_PX = 550
 
+// These MUST match PREVIEW_WIDTH and PREVIEW_HEIGHT in the template editor
+// (src/app/dashboard/organizations/[id]/kta/page.tsx)
+// Field positions are saved in this coordinate system by the drag editor.
+const PREVIEW_BASE_WIDTH = 496
+const PREVIEW_BASE_HEIGHT = 312
+
 const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
     ({ templateUrl, fieldPositions, userData }, ref) => {
         const containerRef = useRef<HTMLDivElement>(null)
@@ -81,6 +87,10 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
             }
         }))
 
+        // Scale helpers — convert from editor coords to generation coords
+        const scaleX = (val: number) => (val / PREVIEW_BASE_WIDTH) * KTA_WIDTH_PX
+        const scaleY = (val: number) => (val / PREVIEW_BASE_HEIGHT) * KTA_HEIGHT_PX
+
         // We render it completely off-screen but in the DOM so html-to-image can capture it
         return (
             <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', pointerEvents: 'none' }}>
@@ -115,11 +125,11 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                     <div
                         style={{
                             position: 'absolute',
-                            left: `${(fieldPositions.name.x / 400) * KTA_WIDTH_PX}px`,
-                            top: `${(fieldPositions.name.y / 250) * KTA_HEIGHT_PX}px`,
-                            width: `${(fieldPositions.name.width / 400) * KTA_WIDTH_PX}px`,
-                            height: `${(fieldPositions.name.height / 250) * KTA_HEIGHT_PX}px`,
-                            fontSize: `${fieldPositions.name.fontSize * (KTA_WIDTH_PX / 400)}px`,
+                            left: `${scaleX(fieldPositions.name.x)}px`,
+                            top: `${scaleY(fieldPositions.name.y)}px`,
+                            width: `${scaleX(fieldPositions.name.width)}px`,
+                            height: `${scaleY(fieldPositions.name.height)}px`,
+                            fontSize: `${fieldPositions.name.fontSize * (KTA_WIDTH_PX / PREVIEW_BASE_WIDTH)}px`,
                             color: fieldPositions.name.fontColor,
                             fontWeight: 'bold',
                             display: 'flex',
@@ -136,11 +146,11 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                     <div
                         style={{
                             position: 'absolute',
-                            left: `${(fieldPositions.kta_number.x / 400) * KTA_WIDTH_PX}px`,
-                            top: `${(fieldPositions.kta_number.y / 250) * KTA_HEIGHT_PX}px`,
-                            width: `${(fieldPositions.kta_number.width / 400) * KTA_WIDTH_PX}px`,
-                            height: `${(fieldPositions.kta_number.height / 250) * KTA_HEIGHT_PX}px`,
-                            fontSize: `${fieldPositions.kta_number.fontSize * (KTA_WIDTH_PX / 400)}px`,
+                            left: `${scaleX(fieldPositions.kta_number.x)}px`,
+                            top: `${scaleY(fieldPositions.kta_number.y)}px`,
+                            width: `${scaleX(fieldPositions.kta_number.width)}px`,
+                            height: `${scaleY(fieldPositions.kta_number.height)}px`,
+                            fontSize: `${fieldPositions.kta_number.fontSize * (KTA_WIDTH_PX / PREVIEW_BASE_WIDTH)}px`,
                             color: fieldPositions.kta_number.fontColor,
                             fontFamily: 'monospace',
                             display: 'flex',
@@ -155,10 +165,10 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                     <div
                         style={{
                             position: 'absolute',
-                            left: `${(fieldPositions.photo.x / 400) * KTA_WIDTH_PX}px`,
-                            top: `${(fieldPositions.photo.y / 250) * KTA_HEIGHT_PX}px`,
-                            width: `${(fieldPositions.photo.width / 400) * KTA_WIDTH_PX}px`,
-                            height: `${(fieldPositions.photo.height / 250) * KTA_HEIGHT_PX}px`,
+                            left: `${scaleX(fieldPositions.photo.x)}px`,
+                            top: `${scaleY(fieldPositions.photo.y)}px`,
+                            width: `${scaleX(fieldPositions.photo.width)}px`,
+                            height: `${scaleY(fieldPositions.photo.height)}px`,
                             backgroundColor: '#f3f4f6',
                             zIndex: 5,
                         }}
@@ -181,10 +191,10 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                     <div
                         style={{
                             position: 'absolute',
-                            left: `${(fieldPositions.qrcode.x / 400) * KTA_WIDTH_PX}px`,
-                            top: `${(fieldPositions.qrcode.y / 250) * KTA_HEIGHT_PX}px`,
-                            width: `${(fieldPositions.qrcode.width / 400) * KTA_WIDTH_PX}px`,
-                            height: `${(fieldPositions.qrcode.height / 250) * KTA_HEIGHT_PX}px`,
+                            left: `${scaleX(fieldPositions.qrcode.x)}px`,
+                            top: `${scaleY(fieldPositions.qrcode.y)}px`,
+                            width: `${scaleX(fieldPositions.qrcode.width)}px`,
+                            height: `${scaleY(fieldPositions.qrcode.height)}px`,
                             backgroundColor: '#ffffff',
                             padding: '4px',
                             zIndex: 5,
