@@ -56,8 +56,8 @@ export default function KTASection({ organizationId, organizationName, isMember 
             const kta = await fetchMyKTA(organizationId)
             setMyKTA(kta)
 
-            // Pre-fill form from user profile + business card data
-            if (!kta) {
+            // Pre-fill form from user profile + business card data (also include previous failed values)
+            if (!kta || kta.status === 'FAILED') {
                 try {
                     const { createClient } = await import('@/lib/supabase/client')
                     const supabase = createClient()
@@ -79,25 +79,26 @@ export default function KTASection({ organizationId, organizationName, isMember 
 
                     const p: any = profile || {}
                     const card: any = (cards && cards.length > 0) ? cards[0] : {}
+                    const prevKta: any = kta || {}
 
                     setFormData(prev => ({
                         ...prev,
-                        fullName: p.full_name || card.full_name || user.full_name || '',
-                        company: p.company || card.company || '',
-                        birthPlace: p.birth_place || '',
-                        birthDate: p.birth_date || '',
-                        professionalCompetency: p.professional_competency || card.job_title || '',
-                        city: p.city || card.city || '',
-                        province: p.province || '',
-                        whatsappNumber: p.phone || card.phone || '',
-                        photoUrl: card.profile_photo_url || p.avatar_url || '',
+                        fullName: prevKta.full_name || p.full_name || card.full_name || user.full_name || '',
+                        company: prevKta.company || p.company || card.company || '',
+                        birthPlace: prevKta.birth_place || p.birth_place || '',
+                        birthDate: prevKta.birth_date || p.birth_date || '',
+                        professionalCompetency: prevKta.professional_competency || p.professional_competency || card.job_title || '',
+                        city: prevKta.city || p.city || card.city || '',
+                        province: prevKta.province || p.province || '',
+                        whatsappNumber: prevKta.whatsapp_number || p.phone || card.phone || '',
+                        photoUrl: prevKta.photo_url || card.profile_photo_url || p.avatar_url || '',
                     }))
                 } catch (err) {
                     console.error('Error fetching profile data for KTA:', err)
                     // Fallback to basic user data
                     setFormData(prev => ({
                         ...prev,
-                        fullName: user.full_name || '',
+                        fullName: kta?.full_name || user.full_name || '',
                     }))
                 }
             }

@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         // Fetch user profile with extended fields
         const { data: profile } = await supabase
             .from('users')
-            .select('full_name, email, phone, company, city, avatar_url, birth_place, birth_date, province, professional_competency')
+            .select('full_name, email, phone, company, city, avatar_url')
             .eq('id', userId)
             .single()
 
