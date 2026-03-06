@@ -1341,3 +1341,180 @@ export function getEventApprovalTemplate(data: {
     `
   }
 }
+
+// ----------------------------------------------------------------------
+// KTA Workflow Templates (Kartu Tanda Anggota)
+// ----------------------------------------------------------------------
+
+export function getKTAPendingEmailTemplate(data: {
+  memberName: string
+  organizationName: string
+  recipientEmail: string
+}): { subject: string; html: string } {
+  const year = new Date().getFullYear()
+
+  return {
+    subject: `📄 Pengajuan KTA ${data.organizationName} Sedang Diproses`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f5f5f5;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #F59E0B, #D97706); border-radius: 16px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 28px;">⏳</span>
+            </div>
+            <h1 style="color: #1a1a1a; font-size: 24px; margin: 0;">Pengajuan Diterima</h1>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">Halo <strong>${data.memberName}</strong>,</p>
+          <p style="color: #666; line-height: 1.6;">
+            Pengajuan Kartu Tanda Anggota (KTA) Anda untuk Circle <strong>${data.organizationName}</strong> telah kami terima dan saat ini sedang <strong>menunggu persetujuan admin</strong>.
+          </p>
+          
+          <p style="color: #666; line-height: 1.6;">
+            Kami akan memberitahu Anda kembali melalui email ini jika KTA Anda telah disetujui dan siap untuk diunduh.
+          </p>
+          
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 32px;">
+            © ${year} Official ID. All rights reserved.
+          </p>
+        </div>
+      </body>
+      </html>
+    `
+  }
+}
+
+export function getKTAApprovedEmailTemplate(data: {
+  memberName: string
+  organizationName: string
+  circleUsername: string
+  ktaNumber: string
+  recipientEmail: string
+  verificationToken: string
+}): { subject: string; html: string } {
+  const year = new Date().getFullYear()
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'
+  const verifyUrl = `${siteUrl}/o/${data.circleUsername}/verify/${data.verificationToken}`
+
+  return {
+    subject: `✅ KTA ${data.organizationName} Anda Telah Terbit!`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f5f5f5;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #10B981, #059669); border-radius: 16px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 28px;">🪪</span>
+            </div>
+            <h1 style="color: #1a1a1a; font-size: 24px; margin: 0;">KTA Telah Terbit!</h1>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">Halo <strong>${data.memberName}</strong>,</p>
+          <p style="color: #666; line-height: 1.6;">
+            Selamat! Pengajuan Kartu Tanda Anggota (KTA) Anda untuk Circle <strong>${data.organizationName}</strong> telah <strong>disetujui</strong>.
+          </p>
+          
+          <div style="background: #f0fdf4; border-radius: 12px; padding: 16px; margin: 20px 0; border-left: 4px solid #10B981;">
+            <p style="margin: 0 0 8px; color: #166534; font-weight: 600;">Detail KTA:</p>
+            <p style="margin: 0 0 4px; color: #666;"><strong>Nama:</strong> ${data.memberName}</p>
+            <p style="margin: 0 0 0; color: #666;"><strong>Nomor KTA:</strong> ${data.ktaNumber}</p>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">
+            Anda dapat melihat dan mengunduh format PDF KTA Anda langsung di halaman Circle.
+          </p>
+          
+          <div style="text-align: center; margin: 24px 0;">
+            <a href="${siteUrl}/o/${data.circleUsername}" style="display: inline-block; background: linear-gradient(135deg, #2D7C88 0%, #236B76 100%); color: white; padding: 14px 24px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
+              Lihat KTA Saya di Dashboard
+            </a>
+            
+            <br/>
+            
+            <a href="${verifyUrl}" style="display: inline-block; background: white; border: 1px solid #2D7C88; color: #2D7C88; padding: 14px 24px; border-radius: 12px; text-decoration: none; font-weight: 600; width: 100%; box-sizing: border-box; margin-top: 12px;">
+              Buka Halaman Verifikasi
+            </a>
+          </div>
+          
+          <p style="color: #999; font-size: 13px; text-align: center; margin-top: 32px;">
+            Simpan tautan verifikasi di atas untuk membuktikan keaslian KTA Anda kepada pihak ketiga.
+          </p>
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 16px;">
+            © ${year} Official ID. All rights reserved.
+          </p>
+        </div>
+      </body>
+      </html>
+    `
+  }
+}
+
+export function getKTAAdminNotificationTemplate(data: {
+  adminName?: string
+  organizationName: string
+  applicantName: string
+  applicantEmail: string
+  circleUsername: string
+}): { subject: string; html: string } {
+  const year = new Date().getFullYear()
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'
+
+  return {
+    subject: `[${data.organizationName}] Pengajuan KTA Baru dari ${data.applicantName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f5f5f5;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #3B82F6, #1D4ED8); border-radius: 16px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 28px;">🔔</span>
+            </div>
+            <h1 style="color: #1a1a1a; font-size: 24px; margin: 0;">Pengajuan KTA Baru</h1>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">Halo ${data.adminName ? `<strong>${data.adminName}</strong>` : 'Admin'},</p>
+          <p style="color: #666; line-height: 1.6;">
+            Ada anggota yang baru saja mengajukan Kartu Tanda Anggota (KTA) untuk Circle <strong>${data.organizationName}</strong>.
+          </p>
+          
+          <div style="background: #eff6ff; border-radius: 12px; padding: 16px; margin: 20px 0; border-left: 4px solid #3B82F6;">
+            <p style="margin: 0 0 8px; color: #1e3a5f; font-weight: 600;">Data Pengaju:</p>
+            <p style="margin: 0 0 4px; color: #666;"><strong>Nama:</strong> ${data.applicantName}</p>
+            <p style="margin: 0 0 0; color: #666;"><strong>Email:</strong> ${data.applicantEmail}</p>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">
+            Silakan tinjau data anggota tersebut di Dashboard dan berikan persetujuan agar KTA dan file PDF-nya dapat di-generate otomatis oleh sistem.
+          </p>
+          
+          <div style="text-align: center; margin: 24px 0;">
+             <a href="${siteUrl}/dashboard/organizations" style="display: inline-block; background: linear-gradient(135deg, #3B82F6, #1D4ED8); color: white; padding: 14px 24px; border-radius: 12px; text-decoration: none; font-weight: 600;">
+              Masuk ke Dashboard Admin
+            </a>
+          </div>
+          
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 32px;">
+            © ${year} Official ID. All rights reserved.
+          </p>
+        </div>
+      </body>
+      </html>
+    `
+  }
+}

@@ -228,6 +228,31 @@ export function useKTA() {
         }
     }, [])
 
+    // Approve KTA (admin)
+    const approveKTA = useCallback(async (
+        applicationId: string,
+        assignedNumberId?: string,
+        editedData?: any
+    ): Promise<KTAApplication | null> => {
+        try {
+            setLoading(true)
+            setError(null)
+            const res = await fetch('/api/kta/approve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ applicationId, assignedNumberId, editedData }),
+            })
+            const data = await res.json()
+            if (!data.success) throw new Error(data.error)
+            return data.data
+        } catch (err: any) {
+            setError(err.message)
+            return null
+        } finally {
+            setLoading(false)
+        }
+    }, [])
+
     return {
         loading,
         error,
@@ -239,5 +264,6 @@ export function useKTA() {
         applyForKTA,
         fetchMyKTA,
         fetchAllApplications,
+        approveKTA,
     }
 }

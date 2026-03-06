@@ -1,11 +1,5 @@
-// KTA Generate API Route
-// POST: Generate KTA card for a member
-
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
-import { generateKTAImage, generateKTAPDF } from '@/lib/kta-generator'
-import { uploadToGDrive, createGDriveFolder } from '@/lib/gdrive'
-import QRCode from 'qrcode'
 
 export async function POST(request: NextRequest) {
     try {
@@ -66,45 +60,14 @@ export async function POST(request: NextRequest) {
             .eq('user_id', user.id)
             .single()
 
-        if (existingKTA && existingKTA.status === 'GENERATED') {
+        if (existingKTA && (existingKTA.status === 'GENERATED' || existingKTA.status === 'PENDING')) {
             return NextResponse.json(
-                { success: false, error: 'You already have a KTA for this circle', data: existingKTA },
+                { success: false, error: 'You already have a KTA application processing or generated', data: existingKTA },
                 { status: 400 }
             )
         }
 
-        // Get template
-        const { data: template } = await adminSupabase
-            .from('kta_templates')
-            .select('*')
-            .eq('organization_id', organizationId)
-            .single()
-
-        if (!template) {
-            return NextResponse.json(
-                { success: false, error: 'KTA template has not been set up by admin' },
-                { status: 400 }
-            )
-        }
-
-        // Assign next available KTA number
-        const { data: nextNumber, error: numError } = await adminSupabase
-            .from('kta_numbers')
-            .select('*')
-            .eq('organization_id', organizationId)
-            .eq('is_used', false)
-            .order('order_index', { ascending: true })
-            .limit(1)
-            .single()
-
-        if (numError || !nextNumber) {
-            return NextResponse.json(
-                { success: false, error: 'No KTA numbers available. Please contact circle admin.' },
-                { status: 400 }
-            )
-        }
-
-        // Get organization info for folder naming
+        // Get organization info for emails
         const { data: org } = await adminSupabase
             .from('organizations')
             .select('name, username')
@@ -112,71 +75,16 @@ export async function POST(request: NextRequest) {
             .single()
 
         const circleName = org?.name || organizationId
+        const circleUsername = org?.username || organizationId
 
         // Create verification token
         const verificationToken = crypto.randomUUID()
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://official.id'
-        const circleUsername = org?.username || organizationId
-        const verificationUrl = `${baseUrl}/o/${circleUsername}/verify/${verificationToken}`
 
-        // Generate QR code
-        const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
-            width: 300,
-            margin: 1,
-            color: { dark: '#000000', light: '#FFFFFF' },
-            errorCorrectionLevel: 'M',
-        })
-
-        // Generate KTA card image
-        const ktaImageBuffer = await generateKTAImage(
-            template.template_image_url,
-            template.field_positions,
-            {
-                fullName,
-                ktaNumber: nextNumber.kta_number,
-                photoUrl,
-                qrCodeDataUrl,
-            }
-        )
-
-        // Generate PDF
-        const pdfBuffer = await generateKTAPDF(ktaImageBuffer)
-
-        // Upload to Google Drive
-        let gdriveResult = { fileId: '', webViewLink: '', webContentLink: '' }
-        try {
-            // Try to create a subfolder for this circle if needed
-            let circleFolderId: string | undefined
-            try {
-                circleFolderId = await createGDriveFolder(`KTA_${circleName}`)
-            } catch {
-                // Use root folder if subfolder creation fails
-                console.warn('Could not create circle subfolder, using root folder')
-            }
-
-            const safeFileName = `KTA_${fullName.replace(/[^a-zA-Z0-9]/g, '_')}_${nextNumber.kta_number}.pdf`
-            gdriveResult = await uploadToGDrive(
-                pdfBuffer,
-                safeFileName,
-                'application/pdf',
-                circleFolderId
-            )
-        } catch (gdriveError) {
-            console.error('Google Drive upload failed:', gdriveError)
-            // Continue without GDrive - we'll still save the application
-        }
-
-        // Mark KTA number as used
-        await adminSupabase
-            .from('kta_numbers')
-            .update({ is_used: true, assigned_to: user.id })
-            .eq('id', nextNumber.id)
-
-        // Save/update application record
+        // Save/update application record (Status PENDING)
         const applicationData = {
             organization_id: organizationId,
             user_id: user.id,
-            kta_number_id: nextNumber.id,
+            kta_number_id: null, // Will be set upon approval
             full_name: fullName,
             company: company || null,
             birth_place: birthPlace || null,
@@ -186,9 +94,10 @@ export async function POST(request: NextRequest) {
             city: city || null,
             province: province || null,
             whatsapp_number: whatsappNumber || null,
-            status: 'GENERATED',
-            gdrive_file_id: gdriveResult.fileId || null,
-            gdrive_pdf_url: gdriveResult.webViewLink || null,
+            status: 'PENDING',
+            gdrive_file_id: null,
+            gdrive_pdf_url: null,
+            generated_card_url: null,
             verification_token: verificationToken,
         }
 
@@ -214,7 +123,7 @@ export async function POST(request: NextRequest) {
             result = data
         }
 
-        // Also update user profile with the new data
+        // Update user profile with the new data
         await adminSupabase
             .from('users')
             .update({
@@ -227,14 +136,64 @@ export async function POST(request: NextRequest) {
             })
             .eq('id', user.id)
 
+        // Send Email Notifications
+        try {
+            const { sendEmail } = await import('@/lib/email')
+            const { getKTAPendingEmailTemplate, getKTAAdminNotificationTemplate } = await import('@/lib/email')
+
+            // 1. Send PENDING email to Member
+            const memberEmailTemplate = getKTAPendingEmailTemplate({
+                memberName: fullName,
+                organizationName: circleName,
+                recipientEmail: user.email!,
+            })
+
+            await sendEmail({
+                to: user.email!,
+                subject: memberEmailTemplate.subject,
+                html: memberEmailTemplate.html,
+            })
+
+            // 2. Fetch Circle Admins to send notification
+            const { data: adminMembers } = await adminSupabase
+                .from('organization_members')
+                .select('user_id')
+                .eq('organization_id', organizationId)
+                .in('role', ['OWNER', 'ADMIN'])
+
+            if (adminMembers && adminMembers.length > 0) {
+                const adminUserIds = adminMembers.map((m: any) => m.user_id)
+                const { data: admins } = await adminSupabase
+                    .from('users')
+                    .select('email, full_name')
+                    .in('id', adminUserIds)
+                    .not('email', 'is', null)
+
+                if (admins && admins.length > 0) {
+                    for (const admin of admins) {
+                        const adminNotification = getKTAAdminNotificationTemplate({
+                            adminName: admin.full_name,
+                            organizationName: circleName,
+                            applicantName: fullName,
+                            applicantEmail: user.email!,
+                            circleUsername,
+                        })
+                        await sendEmail({
+                            to: admin.email,
+                            subject: adminNotification.subject,
+                            html: adminNotification.html,
+                        })
+                    }
+                }
+            }
+        } catch (emailError) {
+            console.error('Failed to send KTA emails:', emailError)
+            // Continue because the main DB transaction succeeded
+        }
+
         return NextResponse.json({
             success: true,
-            data: {
-                ...result,
-                ktaNumber: nextNumber.kta_number,
-                downloadUrl: gdriveResult.webContentLink || null,
-                viewUrl: gdriveResult.webViewLink || null,
-            }
+            data: result
         })
     } catch (error: any) {
         console.error('POST /api/kta/generate error:', error)

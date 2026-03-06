@@ -24,13 +24,14 @@ export default function KTAManagementPage() {
         fetchNumberStats,
         deleteUnusedNumbers,
         fetchAllApplications,
+        approveKTA,
     } = useKTA()
 
     const orgId = params.id as string
 
     const [org, setOrg] = useState<any>(null)
     const [membership, setMembership] = useState<any>(null)
-    const [activeTab, setActiveTab] = useState<'template' | 'numbers' | 'generated'>('template')
+    const [activeTab, setActiveTab] = useState<'template' | 'numbers' | 'pending' | 'generated'>('template')
 
     // Template state
     const [template, setTemplate] = useState<KTATemplate | null>(null)
@@ -51,8 +52,15 @@ export default function KTAManagementPage() {
     const [uploadingNumbers, setUploadingNumbers] = useState(false)
     const [numbersSuccess, setNumbersSuccess] = useState('')
 
-    // Generated KTAs state
+    // Applications state
     const [applications, setApplications] = useState<KTAApplication[]>([])
+    const pendingApps = applications.filter(a => a.status === 'PENDING')
+    const generatedApps = applications.filter(a => a.status === 'GENERATED' || a.status === 'FAILED')
+
+    // Approval Modal state
+    const [approvalModalApp, setApprovalModalApp] = useState<KTAApplication | null>(null)
+    const [editFormData, setEditFormData] = useState<any>({})
+    const [validatingApproval, setValidatingApproval] = useState(false)
 
     // Refs
     const templateInputRef = useRef<HTMLInputElement>(null)
@@ -231,6 +239,27 @@ export default function KTAManagementPage() {
         setDraggingField(null)
     }
 
+    const handleApprove = async () => {
+        if (!approvalModalApp) return
+
+        setValidatingApproval(true)
+        try {
+            const result = await approveKTA(
+                approvalModalApp.id,
+                editFormData.assignedNumberId || undefined,
+                editFormData
+            )
+
+            if (result) {
+                alert('KTA Berhasil Diterbitkan!')
+                setApprovalModalApp(null)
+                loadData()
+            }
+        } finally {
+            setValidatingApproval(false)
+        }
+    }
+
     if (authLoading || !org) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -272,22 +301,28 @@ export default function KTAManagementPage() {
 
             {/* Tabs */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 flex gap-2">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 flex gap-2 overflow-x-auto">
                     {[
                         { key: 'template', label: 'Template Desain', icon: '🎨' },
                         { key: 'numbers', label: 'Nomor KTA', icon: '🔢' },
+                        { key: 'pending', label: 'Menunggu Persetujuan', icon: '⏳', count: pendingApps.length },
                         { key: 'generated', label: 'KTA Terbit', icon: '📋' },
                     ].map(tab => (
                         <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key as any)}
-                            className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 ${activeTab === tab.key
+                            className={`flex-none sm:flex-1 py-2.5 px-4 whitespace-nowrap rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 relative ${activeTab === tab.key
                                 ? 'bg-amber-50 text-amber-700'
                                 : 'text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
                             <span>{tab.icon}</span>
-                            <span className="hidden sm:inline">{tab.label}</span>
+                            <span className="inline">{tab.label}</span>
+                            {tab.count !== undefined && tab.count > 0 && (
+                                <span className="absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                    {tab.count}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -304,6 +339,8 @@ export default function KTAManagementPage() {
 
             {/* Tab Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                {/* ... existing template, numbers, pending, generated tabs ... */}
+
                 {/* =================== TEMPLATE TAB =================== */}
                 {activeTab === 'template' && (
                     <div className="space-y-6">
@@ -642,6 +679,88 @@ export default function KTAManagementPage() {
                     </div>
                 )}
 
+                {/* =================== PENDING TAB =================== */}
+                {activeTab === 'pending' && (
+                    <div className="space-y-6">
+                        <div className="bg-white rounded-2xl shadow-sm border border-orange-100 p-6">
+                            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                ⏳ Menunggu Persetujuan ({pendingApps.length})
+                            </h2>
+                            <p className="text-sm text-gray-500 mb-6">
+                                Daftar anggota yang telah mengajukan KTA. Silakan tinjau data, edit jika perlu, pilih nomor KTA (opsional), lalu klik Setujui untuk menerbitkan KTA.
+                            </p>
+
+                            {pendingApps.length === 0 ? (
+                                <div className="text-center py-12 border border-dashed border-gray-200 rounded-xl bg-gray-50">
+                                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                                        <span className="text-2xl">📝</span>
+                                    </div>
+                                    <p className="text-gray-500 font-medium">Belum ada pengajuan KTA yang pending</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {pendingApps.map((app) => (
+                                        <div
+                                            key={app.id}
+                                            className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-xl border border-orange-200 bg-orange-50/30 hover:shadow-sm transition-all"
+                                        >
+                                            {/* Photo */}
+                                            <div className="flex-shrink-0">
+                                                {app.photo_url ? (
+                                                    <Image
+                                                        src={app.photo_url}
+                                                        alt={app.full_name}
+                                                        width={64}
+                                                        height={80}
+                                                        className="w-16 h-20 rounded-lg object-cover bg-white p-1 border border-gray-200"
+                                                    />
+                                                ) : (
+                                                    <div className="w-16 h-20 bg-white border border-gray-200 rounded-lg flex items-center justify-center">
+                                                        <span className="text-xl font-bold text-gray-400">
+                                                            {app.full_name.charAt(0)}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Info */}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-gray-900">{app.full_name}</p>
+                                                <p className="text-sm text-gray-600">🏢 {app.company || 'Tidak ada instansi'}</p>
+                                                <p className="text-xs text-gray-500 flex gap-4 mt-1">
+                                                    <span>📱 {app.whatsapp_number || '-'}</span>
+                                                    <span>📅 Diajukan: {new Date(app.created_at).toLocaleDateString('id-ID')}</span>
+                                                </p>
+                                            </div>
+
+                                            {/* Actions */}
+                                            <div className="w-full sm:w-auto mt-4 sm:mt-0 flex gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setEditFormData({
+                                                            fullName: app.full_name,
+                                                            company: app.company || '',
+                                                            professionalCompetency: app.professional_competency || '',
+                                                            city: app.city || '',
+                                                            whatsappNumber: app.whatsapp_number || '',
+                                                            photoUrl: app.photo_url,
+                                                            assignedNumberId: '' // Explicitly unassigned initially
+                                                        })
+                                                        setApprovalModalApp(app)
+                                                    }}
+                                                    className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-medium shadow-sm hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    Tinjau & Setujui
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* =================== GENERATED TAB =================== */}
                 {activeTab === 'generated' && (
                     <div className="space-y-6">
@@ -730,6 +849,156 @@ export default function KTAManagementPage() {
                     </div>
                 )}
             </div>
+
+            {/* Approval Modal */}
+            {approvalModalApp && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+                        <div className="px-6 py-4 border-b flex items-center justify-between bg-gray-50/50">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">Persetujuan KTA</h3>
+                                <p className="text-sm text-gray-500">Tinjau dan lengkapi data sebelum menerbitkan KTA</p>
+                            </div>
+                            <button
+                                onClick={() => setApprovalModalApp(null)}
+                                className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto flex-1">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+                                {/* Left Col - Photo & Info */}
+                                <div className="space-y-6">
+                                    {/* Edit Photo */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Foto KTA</label>
+                                        <div className="flex items-start gap-4">
+                                            <div className="relative w-24 h-32 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 flex-shrink-0">
+                                                {editFormData.photoUrl ? (
+                                                    <Image src={editFormData.photoUrl} alt="Photo" fill className="object-cover" />
+                                                ) : (
+                                                    <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                                                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1">
+                                                <input
+                                                    type="url"
+                                                    value={editFormData.photoUrl || ''}
+                                                    onChange={e => setEditFormData({ ...editFormData, photoUrl: e.target.value })}
+                                                    placeholder="URL Foto (https://...)"
+                                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                                />
+                                                <p className="text-xs text-gray-500 mt-2">Untuk mengganti foto, tempel URL foto baru di sini</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap di KTA</label>
+                                        <input
+                                            type="text"
+                                            value={editFormData.fullName || ''}
+                                            onChange={e => setEditFormData({ ...editFormData, fullName: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Nomor KTA (Opsional)</label>
+                                        <select
+                                            value={editFormData.assignedNumberId || ''}
+                                            onChange={e => setEditFormData({ ...editFormData, assignedNumberId: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-white"
+                                        >
+                                            <option value="">-- Otomatis Pilih Nomor Terkecil --</option>
+                                            {numbersList.filter(n => !n.is_used).map(num => (
+                                                <option key={num.id} value={num.id}>{num.kta_number}</option>
+                                            ))}
+                                        </select>
+                                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            Kosongkan untuk menggunakan nomor urut selanjutnya
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Right Col - Other Data */}
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Instansi / Profesi</label>
+                                        <input
+                                            type="text"
+                                            value={editFormData.company || ''}
+                                            onChange={e => setEditFormData({ ...editFormData, company: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Kompetensi</label>
+                                        <input
+                                            type="text"
+                                            value={editFormData.professionalCompetency || ''}
+                                            onChange={e => setEditFormData({ ...editFormData, professionalCompetency: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Kota</label>
+                                        <input
+                                            type="text"
+                                            value={editFormData.city || ''}
+                                            onChange={e => setEditFormData({ ...editFormData, city: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">No. WhatsApp</label>
+                                        <input
+                                            type="text"
+                                            value={editFormData.whatsappNumber || ''}
+                                            onChange={e => setEditFormData({ ...editFormData, whatsappNumber: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="px-6 py-4 border-t bg-gray-50 flex items-center justify-end gap-3 mt-auto">
+                            <button
+                                onClick={() => setApprovalModalApp(null)}
+                                disabled={validatingApproval}
+                                className="px-5 py-2.5 text-gray-600 font-medium hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={handleApprove}
+                                disabled={validatingApproval || !editFormData.fullName || !editFormData.photoUrl}
+                                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-sm disabled:opacity-50 transition-all flex items-center gap-2"
+                            >
+                                {validatingApproval ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Memproses...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                        Setujui & Terbitkan KTA
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <BottomNavigation variant="organizations" />
         </div>
