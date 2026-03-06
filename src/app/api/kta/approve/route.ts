@@ -16,10 +16,10 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json()
-        const { applicationId, assignedNumberId, editedData } = body
+        const { applicationId, assignedNumberId, editedData, base64Image, base64Pdf } = body
 
-        if (!applicationId) {
-            return NextResponse.json({ success: false, error: 'applicationId is required' }, { status: 400 })
+        if (!applicationId || !base64Image || !base64Pdf) {
+            return NextResponse.json({ success: false, error: 'applicationId, base64Image, and base64Pdf are required' }, { status: 400 })
         }
 
         // 1. Fetch Application & Verify Permissions
@@ -115,31 +115,13 @@ export async function POST(request: NextRequest) {
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://official.id'
         const verificationUrl = `${baseUrl}/o/${circleUsername}/verify/${application.verification_token}`
 
-        // Generate QR code
-        const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
-            width: 300,
-            margin: 1,
-            color: { dark: '#000000', light: '#FFFFFF' },
-            errorCorrectionLevel: 'M',
-        })
+        // Parse base64 from client
+        console.log('KTA Approve: Parsing image and PDF buffers from client...')
+        const ktaImageBuffer = Buffer.from(base64Image.replace(/^data:image\/\w+;base64,/, ''), 'base64')
+        const pdfBuffer = Buffer.from(base64Pdf.replace(/^data:application\/pdf;base64,/, ''), 'base64')
 
-        // Generate KTA card image
-        console.log('KTA Approve: Starting image generation...')
-        const ktaImageBuffer = await generateKTAImage(
-            template.template_image_url,
-            template.field_positions,
-            {
-                fullName: finalData.fullName,
-                ktaNumber: ktaNumberString,
-                photoUrl: finalData.photoUrl,
-                qrCodeDataUrl,
-            }
-        )
-        console.log(`KTA Approve: Image buffer generated, size: ${ktaImageBuffer.length} bytes`)
-
-        // Generate PDF
-        const pdfBuffer = await generateKTAPDF(ktaImageBuffer)
-        console.log(`KTA Approve: PDF buffer generated, size: ${pdfBuffer.length} bytes`)
+        console.log(`KTA Approve: Image buffer size: ${ktaImageBuffer.length} bytes`)
+        console.log(`KTA Approve: PDF buffer size: ${pdfBuffer.length} bytes`)
 
         // Upload to Google Drive
         let gdriveResult = { fileId: '', webViewLink: '', webContentLink: '' }

@@ -4,12 +4,14 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import QRCode from 'react-qr-code'
+import ReactQRCode from 'react-qr-code'
+import QRCode from 'qrcode'
 import { useAuth } from '@/hooks/useAuth'
 import { useOrganizations } from '@/hooks/useOrganizations'
 import { useKTA, KTATemplate, KTAApplication, KTANumberStats } from '@/hooks/useKTA'
 import { uploadToCloudinary } from '@/lib/cloudinary'
 import BottomNavigation from '@/components/layout/BottomNavigation'
+import KTACardGenerator, { KTACardGeneratorRef } from '@/components/kta/KTACardGenerator'
 
 export default function KTAManagementPage() {
     const params = useParams()
@@ -272,15 +274,74 @@ export default function KTAManagementPage() {
         setDraggingField(null)
     }
 
+    const ktaGeneratorRef = useRef<KTACardGeneratorRef>(null)
+    const [generatingAppId, setGeneratingAppId] = useState<string | null>(null)
+    const [generatorUserData, setGeneratorUserData] = useState<any>(null)
+
+    // Helper to setup generator and wait for it
+    const generateClientFiles = async (app: KTAApplication, ktaNum: string): Promise<{ base64Image: string, base64Pdf: string } | null> => {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://official.id'
+        const verificationUrl = `${baseUrl}/o/${org.username || orgId}/verify/${app.verification_token}`
+
+        // Generate QR code data URL first
+        const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
+            width: 300,
+            margin: 1,
+            color: { dark: '#000000', light: '#FFFFFF' },
+            errorCorrectionLevel: 'M',
+        })
+
+        // Set state so the component renders the offscreen DOM
+        setGeneratorUserData({
+            fullName: editFormData?.fullName || app.full_name,
+            ktaNumber: ktaNum,
+            photoUrl: editFormData?.photoUrl || app.photo_url,
+            qrCodeDataUrl,
+        })
+
+        // Wait a tiny bit for React to flush the state and DOM to render the background template
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        if (!ktaGeneratorRef.current) throw new Error("Generator ref not attached")
+        return await ktaGeneratorRef.current.generateFiles()
+    }
+
     const handleApprove = async () => {
-        if (!approvalModalApp) return
+        if (!approvalModalApp || !template) return
 
         setValidatingApproval(true)
+        setGeneratingAppId(approvalModalApp.id)
+
         try {
+            // Target KTA number logic (admin choice or auto)
+            let chosenKtaNum = ''
+            if (editFormData.assignedNumberId) {
+                const numObj = numbersList.find(n => n.id === editFormData.assignedNumberId)
+                if (numObj) chosenKtaNum = numObj.kta_number
+            } else {
+                const firstAvail = numbersList.find(n => !n.is_used)
+                if (firstAvail) chosenKtaNum = firstAvail.kta_number
+            }
+
+            if (!chosenKtaNum) {
+                alert('Tidak ada nomor KTA yang tersedia. Silakan ketik/tambah nomor baru.')
+                return
+            }
+
+            // 1. Generate PNG and PDF on the client directly
+            const files = await generateClientFiles(approvalModalApp, chosenKtaNum)
+            if (!files) {
+                alert("Gagal merender file KTA pada browser Anda.")
+                return
+            }
+
+            // 2. Send the pre-rendered base64 files to the backend
             const result = await approveKTA(
                 approvalModalApp.id,
                 editFormData.assignedNumberId || undefined,
-                editFormData
+                editFormData,
+                files.base64Image,
+                files.base64Pdf
             )
 
             if (result) {
@@ -288,8 +349,11 @@ export default function KTAManagementPage() {
                 setApprovalModalApp(null)
                 loadData()
             }
+        } catch (err: any) {
+            alert('Terjadi kesalahan: ' + err.message)
         } finally {
             setValidatingApproval(false)
+            setGeneratingAppId(null)
         }
     }
 
@@ -931,7 +995,7 @@ export default function KTAManagementPage() {
                                                                                 height: `${(fieldPositions.qrcode.height / 312) * 100}%`
                                                                             }}>
                                                                                 <div className="w-full h-full bg-white flex items-center justify-center p-1 border border-gray-100">
-                                                                                    <QRCode
+                                                                                    <ReactQRCode
                                                                                         value={`https://official.id/o/${org?.slug || 'preview'}/verify/preview-123`}
                                                                                         size={256}
                                                                                         style={{ width: '100%', height: '100%' }}
@@ -1099,7 +1163,7 @@ export default function KTAManagementPage() {
                                                                                 {validatingApproval ? (
                                                                                     <>
                                                                                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                                                                        Memproses...
+                                                                                        {generatingAppId ? 'Merender KTA...' : 'Memproses...'}
                                                                                     </>
                                                                                 ) : (
                                                                                     <>
@@ -1219,16 +1283,30 @@ export default function KTAManagementPage() {
                                                 {app.status === 'GENERATED' && (
                                                     <button
                                                         onClick={async () => {
-                                                            if (confirm('Regenerate ulang gambar KTA dan file PDF? File baru akan di-upload ke GDrive.')) {
+                                                            if (!template) {
+                                                                alert('Template tidak ditemukan.')
+                                                                return
+                                                            }
+                                                            if (confirm('Regenerate ulang gambar KTA dan file PDF? Penguraian gambar akan dilakukan di browser Anda lalu di-upload ke GDrive.')) {
                                                                 setRegeneratingAppId(app.id)
                                                                 try {
-                                                                    const success = await regenerateKTA(app.id)
+                                                                    // Render client-side
+                                                                    const files = await generateClientFiles(app, app.kta_numbers?.kta_number!)
+                                                                    if (!files) {
+                                                                        alert("Gagal merender file KTA pada browser Anda.")
+                                                                        return
+                                                                    }
+
+                                                                    const success = await regenerateKTA(app.id, files.base64Image, files.base64Pdf)
                                                                     if (success) {
                                                                         alert('KTA Berhasil di-regenerate!')
                                                                         loadData()
                                                                     }
+                                                                } catch (err: any) {
+                                                                    alert('Terjadi kesalahan: ' + err.message)
                                                                 } finally {
                                                                     setRegeneratingAppId(null)
+                                                                    setGeneratorUserData(null)
                                                                 }
                                                             }
                                                         }}
@@ -1282,6 +1360,16 @@ export default function KTAManagementPage() {
             {/* Approval UI has been moved inline within the pending tab */}
 
             <BottomNavigation variant="organizations" />
+
+            {/* Hidden Offline KTA Generator DOM */}
+            {template && generatorUserData && (
+                <KTACardGenerator
+                    ref={ktaGeneratorRef}
+                    templateUrl={template.template_image_url}
+                    fieldPositions={template.field_positions as any}
+                    userData={generatorUserData}
+                />
+            )}
         </div>
     )
 }

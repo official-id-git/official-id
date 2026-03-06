@@ -256,7 +256,9 @@ export function useKTA() {
     const approveKTA = useCallback(async (
         applicationId: string,
         assignedNumberId?: string,
-        editedData?: any
+        editedData?: any,
+        base64Image?: string,
+        base64Pdf?: string
     ): Promise<KTAApplication | null> => {
         try {
             setLoading(true)
@@ -264,7 +266,7 @@ export function useKTA() {
             const res = await fetch('/api/kta/approve', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ applicationId, assignedNumberId, editedData }),
+                body: JSON.stringify({ applicationId, assignedNumberId, editedData, base64Image, base64Pdf }),
             })
             const data = await res.json()
             if (!data.success) throw new Error(data.error)
@@ -299,14 +301,18 @@ export function useKTA() {
     }, [])
 
     // Regenerate KTA (admin) - used for fixing missing GDrive files without recreating KTA
-    const regenerateKTA = useCallback(async (applicationId: string): Promise<boolean> => {
+    const regenerateKTA = useCallback(async (
+        applicationId: string,
+        base64Image?: string,
+        base64Pdf?: string
+    ): Promise<boolean> => {
         try {
             setLoading(true)
             setError(null)
             const res = await fetch('/api/kta/regenerate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ applicationId }),
+                body: JSON.stringify({ applicationId, base64Image, base64Pdf }),
             })
             const data = await res.json()
             if (!data.success) throw new Error(data.error)
