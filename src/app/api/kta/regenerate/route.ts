@@ -89,61 +89,44 @@ export async function POST(request: NextRequest) {
         // Upload to Google Drive
         let gdriveResult = { fileId: '', webViewLink: '', webContentLink: '' }
         let gdriveImageResult = { fileId: '', webViewLink: '', webContentLink: '' }
-        try {
-            let circleFolderId: string | undefined
-            const targetFolderName = `KTA_${circleName}`
 
-            try {
-                // Find or create Circle Folder
-                console.log(`KTA Regenerate: Finding/creating circle folder: ${targetFolderName}`)
-                const existingOrgFolderId = await findGDriveFolderByName(targetFolderName)
-                if (existingOrgFolderId) {
-                    circleFolderId = existingOrgFolderId
-                    console.log(`KTA Regenerate: Found circle folder: ${circleFolderId}`)
-                } else {
-                    circleFolderId = await createGDriveFolder(targetFolderName)
-                    console.log(`KTA Regenerate: Created circle folder: ${circleFolderId}`)
-                }
+        let circleFolderId: string | undefined
+        const targetFolderName = `KTA_${circleName}`
 
-                // Find or create Member Subfolder
-                const memberFolderName = `${ktaNumberString} - ${application.full_name}`
-                console.log(`KTA Regenerate: Finding/creating member folder: ${memberFolderName}`)
-                const existingMemberFolderId = await findGDriveFolderByName(memberFolderName, circleFolderId)
-
-                let memberFolderId: string
-                if (existingMemberFolderId) {
-                    memberFolderId = existingMemberFolderId
-                    console.log(`KTA Regenerate: Found member folder: ${memberFolderId}`)
-                } else {
-                    memberFolderId = await createGDriveFolder(memberFolderName, circleFolderId)
-                    console.log(`KTA Regenerate: Created member folder: ${memberFolderId}`)
-                }
-
-                // Upload PDF
-                const safeFileNamePDF = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}.pdf`
-                console.log(`KTA Regenerate: Uploading PDF to folder ${memberFolderId}`)
-                gdriveResult = await uploadToGDrive(pdfBuffer, safeFileNamePDF, 'application/pdf', memberFolderId)
-
-                // Upload Image
-                const safeFileNameImage = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}.png`
-                console.log(`KTA Regenerate: Uploading PNG to folder ${memberFolderId}`)
-                gdriveImageResult = await uploadToGDrive(ktaImageBuffer, safeFileNameImage, 'image/png', memberFolderId)
-            } catch (err: any) {
-                console.error('KTA Regenerate: Folder/file operations failed:', err?.message || err)
-                // Fallback to root
-                try {
-                    const safeFileNamePDF = `KTA_${application.full_name.replace(/[^a-zA-Z0-9]/g, '_')}_${ktaNumberString}.pdf`
-                    gdriveResult = await uploadToGDrive(pdfBuffer, safeFileNamePDF, 'application/pdf')
-
-                    const safeFileNameImage = `KTA_${application.full_name.replace(/[^a-zA-Z0-9]/g, '_')}_${ktaNumberString}.png`
-                    gdriveImageResult = await uploadToGDrive(ktaImageBuffer, safeFileNameImage, 'image/png')
-                } catch (fallbackErr: any) {
-                    console.error('KTA Regenerate: Fallback upload failed:', fallbackErr?.message || fallbackErr)
-                }
-            }
-        } catch (gdriveError: any) {
-            console.error('KTA Regenerate: Google Drive init failed:', gdriveError?.message || gdriveError)
+        // Find or create Circle Folder
+        console.log(`KTA Regenerate: Finding/creating circle folder: ${targetFolderName}`)
+        const existingOrgFolderId = await findGDriveFolderByName(targetFolderName)
+        if (existingOrgFolderId) {
+            circleFolderId = existingOrgFolderId
+            console.log(`KTA Regenerate: Found circle folder: ${circleFolderId}`)
+        } else {
+            circleFolderId = await createGDriveFolder(targetFolderName)
+            console.log(`KTA Regenerate: Created circle folder: ${circleFolderId}`)
         }
+
+        // Find or create Member Subfolder
+        const memberFolderName = `${ktaNumberString} - ${application.full_name}`
+        console.log(`KTA Regenerate: Finding/creating member folder: ${memberFolderName}`)
+        const existingMemberFolderId = await findGDriveFolderByName(memberFolderName, circleFolderId)
+
+        let memberFolderId: string
+        if (existingMemberFolderId) {
+            memberFolderId = existingMemberFolderId
+            console.log(`KTA Regenerate: Found member folder: ${memberFolderId}`)
+        } else {
+            memberFolderId = await createGDriveFolder(memberFolderName, circleFolderId)
+            console.log(`KTA Regenerate: Created member folder: ${memberFolderId}`)
+        }
+
+        // Upload PDF
+        const safeFileNamePDF = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}.pdf`
+        console.log(`KTA Regenerate: Uploading PDF to folder ${memberFolderId}`)
+        gdriveResult = await uploadToGDrive(pdfBuffer, safeFileNamePDF, 'application/pdf', memberFolderId)
+
+        // Upload Image
+        const safeFileNameImage = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}.png`
+        console.log(`KTA Regenerate: Uploading PNG to folder ${memberFolderId}`)
+        gdriveImageResult = await uploadToGDrive(ktaImageBuffer, safeFileNameImage, 'image/png', memberFolderId)
 
         // 4. Update Database
         const { data: updatedApp, error: updateError } = await adminSupabase

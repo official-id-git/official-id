@@ -126,86 +126,58 @@ export async function POST(request: NextRequest) {
         // Upload to Google Drive
         let gdriveResult = { fileId: '', webViewLink: '', webContentLink: '' }
         let gdriveImageResult = { fileId: '', webViewLink: '', webContentLink: '' }
-        try {
-            const { uploadToGDrive, createGDriveFolder, findGDriveFolderByName } = await import('@/lib/gdrive')
 
-            let circleFolderId: string | undefined
-            const targetFolderName = `KTA_${circleName}`
+        const { uploadToGDrive, createGDriveFolder, findGDriveFolderByName } = await import('@/lib/gdrive')
 
-            try {
-                // 1. Find or create Circle Folder
-                console.log(`KTA Approve: Finding/creating circle folder: ${targetFolderName}`)
-                const existingOrgFolderId = await findGDriveFolderByName(targetFolderName)
-                if (existingOrgFolderId) {
-                    circleFolderId = existingOrgFolderId
-                    console.log(`KTA Approve: Found existing circle folder: ${circleFolderId}`)
-                } else {
-                    circleFolderId = await createGDriveFolder(targetFolderName)
-                    console.log(`KTA Approve: Created new circle folder: ${circleFolderId}`)
-                }
+        let circleFolderId: string | undefined
+        const targetFolderName = `KTA_${circleName}`
 
-                // 2. Find or create Member Subfolder inside Circle Folder
-                const memberFolderName = `${ktaNumberString} - ${finalData.fullName}`
-                console.log(`KTA Approve: Finding/creating member folder: ${memberFolderName}`)
-                const existingMemberFolderId = await findGDriveFolderByName(memberFolderName, circleFolderId)
-
-                let memberFolderId: string
-                if (existingMemberFolderId) {
-                    memberFolderId = existingMemberFolderId
-                    console.log(`KTA Approve: Found existing member folder: ${memberFolderId}`)
-                } else {
-                    memberFolderId = await createGDriveFolder(memberFolderName, circleFolderId)
-                    console.log(`KTA Approve: Created new member folder: ${memberFolderId}`)
-                }
-
-                // Upload PDF to the Member's Subfolder
-                const safeFileNamePDF = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}.pdf`
-                console.log(`KTA Approve: Uploading PDF (${pdfBuffer.length} bytes) as "${safeFileNamePDF}" to folder ${memberFolderId}`)
-                gdriveResult = await uploadToGDrive(
-                    pdfBuffer,
-                    safeFileNamePDF,
-                    'application/pdf',
-                    memberFolderId
-                )
-                console.log(`KTA Approve: PDF uploaded successfully. File ID: ${gdriveResult.fileId}`)
-
-                // Upload Image to the Member's Subfolder
-                const safeFileNameImage = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}.png`
-                console.log(`KTA Approve: Uploading PNG (${ktaImageBuffer.length} bytes) as "${safeFileNameImage}" to folder ${memberFolderId}`)
-                gdriveImageResult = await uploadToGDrive(
-                    ktaImageBuffer,
-                    safeFileNameImage,
-                    'image/png',
-                    memberFolderId
-                )
-                console.log(`KTA Approve: PNG uploaded successfully. File ID: ${gdriveImageResult.fileId}`)
-            } catch (err: any) {
-                console.error('KTA Approve: Folder/file operations failed:', err?.message || err)
-                // Fallback upload to root if folders fail
-                try {
-                    const safeFileNamePDF = `KTA_${finalData.fullName.replace(/[^a-zA-Z0-9]/g, '_')}_${ktaNumberString}.pdf`
-                    console.log(`KTA Approve: Fallback - uploading PDF to root folder`)
-                    gdriveResult = await uploadToGDrive(
-                        pdfBuffer,
-                        safeFileNamePDF,
-                        'application/pdf'
-                    )
-
-                    const safeFileNameImage = `KTA_${finalData.fullName.replace(/[^a-zA-Z0-9]/g, '_')}_${ktaNumberString}.png`
-                    console.log(`KTA Approve: Fallback - uploading PNG to root folder`)
-                    gdriveImageResult = await uploadToGDrive(
-                        ktaImageBuffer,
-                        safeFileNameImage,
-                        'image/png'
-                    )
-                    console.log('KTA Approve: Fallback uploads succeeded')
-                } catch (fallbackErr: any) {
-                    console.error('KTA Approve: Fallback upload also failed:', fallbackErr?.message || fallbackErr)
-                }
-            }
-        } catch (gdriveError: any) {
-            console.error('KTA Approve: Google Drive initialization failed:', gdriveError?.message || gdriveError)
+        // 1. Find or create Circle Folder
+        console.log(`KTA Approve: Finding/creating circle folder: ${targetFolderName}`)
+        const existingOrgFolderId = await findGDriveFolderByName(targetFolderName)
+        if (existingOrgFolderId) {
+            circleFolderId = existingOrgFolderId
+            console.log(`KTA Approve: Found existing circle folder: ${circleFolderId}`)
+        } else {
+            circleFolderId = await createGDriveFolder(targetFolderName)
+            console.log(`KTA Approve: Created new circle folder: ${circleFolderId}`)
         }
+
+        // 2. Find or create Member Subfolder inside Circle Folder
+        const memberFolderName = `${ktaNumberString} - ${finalData.fullName}`
+        console.log(`KTA Approve: Finding/creating member folder: ${memberFolderName}`)
+        const existingMemberFolderId = await findGDriveFolderByName(memberFolderName, circleFolderId)
+
+        let memberFolderId: string
+        if (existingMemberFolderId) {
+            memberFolderId = existingMemberFolderId
+            console.log(`KTA Approve: Found existing member folder: ${memberFolderId}`)
+        } else {
+            memberFolderId = await createGDriveFolder(memberFolderName, circleFolderId)
+            console.log(`KTA Approve: Created new member folder: ${memberFolderId}`)
+        }
+
+        // Upload PDF to the Member's Subfolder
+        const safeFileNamePDF = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}.pdf`
+        console.log(`KTA Approve: Uploading PDF (${pdfBuffer.length} bytes) as "${safeFileNamePDF}" to folder ${memberFolderId}`)
+        gdriveResult = await uploadToGDrive(
+            pdfBuffer,
+            safeFileNamePDF,
+            'application/pdf',
+            memberFolderId
+        )
+        console.log(`KTA Approve: PDF uploaded successfully. File ID: ${gdriveResult.fileId}`)
+
+        // Upload Image to the Member's Subfolder
+        const safeFileNameImage = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}.png`
+        console.log(`KTA Approve: Uploading PNG (${ktaImageBuffer.length} bytes) as "${safeFileNameImage}" to folder ${memberFolderId}`)
+        gdriveImageResult = await uploadToGDrive(
+            ktaImageBuffer,
+            safeFileNameImage,
+            'image/png',
+            memberFolderId
+        )
+        console.log(`KTA Approve: PNG uploaded successfully. File ID: ${gdriveImageResult.fileId}`)
 
         // 6. Update Database using admin client (bypassing RLS)
         // Mark KTA number as used
