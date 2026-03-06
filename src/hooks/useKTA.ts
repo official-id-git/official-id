@@ -298,6 +298,27 @@ export function useKTA() {
         }
     }, [])
 
+    // Regenerate KTA (admin) - used for fixing missing GDrive files without recreating KTA
+    const regenerateKTA = useCallback(async (applicationId: string): Promise<boolean> => {
+        try {
+            setLoading(true)
+            setError(null)
+            const res = await fetch('/api/kta/regenerate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ applicationId }),
+            })
+            const data = await res.json()
+            if (!data.success) throw new Error(data.error)
+            return true
+        } catch (err: any) {
+            setError(err.message)
+            return false
+        } finally {
+            setLoading(false)
+        }
+    }, [])
+
     return {
         loading,
         error,
@@ -312,5 +333,6 @@ export function useKTA() {
         fetchAllApplications,
         approveKTA,
         rejectKTA,
+        regenerateKTA,
     }
 }

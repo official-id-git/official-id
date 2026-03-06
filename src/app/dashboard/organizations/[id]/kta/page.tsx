@@ -28,6 +28,7 @@ export default function KTAManagementPage() {
         fetchAllApplications,
         approveKTA,
         rejectKTA,
+        regenerateKTA,
     } = useKTA()
 
     const orgId = params.id as string
@@ -68,8 +69,9 @@ export default function KTAManagementPage() {
     const [editFormData, setEditFormData] = useState<any>({})
     const [validatingApproval, setValidatingApproval] = useState(false)
 
-    // Rejection state
+    // Rejection & Regeneration state
     const [isRejecting, setIsRejecting] = useState(false)
+    const [regeneratingAppId, setRegeneratingAppId] = useState<string | null>(null)
     const [rejectionReason, setRejectionReason] = useState('')
     const [showRejectInput, setShowRejectInput] = useState(false)
 
@@ -1212,6 +1214,35 @@ export default function KTAManagementPage() {
                                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                                                         Link GDrive
                                                     </a>
+                                                )}
+
+                                                {app.status === 'GENERATED' && (
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (confirm('Regenerate ulang gambar KTA dan file PDF? File baru akan di-upload ke GDrive.')) {
+                                                                setRegeneratingAppId(app.id)
+                                                                try {
+                                                                    const success = await regenerateKTA(app.id)
+                                                                    if (success) {
+                                                                        alert('KTA Berhasil di-regenerate!')
+                                                                        loadData()
+                                                                    }
+                                                                } finally {
+                                                                    setRegeneratingAppId(null)
+                                                                }
+                                                            }
+                                                        }}
+                                                        disabled={regeneratingAppId === app.id}
+                                                        className="px-3 py-1.5 text-xs font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                                                        title="Regenerate KTA"
+                                                    >
+                                                        {regeneratingAppId === app.id ? (
+                                                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-orange-700"></div>
+                                                        ) : (
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                                        )}
+                                                        Regenerate
+                                                    </button>
                                                 )}
 
                                                 {app.status === 'GENERATED' && (

@@ -99,10 +99,16 @@ export async function uploadToGDrive(
 ): Promise<{ fileId: string; webViewLink: string; webContentLink: string }> {
     const drive = getDriveClient()
 
-    // Convert buffer to readable stream
-    const stream = new Readable()
-    stream.push(fileBuffer)
-    stream.push(null)
+    // Convert buffer to readable stream - ensure a proper copy for googleapis
+    const bufferCopy = Buffer.from(fileBuffer)
+    const stream = new Readable({
+        read() {
+            this.push(bufferCopy)
+            this.push(null)
+        }
+    })
+
+    console.log(`GDrive: Uploading file "${fileName}" (${bufferCopy.length} bytes) to folder ${folderId || GDRIVE_FOLDER_ID}`)
 
     const response = await drive.files.create({
         requestBody: {

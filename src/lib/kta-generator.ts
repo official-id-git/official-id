@@ -226,6 +226,8 @@ function wrapText(
  * Generate PDF from KTA image buffer
  */
 export async function generateKTAPDF(imageBuffer: Buffer): Promise<Buffer> {
+    console.log(`KTA PDF Generator: Received image buffer of ${imageBuffer.length} bytes`)
+
     const pdfDoc = await PDFDocument.create()
 
     // KTA card size: 8.7cm × 5.5cm → convert to points (1cm = 28.3465 points)
@@ -234,11 +236,29 @@ export async function generateKTAPDF(imageBuffer: Buffer): Promise<Buffer> {
 
     const page = pdfDoc.addPage([widthPt, heightPt])
 
-    // Embed the PNG image
-    const pngImage = await pdfDoc.embedPng(imageBuffer)
+    // Auto-detect image format: PNG starts with 0x89504E47, JPEG starts with 0xFFD8
+    let embeddedImage
+    const isPNG = imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50 && imageBuffer[2] === 0x4E && imageBuffer[3] === 0x47
+    const isJPEG = imageBuffer[0] === 0xFF && imageBuffer[1] === 0xD8
+
+    if (isPNG) {
+        console.log('KTA PDF Generator: Detected PNG format')
+        embeddedImage = await pdfDoc.embedPng(imageBuffer)
+    } else if (isJPEG) {
+        console.log('KTA PDF Generator: Detected JPEG format')
+        embeddedImage = await pdfDoc.embedJpg(imageBuffer)
+    } else {
+        // Try PNG first, then JPEG as fallback
+        console.log('KTA PDF Generator: Unknown format, trying PNG then JPEG')
+        try {
+            embeddedImage = await pdfDoc.embedPng(imageBuffer)
+        } catch {
+            embeddedImage = await pdfDoc.embedJpg(imageBuffer)
+        }
+    }
 
     // Draw image to fill the entire page
-    page.drawImage(pngImage, {
+    page.drawImage(embeddedImage, {
         x: 0,
         y: 0,
         width: widthPt,
@@ -246,7 +266,9 @@ export async function generateKTAPDF(imageBuffer: Buffer): Promise<Buffer> {
     })
 
     const pdfBytes = await pdfDoc.save()
-    return Buffer.from(pdfBytes)
+    const pdfBuffer = Buffer.from(pdfBytes)
+    console.log(`KTA PDF Generator: Generated PDF of ${pdfBuffer.length} bytes`)
+    return pdfBuffer
 }
 
 export { KTA_WIDTH_PX, KTA_HEIGHT_PX }
