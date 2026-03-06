@@ -44,7 +44,7 @@ export default function KTASection({ organizationId, organizationName, isMember 
 
     useEffect(() => {
         loadKTAData()
-    }, [organizationId, user])
+    }, [organizationId, user, isMember, fetchTemplate, fetchMyKTA])
 
     const loadKTAData = async () => {
         // Check if template exists
