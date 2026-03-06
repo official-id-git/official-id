@@ -86,54 +86,49 @@ export async function POST(request: NextRequest) {
         console.log(`KTA Regenerate: Image buffer size: ${ktaImageBuffer.length} bytes`)
         console.log(`KTA Regenerate: PDF buffer size: ${pdfBuffer.length} bytes`)
 
-        // Upload to Google Drive
-        let gdriveResult = { fileId: '', webViewLink: '', webContentLink: '' }
-        let gdriveImageResult = { fileId: '', webViewLink: '', webContentLink: '' }
+        // Upload to Cloudinary instead of Google Drive
+        let cloudinaryPdfResult = { secure_url: '', public_id: '' }
+        let cloudinaryImageResult = { secure_url: '', public_id: '' }
 
-        let circleFolderId: string | undefined
-        const targetFolderName = `KTA_${circleName}`
+        try {
+            const { uploadBufferToCloudinary } = await import('@/lib/cloudinary')
+            const targetFolderName = `official-id_kta/KTA_${circleName.replace(/[^a-zA-Z0-9_-]/g, '_')}`
 
-        // Find or create Circle Folder
-        console.log(`KTA Regenerate: Finding/creating circle folder: ${targetFolderName}`)
-        const existingOrgFolderId = await findGDriveFolderByName(targetFolderName)
-        if (existingOrgFolderId) {
-            circleFolderId = existingOrgFolderId
-            console.log(`KTA Regenerate: Found circle folder: ${circleFolderId}`)
-        } else {
-            circleFolderId = await createGDriveFolder(targetFolderName)
-            console.log(`KTA Regenerate: Created circle folder: ${circleFolderId}`)
+            // Upload PDF
+            const safeFileNamePDF = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}.pdf`
+            console.log(`KTA Regenerate: Uploading PDF to Cloudinary folder ${targetFolderName}`)
+
+            cloudinaryPdfResult = await uploadBufferToCloudinary(
+                pdfBuffer,
+                'application/pdf',
+                safeFileNamePDF,
+                targetFolderName
+            )
+            console.log(`KTA Regenerate: PDF uploaded successfully. URL: ${cloudinaryPdfResult.secure_url}`)
+
+            // Upload Image
+            const safeFileNameImage = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}.png`
+            console.log(`KTA Regenerate: Uploading PNG to Cloudinary folder ${targetFolderName}`)
+
+            cloudinaryImageResult = await uploadBufferToCloudinary(
+                ktaImageBuffer,
+                'image/png',
+                safeFileNameImage,
+                targetFolderName
+            )
+            console.log(`KTA Regenerate: PNG uploaded successfully. URL: ${cloudinaryImageResult.secure_url}`)
+
+        } catch (uploadError: any) {
+            console.error('KTA Regenerate: Cloudinary upload failed:', uploadError?.message || uploadError)
+            throw new Error(`Gagal mengupload file KTA ke server: ${uploadError?.message || 'Unknown error'}`)
         }
-
-        // Find or create Member Subfolder
-        const memberFolderName = `${ktaNumberString} - ${application.full_name}`
-        console.log(`KTA Regenerate: Finding/creating member folder: ${memberFolderName}`)
-        const existingMemberFolderId = await findGDriveFolderByName(memberFolderName, circleFolderId)
-
-        let memberFolderId: string
-        if (existingMemberFolderId) {
-            memberFolderId = existingMemberFolderId
-            console.log(`KTA Regenerate: Found member folder: ${memberFolderId}`)
-        } else {
-            memberFolderId = await createGDriveFolder(memberFolderName, circleFolderId)
-            console.log(`KTA Regenerate: Created member folder: ${memberFolderId}`)
-        }
-
-        // Upload PDF
-        const safeFileNamePDF = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}.pdf`
-        console.log(`KTA Regenerate: Uploading PDF to folder ${memberFolderId}`)
-        gdriveResult = await uploadToGDrive(pdfBuffer, safeFileNamePDF, 'application/pdf', memberFolderId)
-
-        // Upload Image
-        const safeFileNameImage = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}.png`
-        console.log(`KTA Regenerate: Uploading PNG to folder ${memberFolderId}`)
-        gdriveImageResult = await uploadToGDrive(ktaImageBuffer, safeFileNameImage, 'image/png', memberFolderId)
 
         // 4. Update Database
         const { data: updatedApp, error: updateError } = await adminSupabase
             .from('kta_applications')
             .update({
-                gdrive_file_id: gdriveResult.fileId || null,
-                gdrive_pdf_url: gdriveResult.webViewLink || null,
+                gdrive_file_id: cloudinaryPdfResult.public_id || null, // Storing Cloudinary public_id
+                gdrive_pdf_url: cloudinaryPdfResult.secure_url || null, // Cloudinary secure PDF URL
                 updated_at: new Date().toISOString(),
             })
             .eq('id', applicationId)
@@ -142,11 +137,11 @@ export async function POST(request: NextRequest) {
 
         if (updateError) throw updateError
 
-        if (gdriveImageResult.webViewLink) {
+        if (cloudinaryImageResult.secure_url) {
             try {
                 await adminSupabase
                     .from('kta_applications')
-                    .update({ gdrive_image_url: gdriveImageResult.webViewLink })
+                    .update({ gdrive_image_url: cloudinaryImageResult.secure_url }) // Cloudinary secure Image URL
                     .eq('id', applicationId)
             } catch (e) {
                 // Ignore if migration 037 is not fully applied

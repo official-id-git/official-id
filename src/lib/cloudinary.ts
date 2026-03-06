@@ -42,6 +42,49 @@ export async function uploadToCloudinary(file: File, folder: string = 'official-
 }
 
 /**
+ * Upload a raw Buffer to Cloudinary (useful for server-side generated files like PDFs and Canvas elements)
+ */
+export async function uploadBufferToCloudinary(
+  buffer: Buffer,
+  mimeType: string,
+  fileName: string,
+  folder: string = 'official-id_kta'
+): Promise<CloudinaryUploadResult> {
+  if (!CLOUD_NAME || !UPLOAD_PRESET) {
+    throw new Error('Cloudinary belum dikonfigurasi. Pastikan NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME dan NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ada di .env.local')
+  }
+
+  // Convert buffer to base64 data URI format expected by Cloudinary's upload API
+  const base64Data = buffer.toString('base64')
+  const fileUri = `data:${mimeType};base64,${base64Data}`
+
+  const formData = new FormData()
+  formData.append('file', fileUri)
+  formData.append('upload_preset', UPLOAD_PRESET)
+  formData.append('folder', folder)
+  formData.append('public_id', fileName.replace(/\.[^/.]+$/, '')) // Remove extension from public_id
+
+  // Determine resource type based on mime
+  const resourceType = mimeType === 'application/pdf' ? 'image' : 'image'
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`,
+    {
+      method: 'POST',
+      body: formData,
+    }
+  )
+
+  if (!response.ok) {
+    const error = await response.json()
+    console.error('Cloudinary Upload Error:', error)
+    throw new Error(error.error?.message || 'Gagal mengupload file ke Cloudinary')
+  }
+
+  return response.json()
+}
+
+/**
  * Delete image from Cloudinary (requires backend/API route)
  */
 export async function deleteFromCloudinary(publicId: string): Promise<boolean> {
@@ -66,16 +109,16 @@ export function getOptimizedImageUrl(
   } = {}
 ): string {
   if (!url) return ''
-  
+
   // Only transform cloudinary URLs
   if (!url.includes('cloudinary.com')) {
     return url
   }
 
-  const { 
-    width = 800, 
-    height = 800, 
-    quality = 80, 
+  const {
+    width = 800,
+    height = 800,
+    quality = 80,
     format = 'auto',
     crop = 'limit'
   } = options
@@ -153,8 +196,8 @@ export function getCloudinaryUrl(
   } = {}
 ): string {
   if (!CLOUD_NAME) return ''
-  
+
   const { width = 400, height = 400, crop = 'fill', quality = 80 } = options
-  
+
   return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_${crop},w_${width},h_${height},q_${quality}/${publicId}`
 }
