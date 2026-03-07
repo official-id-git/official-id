@@ -11,7 +11,8 @@ import { Readable } from 'stream'
 const SCOPES = ['https://www.googleapis.com/auth/drive']
 
 // Target folder ID from the shared Google Drive folder
-const GDRIVE_FOLDER_ID = process.env.GDRIVE_FOLDER_ID || '1-3_ZVnntHCYC1SJVGjBxC51woawYB5kM'
+// Strip any URL query params (e.g. "?hl=id") in case folder ID was copied from a Drive URL
+const GDRIVE_FOLDER_ID = (process.env.GDRIVE_FOLDER_ID || '1-3_ZVnntHCYC1SJVGjBxC51woawYB5kM').split('?')[0].trim()
 
 function getAuth() {
     const credentials = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
