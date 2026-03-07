@@ -137,7 +137,8 @@ export async function POST(
                 return NextResponse.json({ error: 'Failed to resolve Google Drive folder target' }, { status: 500 })
             }
 
-            const sessionUri = await initiateResumableUpload(fileName, mimeType, targetFolderId)
+            const origin = request.headers.get('origin') || '';
+            const sessionUri = await initiateResumableUpload(fileName, mimeType, targetFolderId, origin)
             return NextResponse.json({ success: true, sessionUri, targetFolderId })
         }
 

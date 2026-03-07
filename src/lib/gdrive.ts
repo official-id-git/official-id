@@ -102,7 +102,8 @@ export async function findGDriveFolderByName(folderName: string, parentFolderId?
 export async function initiateResumableUpload(
     fileName: string,
     mimeType: string,
-    folderId?: string
+    folderId?: string,
+    origin?: string
 ): Promise<string> {
     const accessToken = await getAccessToken();
     const targetFolder = folderId || GDRIVE_FOLDER_ID;
@@ -115,13 +116,19 @@ export async function initiateResumableUpload(
         parents: [targetFolder],
     };
 
+    const headers: Record<string, string> = {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Upload-Content-Type': mimeType,
+    };
+
+    if (origin) {
+        headers['Origin'] = origin;
+    }
+
     const initRes = await fetch(url, {
         method: 'POST',
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json; charset=UTF-8',
-            'X-Upload-Content-Type': mimeType,
-        },
+        headers,
         body: JSON.stringify(metadata),
     });
 
