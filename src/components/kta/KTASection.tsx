@@ -371,10 +371,19 @@ export default function KTASection({ organizationId, organizationName, isMember 
 
                 {/* Member: Has pending KTA */}
                 {isMember && myKTA && myKTA.status === 'PENDING' && (
-                    <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 mx-auto mb-3"></div>
-                        <p className="font-medium text-yellow-800">KTA sedang dalam proses pembuatan...</p>
-                        <p className="text-sm text-yellow-600 mt-1">Mohon tunggu, KTA Anda sedang dibuat.</p>
+                    <div className="bg-yellow-50 p-6 rounded-xl border border-yellow-200 text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 mx-auto mb-4"></div>
+                        <p className="font-semibold text-xl text-yellow-800 mb-2">KTA sedang dalam proses verifikasi</p>
+                        <p className="text-sm text-yellow-700 mb-6">Mohon tunggu, pengajuan KTA Anda sedang ditinjau oleh Admin Circle.</p>
+                        <a
+                            href={`/dashboard/messages?to=${organizationId}`}
+                            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-yellow-600 text-white rounded-xl font-medium hover:bg-yellow-700 transition-colors shadow-sm"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            Hubungi Admin
+                        </a>
                     </div>
                 )}
 
@@ -411,175 +420,187 @@ export default function KTASection({ organizationId, organizationName, isMember 
                     </div>
                 )}
 
-                {/* KTA Application Form */}
+                {/* KTA Application Form Modal */}
                 {showForm && (
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Form Pengajuan KTA</h3>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap <span className="text-red-500">*</span></label>
-                            <input
-                                type="text"
-                                required
-                                value={formData.fullName}
-                                onChange={e => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                                placeholder="Nama sesuai identitas"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Perusahaan / Organisasi</label>
-                                <input
-                                    type="text"
-                                    value={formData.company}
-                                    onChange={e => setFormData(prev => ({ ...prev, company: e.target.value }))}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                                />
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                        <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl relative">
+                            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+                                <h3 className="font-bold text-lg text-gray-900">Form Pengajuan KTA</h3>
+                                <button onClick={() => setShowForm(false)} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Kompetensi Profesional</label>
-                                <input
-                                    type="text"
-                                    value={formData.professionalCompetency}
-                                    onChange={e => setFormData(prev => ({ ...prev, professionalCompetency: e.target.value }))}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                                    placeholder="Contoh: Web Developer"
-                                />
-                            </div>
-                        </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Tempat Lahir</label>
-                                <input
-                                    type="text"
-                                    value={formData.birthPlace}
-                                    onChange={e => setFormData(prev => ({ ...prev, birthPlace: e.target.value }))}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Lahir</label>
-                                <input
-                                    type="date"
-                                    value={formData.birthDate}
-                                    onChange={e => setFormData(prev => ({ ...prev, birthDate: e.target.value }))}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Kota</label>
-                                <input
-                                    type="text"
-                                    value={formData.city}
-                                    onChange={e => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Provinsi</label>
-                                <input
-                                    type="text"
-                                    value={formData.province}
-                                    onChange={e => setFormData(prev => ({ ...prev, province: e.target.value }))}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">No. WhatsApp</label>
-                            <input
-                                type="tel"
-                                value={formData.whatsappNumber}
-                                onChange={e => setFormData(prev => ({ ...prev, whatsappNumber: e.target.value.replace(/[^0-9+]/g, '') }))}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                                placeholder="08xxxxxxxxxx"
-                            />
-                        </div>
-
-                        {/* Photo Upload */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Foto KTA <span className="text-red-500">*</span></label>
-                            <div className="flex items-center gap-4">
-                                {formData.photoUrl ? (
-                                    <div className="relative w-24 h-30 rounded-xl overflow-hidden border-2 border-amber-300">
-                                        <Image
-                                            src={formData.photoUrl}
-                                            alt="Photo KTA"
-                                            width={96}
-                                            height={120}
-                                            className="w-full h-full object-cover"
-                                            unoptimized
+                            <div className="p-6">
+                                <form onSubmit={handleSubmit} className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap <span className="text-red-500">*</span></label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={formData.fullName}
+                                            onChange={e => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-colors"
+                                            placeholder="Nama sesuai identitas"
                                         />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Instansi / Organisasi</label>
+                                            <input
+                                                type="text"
+                                                value={formData.company}
+                                                onChange={e => setFormData(prev => ({ ...prev, company: e.target.value }))}
+                                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-colors"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Profesi / Jabatan</label>
+                                            <input
+                                                type="text"
+                                                value={formData.professionalCompetency}
+                                                onChange={e => setFormData(prev => ({ ...prev, professionalCompetency: e.target.value }))}
+                                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-colors"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Tempat Lahir</label>
+                                            <input
+                                                type="text"
+                                                value={formData.birthPlace}
+                                                onChange={e => setFormData(prev => ({ ...prev, birthPlace: e.target.value }))}
+                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Lahir</label>
+                                            <input
+                                                type="date"
+                                                value={formData.birthDate}
+                                                onChange={e => setFormData(prev => ({ ...prev, birthDate: e.target.value }))}
+                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Kota</label>
+                                            <input
+                                                type="text"
+                                                value={formData.city}
+                                                onChange={e => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Provinsi</label>
+                                            <input
+                                                type="text"
+                                                value={formData.province}
+                                                onChange={e => setFormData(prev => ({ ...prev, province: e.target.value }))}
+                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">No. WhatsApp</label>
+                                        <input
+                                            type="tel"
+                                            value={formData.whatsappNumber}
+                                            onChange={e => setFormData(prev => ({ ...prev, whatsappNumber: e.target.value.replace(/[^0-9+]/g, '') }))}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                            placeholder="08xxxxxxxxxx"
+                                        />
+                                    </div>
+
+                                    {/* Photo Upload */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Foto KTA <span className="text-red-500">*</span></label>
+                                        <div className="flex items-center gap-4">
+                                            {formData.photoUrl ? (
+                                                <div className="relative w-24 h-30 rounded-xl overflow-hidden border-2 border-amber-300">
+                                                    <Image
+                                                        src={formData.photoUrl}
+                                                        alt="Photo KTA"
+                                                        width={96}
+                                                        height={120}
+                                                        className="w-full h-full object-cover"
+                                                        unoptimized
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFormData(prev => ({ ...prev, photoUrl: '' }))}
+                                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => photoInputRef.current?.click()}
+                                                    disabled={uploadingPhoto}
+                                                    className="w-24 h-30 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-amber-400 hover:text-amber-500 transition-colors"
+                                                >
+                                                    {uploadingPhoto ? (
+                                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-amber-500"></div>
+                                                    ) : (
+                                                        <>
+                                                            <svg className="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                            </svg>
+                                                            <span className="text-xs">Upload</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            )}
+                                            <input
+                                                ref={photoInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handlePhotoUpload}
+                                                className="hidden"
+                                            />
+                                            <p className="text-xs text-gray-400">Foto formal pas foto, ukuran 3x4 atau 4x6</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Submit Buttons */}
+                                    <div className="flex gap-3 pt-2">
                                         <button
                                             type="button"
-                                            onClick={() => setFormData(prev => ({ ...prev, photoUrl: '' }))}
-                                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                                            onClick={() => setShowForm(false)}
+                                            className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
                                         >
-                                            ×
+                                            Batal
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={formSubmitting || loading || !formData.photoUrl}
+                                            className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            {formSubmitting ? (
+                                                <>
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                    Generating KTA...
+                                                </>
+                                            ) : (
+                                                'Ajukan KTA'
+                                            )}
                                         </button>
                                     </div>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={() => photoInputRef.current?.click()}
-                                        disabled={uploadingPhoto}
-                                        className="w-24 h-30 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-amber-400 hover:text-amber-500 transition-colors"
-                                    >
-                                        {uploadingPhoto ? (
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-amber-500"></div>
-                                        ) : (
-                                            <>
-                                                <svg className="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                </svg>
-                                                <span className="text-xs">Upload</span>
-                                            </>
-                                        )}
-                                    </button>
-                                )}
-                                <input
-                                    ref={photoInputRef}
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handlePhotoUpload}
-                                    className="hidden"
-                                />
-                                <p className="text-xs text-gray-400">Foto formal pas foto, ukuran 3x4 atau 4x6</p>
+                                </form>
                             </div>
                         </div>
-
-                        {/* Submit Buttons */}
-                        <div className="flex gap-3 pt-2">
-                            <button
-                                type="button"
-                                onClick={() => setShowForm(false)}
-                                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
-                            >
-                                Batal
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={formSubmitting || loading || !formData.photoUrl}
-                                className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                            >
-                                {formSubmitting ? (
-                                    <>
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                        Generating KTA...
-                                    </>
-                                ) : (
-                                    'Ajukan KTA'
-                                )}
-                            </button>
-                        </div>
-                    </form>
+                    </div>
                 )}
             </div>
         </div>

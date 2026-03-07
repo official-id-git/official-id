@@ -10,6 +10,8 @@ import { MemberList } from '@/components/organizations/MemberList'
 import { OrganizationRequests } from '@/components/organizations/OrganizationRequests'
 import type { Organization, OrganizationMember, OrganizationRequest } from '@/types'
 import BottomNavigation from '@/components/layout/BottomNavigation'
+import KTASection from '@/components/kta/KTASection'
+import MemberEventsSection from '@/components/events/MemberEventsSection'
 
 interface Invitation {
   id: string
@@ -478,6 +480,23 @@ export default function OrganizationDetailPage() {
                 </svg>
                 Send Broadcast
               </button>
+            )}
+
+            {/* Member KTA Section */}
+            {(membership.isAdmin || membership.status === 'APPROVED') && (
+              <KTASection
+                organizationId={orgId}
+                organizationName={org.name}
+                isMember={true}
+              />
+            )}
+
+            {/* Member Events Section */}
+            {(membership.isAdmin || membership.status === 'APPROVED') && (
+              <MemberEventsSection
+                organizationId={orgId}
+                organizationName={org.name}
+              />
             )}
           </div>
 
