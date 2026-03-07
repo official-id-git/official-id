@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { generateKTAImage, generateKTAPDF } from '@/lib/kta-generator'
-import { uploadToGDrive, createGDriveFolder } from '@/lib/gdrive'
+
 import QRCode from 'qrcode'
 
 export async function POST(request: NextRequest) {
@@ -123,27 +123,27 @@ export async function POST(request: NextRequest) {
         console.log(`KTA Approve: Image buffer size: ${ktaImageBuffer.length} bytes`)
         console.log(`KTA Approve: PDF buffer size: ${pdfBuffer.length} bytes`)
 
-        // Upload to Cloudinary for Image, Google Drive for PDF
-        let gdrivePdfResult = { webViewLink: '', fileId: '' }
+        // Upload to Cloudinary for Image and PDF
+        let cloudinaryPdfResult = { secure_url: '', public_id: '' }
         let cloudinaryImageResult = { secure_url: '', public_id: '' }
 
         try {
             const { uploadBufferToCloudinary } = await import('@/lib/cloudinary')
-            const { uploadToGDrive } = await import('@/lib/gdrive')
             const targetFolderName = `official-id_kta/KTA_${circleName.replace(/[^a-zA-Z0-9_-]/g, '_')}`
 
-            // Upload PDF to Google Drive to avoid Cloudinary PDF blocks
+            // Upload PDF to Cloudinary
             const safeFileNamePDF = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}_pdf.pdf`
-            console.log(`KTA Approve: Uploading PDF (${pdfBuffer.length} bytes) as "${safeFileNamePDF}" to Google Drive`)
+            console.log(`KTA Approve: Uploading PDF (${pdfBuffer.length} bytes) as "${safeFileNamePDF}" to Cloudinary`)
 
-            const gdriveUpload = await uploadToGDrive(pdfBuffer, safeFileNamePDF, 'application/pdf')
-            gdrivePdfResult = {
-                webViewLink: gdriveUpload.webViewLink,
-                fileId: gdriveUpload.fileId
-            }
-            console.log(`KTA Approve: PDF uploaded successfully. URL: ${gdrivePdfResult.webViewLink}`)
+            cloudinaryPdfResult = await uploadBufferToCloudinary(
+                pdfBuffer,
+                'application/pdf',
+                safeFileNamePDF,
+                targetFolderName
+            )
+            console.log(`KTA Approve: PDF uploaded successfully. URL: ${cloudinaryPdfResult.secure_url}`)
 
-            // Upload Image
+            // Upload Image to Cloudinary
             const safeFileNameImage = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}_image.png`
             console.log(`KTA Approve: Uploading PNG (${ktaImageBuffer.length} bytes) as "${safeFileNameImage}" to Cloudinary folder ${targetFolderName}`)
 
@@ -183,8 +183,8 @@ export async function POST(request: NextRequest) {
                 whatsapp_number: finalData.whatsappNumber || null,
                 status: 'GENERATED',
                 // Re-using the gdrive_ columns to store info
-                gdrive_file_id: gdrivePdfResult.fileId || null,
-                gdrive_pdf_url: gdrivePdfResult.webViewLink || null, // GDrive PDF link
+                gdrive_file_id: cloudinaryPdfResult.public_id || null,
+                gdrive_pdf_url: cloudinaryPdfResult.secure_url || null, // Cloudinary PDF secure link
                 updated_at: new Date().toISOString(),
             })
             .eq('id', applicationId)
@@ -298,8 +298,8 @@ export async function POST(request: NextRequest) {
             data: {
                 ...updatedApp,
                 ktaNumber: ktaNumberString,
-                downloadUrl: gdrivePdfResult.webViewLink || null,
-                viewUrl: gdrivePdfResult.webViewLink || null,
+                downloadUrl: cloudinaryPdfResult.secure_url || null,
+                viewUrl: cloudinaryPdfResult.secure_url || null,
             }
         })
     } catch (error: any) {

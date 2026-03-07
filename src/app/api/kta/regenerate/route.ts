@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { generateKTAImage, generateKTAPDF } from '@/lib/kta-generator'
-import { uploadToGDrive, createGDriveFolder, findGDriveFolderByName } from '@/lib/gdrive'
+
 import QRCode from 'qrcode'
 
 export async function POST(request: NextRequest) {
@@ -86,27 +86,27 @@ export async function POST(request: NextRequest) {
         console.log(`KTA Regenerate: Image buffer size: ${ktaImageBuffer.length} bytes`)
         console.log(`KTA Regenerate: PDF buffer size: ${pdfBuffer.length} bytes`)
 
-        // Upload to Cloudinary for Image, Google Drive for PDF
-        let gdrivePdfResult = { webViewLink: '', fileId: '' }
+        // Upload to Cloudinary for Image and PDF
+        let cloudinaryPdfResult = { secure_url: '', public_id: '' }
         let cloudinaryImageResult = { secure_url: '', public_id: '' }
 
         try {
             const { uploadBufferToCloudinary } = await import('@/lib/cloudinary')
-            const { uploadToGDrive } = await import('@/lib/gdrive')
             const targetFolderName = `official-id_kta/KTA_${circleName.replace(/[^a-zA-Z0-9_-]/g, '_')}`
 
-            // Upload PDF to Google Drive
+            // Upload PDF to Cloudinary
             const safeFileNamePDF = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}_pdf.pdf`
-            console.log(`KTA Regenerate: Uploading PDF to Google Drive`)
+            console.log(`KTA Regenerate: Uploading PDF to Cloudinary`)
 
-            const gdriveUpload = await uploadToGDrive(pdfBuffer, safeFileNamePDF, 'application/pdf')
-            gdrivePdfResult = {
-                webViewLink: gdriveUpload.webViewLink,
-                fileId: gdriveUpload.fileId
-            }
-            console.log(`KTA Regenerate: PDF uploaded successfully. URL: ${gdrivePdfResult.webViewLink}`)
+            cloudinaryPdfResult = await uploadBufferToCloudinary(
+                pdfBuffer,
+                'application/pdf',
+                safeFileNamePDF,
+                targetFolderName
+            )
+            console.log(`KTA Regenerate: PDF uploaded successfully. URL: ${cloudinaryPdfResult.secure_url}`)
 
-            // Upload Image
+            // Upload Image to Cloudinary
             const safeFileNameImage = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}_image.png`
             console.log(`KTA Regenerate: Uploading PNG to Cloudinary folder ${targetFolderName}`)
 
@@ -127,8 +127,8 @@ export async function POST(request: NextRequest) {
         const { data: updatedApp, error: updateError } = await adminSupabase
             .from('kta_applications')
             .update({
-                gdrive_file_id: gdrivePdfResult.fileId || null, // Storing GDrive fileId
-                gdrive_pdf_url: gdrivePdfResult.webViewLink || null, // GDrive view link
+                gdrive_file_id: cloudinaryPdfResult.public_id || null, // Storing Cloudinary public_id
+                gdrive_pdf_url: cloudinaryPdfResult.secure_url || null, // Cloudinary PDF secure link
                 updated_at: new Date().toISOString(),
             })
             .eq('id', applicationId)
