@@ -82,6 +82,12 @@ export default function KTAManagementPage() {
     const [rejectionReason, setRejectionReason] = useState('')
     const [showRejectInput, setShowRejectInput] = useState(false)
 
+    // Edit Generated KTA state
+    const [isEditGeneratedModalOpen, setIsEditGeneratedModalOpen] = useState(false)
+    const [selectedAppForEdit, setSelectedAppForEdit] = useState<KTAApplication | null>(null)
+    const [editGeneratedData, setEditGeneratedData] = useState<any>({})
+    const [isUpdatingData, setIsUpdatingData] = useState(false)
+
     // Modal states
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: () => { }, isDestructive: false })
     const [promptModal, setPromptModal] = useState({ isOpen: false, title: '', message: '', onConfirm: (val: string) => { } })
@@ -443,6 +449,39 @@ export default function KTAManagementPage() {
             toast.success(`Berhasil mengunduh ${type.toUpperCase()}`, { id: toastId })
         } catch (err: any) {
             toast.error(`Gagal mengunduh: ${err.message}`)
+        }
+    }
+
+    const handleUpdateGeneratedData = async () => {
+        if (!selectedAppForEdit) return
+        setIsUpdatingData(true)
+        try {
+            const res = await fetch(`/api/kta/applications/${selectedAppForEdit.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    full_name: editGeneratedData.fullName,
+                    company: editGeneratedData.company,
+                    professional_competency: editGeneratedData.professionalCompetency,
+                    city: editGeneratedData.city,
+                    whatsapp_number: editGeneratedData.whatsappNumber,
+                    photo_url: editGeneratedData.photoUrl
+                })
+            })
+
+            if (!res.ok) {
+                const data = await res.json()
+                throw new Error(data.error || 'Failed to update')
+            }
+
+            toast.success('Data KTA berhasil diperbarui. Silakan "Regenerate" untuk menerapkan ke gambar/PDF.', { duration: 5000 })
+            setIsEditGeneratedModalOpen(false)
+            setSelectedAppForEdit(null)
+            loadData()
+        } catch (err: any) {
+            toast.error('Gagal menyimpan data: ' + err.message)
+        } finally {
+            setIsUpdatingData(false)
         }
     }
 
@@ -1346,6 +1385,28 @@ export default function KTAManagementPage() {
                                                 {app.status === 'GENERATED' && (
                                                     <button
                                                         onClick={() => {
+                                                            setSelectedAppForEdit(app)
+                                                            setEditGeneratedData({
+                                                                fullName: app.full_name,
+                                                                company: app.company || '',
+                                                                professionalCompetency: app.professional_competency || '',
+                                                                city: app.city || '',
+                                                                whatsappNumber: app.whatsapp_number || '',
+                                                                photoUrl: app.photo_url
+                                                            })
+                                                            setIsEditGeneratedModalOpen(true)
+                                                        }}
+                                                        className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-1.5 border border-gray-200"
+                                                        title="Edit Data KTA"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                                        Edit
+                                                    </button>
+                                                )}
+
+                                                {app.status === 'GENERATED' && (
+                                                    <button
+                                                        onClick={() => {
                                                             if (!template) {
                                                                 toast.error('Template tidak ditemukan.')
                                                                 return
@@ -1487,6 +1548,131 @@ export default function KTAManagementPage() {
                                     </>
                                 ) : (
                                     <span>Ya, Regenerate</span>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Generated KTA Modal */}
+            {isEditGeneratedModalOpen && selectedAppForEdit && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col">
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-gray-900">Edit Data KTA</h3>
+                            <button
+                                onClick={() => {
+                                    setIsEditGeneratedModalOpen(false)
+                                    setSelectedAppForEdit(null)
+                                }}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto space-y-6">
+                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800 flex gap-3">
+                                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <p><strong>Penting:</strong> Setelah mengubah data, Anda harus melakukan <strong>Regenerate</strong> pada KTA ini agar perubahan data tercetak di file PDF & Gambar.</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Foto KTA</label>
+                                <div className="flex flex-col sm:flex-row items-start gap-4">
+                                    <div className="relative w-24 h-32 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 flex-shrink-0">
+                                        {editGeneratedData.photoUrl ? (
+                                            <Image src={editGeneratedData.photoUrl} alt="Photo" fill className="object-cover" />
+                                        ) : (
+                                            <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 w-full">
+                                        <input
+                                            type="url"
+                                            value={editGeneratedData.photoUrl || ''}
+                                            onChange={e => setEditGeneratedData({ ...editGeneratedData, photoUrl: e.target.value })}
+                                            placeholder="URL Foto (https://...)"
+                                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-2">Ubah foto dengan menempel paste URL foto baru.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                                    <input
+                                        type="text"
+                                        value={editGeneratedData.fullName || ''}
+                                        onChange={e => setEditGeneratedData({ ...editGeneratedData, fullName: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Instansi / Pekerjaan</label>
+                                    <input
+                                        type="text"
+                                        value={editGeneratedData.company || ''}
+                                        onChange={e => setEditGeneratedData({ ...editGeneratedData, company: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Kompetensi Profesi</label>
+                                    <input
+                                        type="text"
+                                        value={editGeneratedData.professionalCompetency || ''}
+                                        onChange={e => setEditGeneratedData({ ...editGeneratedData, professionalCompetency: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Kota Asal</label>
+                                    <input
+                                        type="text"
+                                        value={editGeneratedData.city || ''}
+                                        onChange={e => setEditGeneratedData({ ...editGeneratedData, city: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm"
+                                    />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">No WhatsApp</label>
+                                    <input
+                                        type="text"
+                                        value={editGeneratedData.whatsappNumber || ''}
+                                        onChange={e => setEditGeneratedData({ ...editGeneratedData, whatsappNumber: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3 flex-wrap sm:flex-nowrap border-t border-gray-100">
+                            <button
+                                onClick={() => {
+                                    setIsEditGeneratedModalOpen(false)
+                                    setSelectedAppForEdit(null)
+                                }}
+                                disabled={isUpdatingData}
+                                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={handleUpdateGeneratedData}
+                                disabled={isUpdatingData || !editGeneratedData.fullName || !editGeneratedData.photoUrl}
+                                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {isUpdatingData ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        <span>Menyimpan...</span>
+                                    </>
+                                ) : (
+                                    <span>Simpan Perubahan</span>
                                 )}
                             </button>
                         </div>
