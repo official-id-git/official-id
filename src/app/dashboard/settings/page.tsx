@@ -144,6 +144,32 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Admin Settings (Only visible to APP_ADMIN) */}
+        {user?.role === 'APP_ADMIN' && (
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-3 px-1">Admin Tools</h3>
+            <div className="space-y-2">
+              <Link
+                href="/api/auth/google-drive"
+                className="flex items-center gap-3 p-4 bg-white rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">Connect Google Drive</p>
+                  <p className="text-sm text-gray-500">Authorize access for automated backups</p>
+                </div>
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Logout Button */}
         <button
           onClick={signOut}

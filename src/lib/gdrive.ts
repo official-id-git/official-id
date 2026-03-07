@@ -5,12 +5,12 @@
 // This allows uploading files using the full storage capacity of the authenticated Gmail account.
 
 async function getAccessToken(): Promise<string> {
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const clientId = process.env.GDRIVE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GDRIVE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET;
     const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
 
     if (!clientId || !clientSecret || !refreshToken) {
-        throw new Error('Google OAuth2 credentials belum dikonfigurasi. Pastikan GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, dan GOOGLE_REFRESH_TOKEN sudah ada.');
+        throw new Error('Google OAuth2 credentials belum dikonfigurasi. Pastikan GDRIVE_CLIENT_ID, GDRIVE_CLIENT_SECRET, dan GOOGLE_REFRESH_TOKEN sudah ada.');
     }
 
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
