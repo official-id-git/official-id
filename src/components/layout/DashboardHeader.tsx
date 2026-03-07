@@ -11,15 +11,45 @@ export default function DashboardHeader({ onOpenSideMenu }: { onOpenSideMenu: ()
     const [unreadMessages, setUnreadMessages] = useState(0)
 
     useEffect(() => {
-        const loadUnreadMessages = async () => {
-            const count = await getUnreadCount()
-            setUnreadMessages(count)
-        }
-        loadUnreadMessages()
+        let timeoutId: NodeJS.Timeout | null = null
+        let retryDelay = 30000 // Start at 30s, back off on error
+        let consecutiveErrors = 0
 
-        // Refresh count every 30 seconds
-        const interval = setInterval(loadUnreadMessages, 30000)
-        return () => clearInterval(interval)
+        const loadUnreadMessages = async () => {
+            // Skip polling if tab is hidden (page standby)
+            if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+                timeoutId = setTimeout(loadUnreadMessages, retryDelay)
+                return
+            }
+            try {
+                const count = await getUnreadCount()
+                setUnreadMessages(count)
+                consecutiveErrors = 0
+                retryDelay = 30000 // Reset on success
+            } catch {
+                consecutiveErrors++
+                // Exponential backoff: 30s → 60s → 120s → 300s max
+                retryDelay = Math.min(30000 * Math.pow(2, consecutiveErrors), 300000)
+            }
+            timeoutId = setTimeout(loadUnreadMessages, retryDelay)
+        }
+
+        // Resume immediately when tab becomes visible again
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                if (timeoutId) clearTimeout(timeoutId)
+                retryDelay = 30000
+                consecutiveErrors = 0
+                loadUnreadMessages()
+            }
+        }
+
+        loadUnreadMessages()
+        document.addEventListener('visibilitychange', handleVisibilityChange)
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId)
+            document.removeEventListener('visibilitychange', handleVisibilityChange)
+        }
     }, [getUnreadCount])
 
     return (

@@ -21,15 +21,42 @@ export default function BottomNavigation({
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
-    const loadUnreadCount = async () => {
-      const count = await getUnreadCount()
-      setUnreadCount(count)
-    }
-    loadUnreadCount()
+    let timeoutId: NodeJS.Timeout | null = null
+    let retryDelay = 30000
+    let consecutiveErrors = 0
 
-    // Refresh count every 30 seconds
-    const interval = setInterval(loadUnreadCount, 30000)
-    return () => clearInterval(interval)
+    const loadUnreadCount = async () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        timeoutId = setTimeout(loadUnreadCount, retryDelay)
+        return
+      }
+      try {
+        const count = await getUnreadCount()
+        setUnreadCount(count)
+        consecutiveErrors = 0
+        retryDelay = 30000
+      } catch {
+        consecutiveErrors++
+        retryDelay = Math.min(30000 * Math.pow(2, consecutiveErrors), 300000)
+      }
+      timeoutId = setTimeout(loadUnreadCount, retryDelay)
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        if (timeoutId) clearTimeout(timeoutId)
+        retryDelay = 30000
+        consecutiveErrors = 0
+        loadUnreadCount()
+      }
+    }
+
+    loadUnreadCount()
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [getUnreadCount])
 
   // Messages icon with badge component
