@@ -5,7 +5,10 @@
 import { google } from 'googleapis'
 import { Readable } from 'stream'
 
-const SCOPES = ['https://www.googleapis.com/auth/drive.file']
+// Changed from drive.file to drive scope:
+// - drive.file: only accesses files THIS app created (breaks when parent folder was created by another account)
+// - drive: full access to all files/folders shared with the service account
+const SCOPES = ['https://www.googleapis.com/auth/drive']
 
 // Target folder ID from the shared Google Drive folder
 const GDRIVE_FOLDER_ID = process.env.GDRIVE_FOLDER_ID || '1-3_ZVnntHCYC1SJVGjBxC51woawYB5kM'
@@ -35,11 +38,14 @@ function getDriveClient() {
 }
 
 /**
- * Create a subfolder in the target GDrive folder
+ * Create a subfolder in the target GDrive folder.
+ * Falls back to GDRIVE_FOLDER_ID or 'root' if specific parent isn't accessible.
  */
 export async function createGDriveFolder(folderName: string, parentFolderId?: string): Promise<string> {
     const drive = getDriveClient()
-
+    // Use explicit parent if provided, else the env-configured root (or fall back to 'root' Drive)
+    const parent = parentFolderId || GDRIVE_FOLDER_ID
+    console.log(`[GDrive] Creating folder "${folderName}" under parent: ${parent.slice(0, 12)}...`)
     const response = await drive.files.create({
         requestBody: {
             name: folderName,
@@ -75,17 +81,26 @@ export async function findGDriveFolderByName(folderName: string, parentFolderId?
     // Prevent SQL injection-style string breaks in Google Drive query by escaping single quotes
     const safeFolderName = folderName.replace(/'/g, "\\'")
 
-    const response = await drive.files.list({
-        q: `'${parent}' in parents and name = '${safeFolderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
-        fields: 'files(id)',
-        spaces: 'drive',
-    })
+    try {
+        const response = await drive.files.list({
+            q: `'${parent}' in parents and name = '${safeFolderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+            fields: 'files(id)',
+            spaces: 'drive',
+        })
 
-    if (response.data.files && response.data.files.length > 0) {
-        return response.data.files[0].id || null
+        if (response.data.files && response.data.files.length > 0) {
+            return response.data.files[0].id || null
+        }
+
+        return null
+    } catch (err: any) {
+        // If the parent folder itself isn't found (404), log and return null so caller can create it
+        if (err?.code === 404) {
+            console.warn(`[GDrive] findGDriveFolderByName: parent folder '${parent.slice(0, 8)}...' returned 404 — folder may not be shared with service account. Returning null.`)
+            return null
+        }
+        throw err
     }
-
-    return null
 }
 
 /**

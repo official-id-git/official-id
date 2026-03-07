@@ -4,6 +4,10 @@ import { generateKTAImage, generateKTAPDF } from '@/lib/kta-generator'
 
 import QRCode from 'qrcode'
 
+// Increase max duration for GDrive upload (default 10s is too short)
+export const maxDuration = 60
+
+
 export async function POST(request: NextRequest) {
     try {
         const supabase = await createClient() as any
@@ -154,59 +158,65 @@ export async function POST(request: NextRequest) {
         // Folder: KTA_{CircleName}/{KTA_Number}_{FullName}/
         //   ├── KTA_{number}_image.png
         //   └── KTA_{number}_pdf.pdf
-        try {
-            const { uploadToGDrive, findGDriveFolderByName, createGDriveFolder } = await import('@/lib/gdrive')
-            const memberName = application.full_name
-            const safeName = memberName.replace(/[^a-zA-Z0-9 ]/g, '_')
-            const safeCircle = circleName.replace(/[^a-zA-Z0-9_-]/g, '_')
-            const circleFolderName = `KTA_${safeCircle}`
-            const memberFolderName = `${ktaNumberString}_${safeName}`
+        const gdriveKeySet = !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY
+        const gdriveFolderSet = !!process.env.GDRIVE_FOLDER_ID
+        console.log(`[GDrive DEBUG] Env check — GOOGLE_SERVICE_ACCOUNT_KEY: ${gdriveKeySet}, GDRIVE_FOLDER_ID: ${gdriveFolderSet}`)
 
-            // === DEBUG: check env and buffer sizes ===
-            console.log('[GDrive DEBUG] GDRIVE_FOLDER_ID set:', !!process.env.GDRIVE_FOLDER_ID)
-            console.log('[GDrive DEBUG] GOOGLE_SERVICE_ACCOUNT_KEY set:', !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
-            console.log(`[GDrive DEBUG] Image buffer size: ${ktaImageBuffer.length} bytes`)
-            console.log(`[GDrive DEBUG] PDF buffer size: ${pdfBuffer.length} bytes`)
-            console.log(`[GDrive DEBUG] Circle folder name: "${circleFolderName}"`)
-            console.log(`[GDrive DEBUG] Member folder name: "${memberFolderName}"`)
+        if (!gdriveKeySet) {
+            console.error('[GDrive DEBUG] Skipping GDrive backup: GOOGLE_SERVICE_ACCOUNT_KEY is not set.')
+        } else {
+            try {
+                const { uploadToGDrive, findGDriveFolderByName, createGDriveFolder } = await import('@/lib/gdrive')
+                const memberName = application.full_name
+                const safeName = memberName.replace(/[^a-zA-Z0-9 ]/g, '_')
+                const safeCircle = circleName.replace(/[^a-zA-Z0-9_-]/g, '_')
+                const circleFolderName = `KTA_${safeCircle}`
+                const memberFolderName = `${ktaNumberString}_${safeName}`
 
-            // 1. Get/create circle-level folder
-            let circleFolderId = await findGDriveFolderByName(circleFolderName)
-            console.log(`[GDrive DEBUG] Circle folder ID found: ${circleFolderId}`)
-            if (!circleFolderId) {
-                circleFolderId = await createGDriveFolder(circleFolderName)
-                console.log(`[GDrive DEBUG] Circle folder CREATED with ID: ${circleFolderId}`)
+                console.log(`[GDrive DEBUG] Image buffer size: ${ktaImageBuffer.length} bytes`)
+                console.log(`[GDrive DEBUG] PDF buffer size: ${pdfBuffer.length} bytes`)
+                console.log(`[GDrive DEBUG] Circle folder name: "${circleFolderName}"`)
+                console.log(`[GDrive DEBUG] Member folder name: "${memberFolderName}"`)
+
+                // 1. Get/create circle-level folder
+                let circleFolderId = await findGDriveFolderByName(circleFolderName)
+                console.log(`[GDrive DEBUG] Circle folder ID found: ${circleFolderId}`)
+                if (!circleFolderId) {
+                    circleFolderId = await createGDriveFolder(circleFolderName)
+                    console.log(`[GDrive DEBUG] Circle folder CREATED with ID: ${circleFolderId}`)
+                }
+
+                // 2. Get/create member-level subfolder inside the circle folder
+                let memberFolderId = await findGDriveFolderByName(memberFolderName, circleFolderId)
+                console.log(`[GDrive DEBUG] Member folder ID found: ${memberFolderId}`)
+                if (!memberFolderId) {
+                    memberFolderId = await createGDriveFolder(memberFolderName, circleFolderId)
+                    console.log(`[GDrive DEBUG] Member folder CREATED with ID: ${memberFolderId}`)
+                }
+
+                const imageFileName = `KTA_${ktaNumberString}_image.png`
+                const pdfFileName = `KTA_${ktaNumberString}_pdf.pdf`
+
+                console.log(`[GDrive DEBUG] Uploading image "${imageFileName}" to folder ${memberFolderId}...`)
+                const imgResult = await uploadToGDrive(ktaImageBuffer, imageFileName, 'image/png', memberFolderId)
+                console.log(`[GDrive DEBUG] Image OK. fileId=${imgResult.fileId}`)
+
+                console.log(`[GDrive DEBUG] Uploading PDF "${pdfFileName}" to folder ${memberFolderId}...`)
+                const pdfResult = await uploadToGDrive(pdfBuffer, pdfFileName, 'application/pdf', memberFolderId)
+                console.log(`[GDrive DEBUG] PDF OK. fileId=${pdfResult.fileId}`)
+
+                console.log('[GDrive DEBUG] KTA Regenerate: GDrive backup COMPLETE.')
+            } catch (gdriveError: any) {
+                console.error('[GDrive DEBUG] KTA Regenerate: GDrive backup FAILED.')
+                console.error('[GDrive DEBUG] Error message:', gdriveError?.message)
+                console.error('[GDrive DEBUG] Error code:', gdriveError?.code)
+                console.error('[GDrive DEBUG] Error stack:', gdriveError?.stack)
+                console.error('[GDrive DEBUG] Full error:', JSON.stringify(gdriveError, Object.getOwnPropertyNames(gdriveError)))
             }
-
-            // 2. Get/create member-level subfolder inside the circle folder
-            let memberFolderId = await findGDriveFolderByName(memberFolderName, circleFolderId)
-            console.log(`[GDrive DEBUG] Member folder ID found: ${memberFolderId}`)
-            if (!memberFolderId) {
-                memberFolderId = await createGDriveFolder(memberFolderName, circleFolderId)
-                console.log(`[GDrive DEBUG] Member folder CREATED with ID: ${memberFolderId}`)
-            }
-
-            const imageFileName = `KTA_${ktaNumberString}_image.png`
-            const pdfFileName = `KTA_${ktaNumberString}_pdf.pdf`
-
-            console.log(`[GDrive DEBUG] Uploading image "${imageFileName}" to folder ${memberFolderId}...`)
-            const imgResult = await uploadToGDrive(ktaImageBuffer, imageFileName, 'image/png', memberFolderId)
-            console.log(`[GDrive DEBUG] Image uploaded OK. fileId=${imgResult.fileId} link=${imgResult.webViewLink}`)
-
-            console.log(`[GDrive DEBUG] Uploading PDF "${pdfFileName}" to folder ${memberFolderId}...`)
-            const pdfResult = await uploadToGDrive(pdfBuffer, pdfFileName, 'application/pdf', memberFolderId)
-            console.log(`[GDrive DEBUG] PDF uploaded OK. fileId=${pdfResult.fileId} link=${pdfResult.webViewLink}`)
-
-            console.log('[GDrive DEBUG] KTA Regenerate: GDrive backup COMPLETE.')
-        } catch (gdriveError: any) {
-            console.error('[GDrive DEBUG] KTA Regenerate: GDrive backup FAILED.')
-            console.error('[GDrive DEBUG] Error message:', gdriveError?.message)
-            console.error('[GDrive DEBUG] Error code:', gdriveError?.code)
-            console.error('[GDrive DEBUG] Error stack:', gdriveError?.stack)
-            console.error('[GDrive DEBUG] Full error:', JSON.stringify(gdriveError, Object.getOwnPropertyNames(gdriveError)))
         }
 
         return NextResponse.json({ success: true, data: updatedApp })
+
     } catch (error: any) {
         console.error('POST /api/kta/regenerate error:', error)
         return NextResponse.json({ success: false, error: error.message }, { status: 500 })
