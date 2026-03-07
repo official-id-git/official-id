@@ -99,76 +99,55 @@ export async function uploadToGDrive(
 ): Promise<{ fileId: string; webViewLink: string; webContentLink: string }> {
     const drive = getDriveClient()
 
-    console.log(`GDrive: Uploading file "${fileName}" (${fileBuffer.length} bytes) to folder ${folderId || GDRIVE_FOLDER_ID} using native fetch`)
+    console.log(`GDrive: Uploading file "${fileName}" (${fileBuffer.length} bytes) to folder ${folderId || GDRIVE_FOLDER_ID} using googleapis SDK`)
 
-    const auth = getAuth()
-    const token = await auth.getAccessToken()
-    if (!token) throw new Error("Could not get Google Drive access token")
-
-    const boundary = "-------314159265358979323846"
-    const delimiter = "\r\n--" + boundary + "\r\n"
-    const closeDelimiter = "\r\n--" + boundary + "--"
-
-    const metadata = JSON.stringify({
+    const fileMetadata = {
         name: fileName,
         parents: [folderId || GDRIVE_FOLDER_ID]
-    })
-
-    const bodyChunks = []
-    bodyChunks.push(Buffer.from(delimiter + "Content-Type: application/json; charset=UTF-8\r\n\r\n" + metadata + "\r\n"))
-    bodyChunks.push(Buffer.from("--" + boundary + "\r\nContent-Type: " + mimeType + "\r\n\r\n"))
-    bodyChunks.push(fileBuffer)
-    bodyChunks.push(Buffer.from(closeDelimiter))
-
-    const body = Buffer.concat(bodyChunks)
-
-    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
-        method: 'POST',
-        headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'multipart/related; boundary=' + boundary,
-            'Content-Length': body.length.toString()
-        },
-        body: body,
-        cache: 'no-store'
-    })
-
-    if (!res.ok) {
-        const errorText = await res.text()
-        console.error("GDrive upload failed with status", res.status, errorText)
-        throw new Error('Failed to upload file to Google Drive: ' + errorText)
     }
 
-    const uploadData = await res.json()
-    if (!uploadData.id) {
-        throw new Error('Failed to get file ID from upload response')
+    const media = {
+        mimeType: mimeType,
+        body: Readable.from(fileBuffer)
     }
 
-    const response = {
-        data: {
-            id: uploadData.id
+    try {
+        const response = await drive.files.create({
+            requestBody: fileMetadata,
+            media: media,
+            fields: 'id',
+            supportsAllDrives: true // crucial for service accounts
+        })
+
+        if (!response.data.id) {
+            throw new Error('Failed to get file ID from upload response')
         }
-    }
 
-    // Make file accessible via link
-    await drive.permissions.create({
-        fileId: response.data.id,
-        requestBody: {
-            role: 'reader',
-            type: 'anyone',
-        },
-    })
+        const fileId = response.data.id;
 
-    // Fetch updated links after permission change
-    const fileInfo = await drive.files.get({
-        fileId: response.data.id,
-        fields: 'webViewLink,webContentLink',
-    })
+        // Make file accessible via link
+        await drive.permissions.create({
+            fileId: fileId,
+            requestBody: {
+                role: 'reader',
+                type: 'anyone',
+            },
+        })
 
-    return {
-        fileId: response.data.id,
-        webViewLink: fileInfo.data.webViewLink || `https://drive.google.com/file/d/${response.data.id}/view`,
-        webContentLink: fileInfo.data.webContentLink || `https://drive.google.com/uc?export=download&id=${response.data.id}`,
+        // Fetch updated links after permission change
+        const fileInfo = await drive.files.get({
+            fileId: fileId,
+            fields: 'webViewLink,webContentLink',
+        })
+
+        return {
+            fileId: fileId,
+            webViewLink: fileInfo.data.webViewLink || `https://drive.google.com/file/d/${fileId}/view`,
+            webContentLink: fileInfo.data.webContentLink || `https://drive.google.com/uc?export=download&id=${fileId}`,
+        }
+    } catch (error: any) {
+        console.error("GDrive upload failed with error", error)
+        throw new Error('Failed to upload file to Google Drive: ' + error.message)
     }
 }
 
