@@ -539,6 +539,8 @@ export type Database = {
           gdrive_web_view_link: string | null
           gdrive_web_content_link: string | null
           download_count: number
+          event_id: string | null
+          category: string | null
           created_at: string
           updated_at: string
         }
@@ -552,6 +554,8 @@ export type Database = {
           gdrive_web_view_link?: string | null
           gdrive_web_content_link?: string | null
           download_count?: number
+          event_id?: string | null
+          category?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -565,6 +569,8 @@ export type Database = {
           gdrive_web_view_link?: string | null
           gdrive_web_content_link?: string | null
           download_count?: number
+          event_id?: string | null
+          category?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -574,6 +580,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_repositories_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           }
         ]
