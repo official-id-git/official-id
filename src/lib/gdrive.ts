@@ -96,6 +96,74 @@ export async function findGDriveFolderByName(folderName: string, parentFolderId?
 }
 
 /**
+ * Initiate a resumable upload to Google Drive.
+ * Returns the resumable session URI.
+ */
+export async function initiateResumableUpload(
+    fileName: string,
+    mimeType: string,
+    folderId?: string
+): Promise<string> {
+    const accessToken = await getAccessToken();
+    const targetFolder = folderId || GDRIVE_FOLDER_ID;
+
+    // Use supportsAllDrives for shared drives. Include fields so the client receives them after doing the PUT
+    const url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,webViewLink,webContentLink&supportsAllDrives=true';
+
+    const metadata = {
+        name: fileName,
+        parents: [targetFolder],
+    };
+
+    const initRes = await fetch(url, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json; charset=UTF-8',
+            'X-Upload-Content-Type': mimeType,
+        },
+        body: JSON.stringify(metadata),
+    });
+
+    if (!initRes.ok) {
+        const errBody = await initRes.text();
+        throw new Error(`Failed to initiate resumable upload: ${errBody}`);
+    }
+
+    const sessionUri = initRes.headers.get('Location');
+    if (!sessionUri) {
+        throw new Error('No Location header returned from Google Drive session initialization.');
+    }
+
+    return sessionUri;
+}
+
+/**
+ * Sets permission of a Google Drive file to anyone with the link.
+ */
+export async function setGDriveFilePermissions(fileId: string): Promise<void> {
+    const accessToken = await getAccessToken();
+    try {
+        await fetch(
+            `https://www.googleapis.com/drive/v3/files/${fileId}/permissions?supportsAllDrives=true`,
+            {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    role: 'reader',
+                    type: 'anyone',
+                }),
+            }
+        );
+    } catch (permErr) {
+        console.error('Failed to set permissions on GDrive file:', permErr);
+    }
+}
+
+/**
  * Upload a file buffer to Google Drive.
  */
 export async function uploadToGDrive(

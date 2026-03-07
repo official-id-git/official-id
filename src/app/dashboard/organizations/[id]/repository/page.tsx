@@ -116,34 +116,68 @@ export default function RepositoryManagementPage() {
 
         setUploading(true)
         try {
-            const formData = new FormData()
-            formData.append('title', title)
-            formData.append('file', file)
-            formData.append('category', categoryId)
-            formData.append('event_id', eventId)
+            const ext = file.name.split('.').pop() || 'file'
+            const fileName = `${title}.${ext}`
 
-            const res = await fetch(`/api/organizations/${orgId}/repository`, {
+            // 1. Get Resumable Upload URL from Server
+            const initRes = await fetch(`/api/organizations/${orgId}/repository`, {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'init',
+                    title,
+                    fileName,
+                    mimeType: file.type || 'application/octet-stream',
+                    category: categoryId,
+                    event_id: eventId
+                }),
+            })
+            const initData = await initRes.json()
+            if (!initData.success) throw new Error(initData.error || 'Gagal inisiasi upload')
+
+            // 2. Upload file directly to Google Drive Session URI
+            const uploadRes = await fetch(initData.sessionUri, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': file.type || 'application/octet-stream',
+                },
+                body: file,
             })
 
-            const data = await res.json()
+            if (!uploadRes.ok) throw new Error('Gagal mengunggah file ke Google Drive')
 
-            if (data.success) {
-                showToast('File berhasil diupload', 'success')
-                setTitle('')
-                setCategoryId('')
-                setEventId('')
-                setFile(null)
-                if (fileInputRef.current) fileInputRef.current.value = ''
-                // Refresh list
-                fetchRepositories()
-            } else {
-                showToast(data.error || 'Upload gagal', 'error')
-            }
-        } catch (err) {
+            const gdriveData = await uploadRes.json()
+
+            // 3. Finalize upload (Save to DB & set permissions)
+            const finRes = await fetch(`/api/organizations/${orgId}/repository`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'finalize',
+                    title,
+                    category: categoryId,
+                    event_id: eventId,
+                    fileId: gdriveData.id,
+                    webViewLink: gdriveData.webViewLink,
+                    webContentLink: gdriveData.webContentLink,
+                    targetFolderId: initData.targetFolderId,
+                    mimeType: file.type || 'application/octet-stream'
+                }),
+            })
+            const finData = await finRes.json()
+            if (!finData.success) throw new Error(finData.error || 'Gagal menyimpan data repository')
+
+            showToast('File berhasil diupload', 'success')
+            setTitle('')
+            setCategoryId('')
+            setEventId('')
+            setFile(null)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+            // Refresh list
+            fetchRepositories()
+        } catch (err: any) {
             console.error(err)
-            showToast('Terjadi kesalahan saat upload', 'error')
+            showToast(err.message || 'Terjadi kesalahan saat upload', 'error')
         } finally {
             setUploading(false)
         }
