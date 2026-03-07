@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { useOrganizations } from '@/hooks/useOrganizations'
+import { useEvents } from '@/hooks/useEvents'
 import BottomNavigation from '@/components/layout/BottomNavigation'
 import { showToast } from '@/hooks/useToast'
 import type { OrganizationRepository, CircleEvent } from '@/types'
@@ -27,6 +28,7 @@ export default function RepositoryManagementPage() {
     const router = useRouter()
     const { user } = useAuth()
     const { checkMembership } = useOrganizations()
+    const { fetchEvents: fetchOrgEvents } = useEvents()
     const orgId = params.id as string
 
     const [loading, setLoading] = useState(true)
@@ -82,13 +84,8 @@ export default function RepositoryManagementPage() {
 
     const fetchEvents = async () => {
         try {
-            const res = await fetch(`/api/organizations/${orgId}/events`)
-            if (res.ok) {
-                const data = await res.json()
-                if (data.success) {
-                    setEvents(data.data || [])
-                }
-            }
+            const evts = await fetchOrgEvents(orgId)
+            setEvents(evts || [])
         } catch (err) {
             console.error('Error fetching events:', err)
         }
