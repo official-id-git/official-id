@@ -1,18 +1,24 @@
 // Google Drive Integration Library
 // File: /src/lib/gdrive.ts
 // Uses Service Account for server-side access
+//
+// IMPORTANT: This lib is designed to work with a Shared Drive (Team Drive).
+// Service Accounts have NO personal storage quota, so files must be uploaded
+// into a Shared Drive where quota belongs to the organization.
+//
+// Setup:
+// 1. Create a Shared Drive in Google Drive
+// 2. Add the service account email as a Manager of the Shared Drive
+// 3. Set GDRIVE_FOLDER_ID to the Shared Drive ID (or a subfolder within it)
+// 4. All API calls use supportsAllDrives: true + includeItemsFromAllDrives: true
 
 import { google } from 'googleapis'
 import { Readable } from 'stream'
 
-// Changed from drive.file to drive scope:
-// - drive.file: only accesses files THIS app created (breaks when parent folder was created by another account)
-// - drive: full access to all files/folders shared with the service account
 const SCOPES = ['https://www.googleapis.com/auth/drive']
 
-// Target folder ID from the shared Google Drive folder
-// Strip any URL query params (e.g. "?hl=id") in case folder ID was copied from a Drive URL
-const GDRIVE_FOLDER_ID = (process.env.GDRIVE_FOLDER_ID || '1-3_ZVnntHCYC1SJVGjBxC51woawYB5kM').split('?')[0].trim()
+// Strip any URL query params in case folder ID was copied from a Drive URL
+const GDRIVE_FOLDER_ID = (process.env.GDRIVE_FOLDER_ID || '').split('?')[0].trim()
 
 function getAuth() {
     const credentials = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
@@ -40,18 +46,18 @@ function getDriveClient() {
 
 /**
  * Create a subfolder in the target GDrive folder.
- * Falls back to GDRIVE_FOLDER_ID or 'root' if specific parent isn't accessible.
+ * Supports Shared Drives via supportsAllDrives: true
  */
 export async function createGDriveFolder(folderName: string, parentFolderId?: string): Promise<string> {
     const drive = getDriveClient()
-    // Use explicit parent if provided, else the env-configured root (or fall back to 'root' Drive)
     const parent = parentFolderId || GDRIVE_FOLDER_ID
     console.log(`[GDrive] Creating folder "${folderName}" under parent: ${parent.slice(0, 12)}...`)
     const response = await drive.files.create({
+        supportsAllDrives: true,
         requestBody: {
             name: folderName,
             mimeType: 'application/vnd.google-apps.folder',
-            parents: [parentFolderId || GDRIVE_FOLDER_ID],
+            parents: [parent],
         },
         fields: 'id',
     })
@@ -60,26 +66,18 @@ export async function createGDriveFolder(folderName: string, parentFolderId?: st
         throw new Error('Failed to create folder in Google Drive')
     }
 
-    // Make folder accessible via link
-    await drive.permissions.create({
-        fileId: response.data.id,
-        requestBody: {
-            role: 'reader',
-            type: 'anyone',
-        },
-    })
-
     return response.data.id
 }
 
 /**
- * Find a subfolder by name in the target GDrive folder
+ * Find a subfolder by name in the target GDrive folder.
+ * Supports Shared Drives via includeItemsFromAllDrives: true
  */
 export async function findGDriveFolderByName(folderName: string, parentFolderId?: string): Promise<string | null> {
     const drive = getDriveClient()
     const parent = parentFolderId || GDRIVE_FOLDER_ID
 
-    // Prevent SQL injection-style string breaks in Google Drive query by escaping single quotes
+    // Escape single quotes in folder name for Drive query
     const safeFolderName = folderName.replace(/'/g, "\\'")
 
     try {
@@ -87,6 +85,8 @@ export async function findGDriveFolderByName(folderName: string, parentFolderId?
             q: `'${parent}' in parents and name = '${safeFolderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
             fields: 'files(id)',
             spaces: 'drive',
+            supportsAllDrives: true,
+            includeItemsFromAllDrives: true,
         })
 
         if (response.data.files && response.data.files.length > 0) {
@@ -95,8 +95,7 @@ export async function findGDriveFolderByName(folderName: string, parentFolderId?
 
         return null
     } catch (err: any) {
-        // If the parent folder itself isn't found (404), log and return null so caller can create it
-        if (err?.code === 404) {
+        if (err?.code === 404 || err?.status === 404) {
             console.warn(`[GDrive] findGDriveFolderByName: parent folder '${parent.slice(0, 8)}...' returned 404 — folder may not be shared with service account. Returning null.`)
             return null
         }
@@ -105,7 +104,8 @@ export async function findGDriveFolderByName(folderName: string, parentFolderId?
 }
 
 /**
- * Upload a file buffer to Google Drive
+ * Upload a file buffer to Google Drive (Shared Drive compatible).
+ * supportsAllDrives: true is required for Shared Drives.
  */
 export async function uploadToGDrive(
     fileBuffer: Buffer,
@@ -114,12 +114,13 @@ export async function uploadToGDrive(
     folderId?: string
 ): Promise<{ fileId: string; webViewLink: string; webContentLink: string }> {
     const drive = getDriveClient()
+    const targetFolder = folderId || GDRIVE_FOLDER_ID
 
-    console.log(`GDrive: Uploading file "${fileName}" (${fileBuffer.length} bytes) to folder ${folderId || GDRIVE_FOLDER_ID} using googleapis SDK`)
+    console.log(`GDrive: Uploading file "${fileName}" (${fileBuffer.length} bytes) to folder ${targetFolder}`)
 
     const fileMetadata = {
         name: fileName,
-        parents: [folderId || GDRIVE_FOLDER_ID]
+        parents: [targetFolder]
     }
 
     const media = {
@@ -129,37 +130,38 @@ export async function uploadToGDrive(
 
     try {
         const response = await drive.files.create({
+            supportsAllDrives: true,
             requestBody: fileMetadata,
             media: media,
-            fields: 'id',
-            supportsAllDrives: true // crucial for service accounts
+            fields: 'id,webViewLink,webContentLink',
         })
 
         if (!response.data.id) {
             throw new Error('Failed to get file ID from upload response')
         }
 
-        const fileId = response.data.id;
+        const fileId = response.data.id
 
-        // Make file accessible via link
-        await drive.permissions.create({
-            fileId: fileId,
-            requestBody: {
-                role: 'reader',
-                type: 'anyone',
-            },
-        })
-
-        // Fetch updated links after permission change
-        const fileInfo = await drive.files.get({
-            fileId: fileId,
-            fields: 'webViewLink,webContentLink',
-        })
+        // For Shared Drives, files are accessible to Drive members automatically.
+        // We still try to set public read permission, but silently ignore errors
+        // (Shared Drive admins may restrict sharing permissions).
+        try {
+            await drive.permissions.create({
+                fileId: fileId,
+                supportsAllDrives: true,
+                requestBody: {
+                    role: 'reader',
+                    type: 'anyone',
+                },
+            })
+        } catch (permErr: any) {
+            console.warn(`[GDrive] Could not set public read permission on file ${fileId}:`, permErr?.message)
+        }
 
         return {
             fileId: fileId,
-            webViewLink: fileInfo.data.webViewLink || `https://drive.google.com/file/d/${fileId}/view`,
-            webContentLink: fileInfo.data.webContentLink || `https://drive.google.com/uc?export=download&id=${fileId}`,
+            webViewLink: response.data.webViewLink || `https://drive.google.com/file/d/${fileId}/view`,
+            webContentLink: response.data.webContentLink || `https://drive.google.com/uc?export=download&id=${fileId}`,
         }
     } catch (error: any) {
         console.error("GDrive upload failed with error", error)
@@ -176,6 +178,7 @@ export async function getShareableLink(fileId: string): Promise<string> {
     const response = await drive.files.get({
         fileId,
         fields: 'webViewLink',
+        supportsAllDrives: true,
     })
 
     return response.data.webViewLink || `https://drive.google.com/file/d/${fileId}/view`
@@ -187,7 +190,7 @@ export async function getShareableLink(fileId: string): Promise<string> {
 export async function deleteFromGDrive(fileId: string): Promise<boolean> {
     try {
         const drive = getDriveClient()
-        await drive.files.delete({ fileId })
+        await drive.files.delete({ fileId, supportsAllDrives: true })
         return true
     } catch (error) {
         console.error('Error deleting file from GDrive:', error)
@@ -196,7 +199,7 @@ export async function deleteFromGDrive(fileId: string): Promise<boolean> {
 }
 
 /**
- * List files in a folder
+ * List files in a folder (Shared Drive compatible)
  */
 export async function listGDriveFiles(folderId?: string): Promise<Array<{
     id: string
@@ -210,6 +213,8 @@ export async function listGDriveFiles(folderId?: string): Promise<Array<{
         q: `'${folderId || GDRIVE_FOLDER_ID}' in parents and trashed = false`,
         fields: 'files(id,name,mimeType,webViewLink)',
         orderBy: 'createdTime desc',
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
     })
 
     return (response.data.files || []).map(f => ({
