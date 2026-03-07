@@ -177,10 +177,10 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                             top: `${scaleY(fieldPositions.photo.y)}px`,
                             width: `${scaleX(fieldPositions.photo.width)}px`,
                             height: `${scaleY(fieldPositions.photo.height)}px`,
-                            borderRadius: '50%',
+                            borderRadius: '18px',
                             overflow: 'hidden',
                             backgroundColor: '#f3f4f6',
-                            boxShadow: '0 0 0 4px rgba(255,255,255,0.8), 0 2px 12px rgba(0,0,0,0.18)',
+                            boxShadow: '0 0 0 3px rgba(255,255,255,0.85), 0 2px 14px rgba(0,0,0,0.2)',
                             zIndex: 5,
                         }}
                     >

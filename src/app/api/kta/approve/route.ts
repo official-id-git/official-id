@@ -160,27 +160,7 @@ export async function POST(request: NextRequest) {
             throw new Error(`Gagal mengupload file KTA ke server: ${uploadError?.message || 'Unknown error'}`)
         }
 
-        // Upload to Google Drive for Archive
-        try {
-            const { uploadToGDrive, findGDriveFolderByName, createGDriveFolder } = await import('@/lib/gdrive');
-            const targetFolderName = `KTA_${circleName.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
-
-            // Create or Find GDrive Folder
-            let folderId = await findGDriveFolderByName(targetFolderName);
-            if (!folderId) {
-                folderId = await createGDriveFolder(targetFolderName);
-            }
-
-            const safeFileNamePDF = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}_pdf.pdf`;
-            const safeFileNameImage = `${ktaNumberString}_${finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')}_image.png`;
-
-            console.log(`KTA Approve: Backing up to GDrive folder ${targetFolderName}...`);
-            await uploadToGDrive(pdfBuffer, safeFileNamePDF, 'application/pdf', folderId);
-            await uploadToGDrive(ktaImageBuffer, safeFileNameImage, 'image/png', folderId);
-            console.log(`KTA Approve: GDrive backup successful.`);
-        } catch (gdriveError: any) {
-            console.error('KTA Approve: GDrive backup failed (Non-fatal):', gdriveError?.message || gdriveError);
-        }
+        // NOTE: GDrive backup happens AFTER DB update below (see step 7)
 
         // 6. Update Database using admin client (bypassing RLS)
         // Mark KTA number as used
@@ -220,11 +200,41 @@ export async function POST(request: NextRequest) {
             try {
                 await adminSupabase
                     .from('kta_applications')
-                    .update({ gdrive_image_url: cloudinaryImageResult.secure_url }) // Cloudinary Image link
+                    .update({ gdrive_image_url: cloudinaryImageResult.secure_url })
                     .eq('id', applicationId)
             } catch (e) {
                 console.warn('Could not update gdrive_image_url, migration 037 may not be applied:', e)
             }
+        }
+
+        // 7. GDrive backup (non-fatal) — happens AFTER DB is updated with Cloudinary URLs
+        // Folder: KTA_{CircleName}/{KTA_Number}_{FullName}/
+        //   ├── KTA_{number}_image.png
+        //   └── KTA_{number}_pdf.pdf
+        try {
+            const { uploadToGDrive, findGDriveFolderByName, createGDriveFolder } = await import('@/lib/gdrive')
+            const safeName = finalData.fullName.replace(/[^a-zA-Z0-9 ]/g, '_')
+            const safeCircle = circleName.replace(/[^a-zA-Z0-9_-]/g, '_')
+            const circleFolderName = `KTA_${safeCircle}`
+            const memberFolderName = `${ktaNumberString}_${safeName}`
+
+            // 1. Get/create circle-level folder
+            let circleFolderId = await findGDriveFolderByName(circleFolderName)
+            if (!circleFolderId) circleFolderId = await createGDriveFolder(circleFolderName)
+
+            // 2. Get/create member-level subfolder inside circle folder
+            let memberFolderId = await findGDriveFolderByName(memberFolderName, circleFolderId)
+            if (!memberFolderId) memberFolderId = await createGDriveFolder(memberFolderName, circleFolderId)
+
+            const imageFileName = `KTA_${ktaNumberString}_image.png`
+            const pdfFileName = `KTA_${ktaNumberString}_pdf.pdf`
+
+            console.log(`KTA Approve: Backing up to GDrive ${circleFolderName}/${memberFolderName}/...`)
+            await uploadToGDrive(ktaImageBuffer, imageFileName, 'image/png', memberFolderId)
+            await uploadToGDrive(pdfBuffer, pdfFileName, 'application/pdf', memberFolderId)
+            console.log(`KTA Approve: GDrive backup successful.`)
+        } catch (gdriveError: any) {
+            console.error('KTA Approve: GDrive backup failed (Non-fatal):', gdriveError?.message || gdriveError)
         }
 
         // Update user's full_name on the users table (safe columns only)

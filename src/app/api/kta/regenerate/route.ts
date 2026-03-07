@@ -123,27 +123,7 @@ export async function POST(request: NextRequest) {
             throw new Error(`Gagal mengupload file KTA ke server: ${uploadError?.message || 'Unknown error'}`)
         }
 
-        // Upload to Google Drive for Archive
-        try {
-            const { uploadToGDrive, findGDriveFolderByName, createGDriveFolder } = await import('@/lib/gdrive');
-            const targetFolderName = `KTA_${circleName.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
-
-            // Create or Find GDrive Folder
-            let folderId = await findGDriveFolderByName(targetFolderName);
-            if (!folderId) {
-                folderId = await createGDriveFolder(targetFolderName);
-            }
-
-            const safeFileNamePDF = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}_pdf.pdf`;
-            const safeFileNameImage = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}_image.png`;
-
-            console.log(`KTA Regenerate: Backing up to GDrive folder ${targetFolderName}...`);
-            await uploadToGDrive(pdfBuffer, safeFileNamePDF, 'application/pdf', folderId);
-            await uploadToGDrive(ktaImageBuffer, safeFileNameImage, 'image/png', folderId);
-            console.log(`KTA Regenerate: GDrive backup successful.`);
-        } catch (gdriveError: any) {
-            console.error('KTA Regenerate: GDrive backup failed (Non-fatal):', gdriveError?.message || gdriveError);
-        }
+        // NOTE: GDrive backup happens AFTER DB update below
 
         // 4. Update Database
         const { data: updatedApp, error: updateError } = await adminSupabase
@@ -163,11 +143,43 @@ export async function POST(request: NextRequest) {
             try {
                 await adminSupabase
                     .from('kta_applications')
-                    .update({ gdrive_image_url: cloudinaryImageResult.secure_url }) // Cloudinary secure Image URL
+                    .update({ gdrive_image_url: cloudinaryImageResult.secure_url })
                     .eq('id', applicationId)
             } catch (e) {
                 // Ignore if migration 037 is not fully applied
             }
+        }
+
+        // GDrive backup (non-fatal) — happens AFTER DB is updated with Cloudinary URLs
+        // Folder: KTA_{CircleName}/{KTA_Number}_{FullName}/
+        //   ├── KTA_{number}_image.png
+        //   └── KTA_{number}_pdf.pdf
+        try {
+            const { uploadToGDrive, findGDriveFolderByName, createGDriveFolder } = await import('@/lib/gdrive')
+            // Use the freshest name from DB (application.full_name was already updated in approve, or is from DB)
+            const memberName = application.full_name
+            const safeName = memberName.replace(/[^a-zA-Z0-9 ]/g, '_')
+            const safeCircle = circleName.replace(/[^a-zA-Z0-9_-]/g, '_')
+            const circleFolderName = `KTA_${safeCircle}`
+            const memberFolderName = `${ktaNumberString}_${safeName}`
+
+            // 1. Get/create circle-level folder
+            let circleFolderId = await findGDriveFolderByName(circleFolderName)
+            if (!circleFolderId) circleFolderId = await createGDriveFolder(circleFolderName)
+
+            // 2. Get/create member-level subfolder inside the circle folder
+            let memberFolderId = await findGDriveFolderByName(memberFolderName, circleFolderId)
+            if (!memberFolderId) memberFolderId = await createGDriveFolder(memberFolderName, circleFolderId)
+
+            const imageFileName = `KTA_${ktaNumberString}_image.png`
+            const pdfFileName = `KTA_${ktaNumberString}_pdf.pdf`
+
+            console.log(`KTA Regenerate: Backing up to GDrive ${circleFolderName}/${memberFolderName}/...`)
+            await uploadToGDrive(ktaImageBuffer, imageFileName, 'image/png', memberFolderId)
+            await uploadToGDrive(pdfBuffer, pdfFileName, 'application/pdf', memberFolderId)
+            console.log(`KTA Regenerate: GDrive backup successful.`)
+        } catch (gdriveError: any) {
+            console.error('KTA Regenerate: GDrive backup failed (Non-fatal):', gdriveError?.message || gdriveError)
         }
 
         return NextResponse.json({ success: true, data: updatedApp })
