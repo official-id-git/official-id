@@ -1013,108 +1013,150 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                     </div>
                 )}
 
-                {/* Repository Section - Only for Approved Members & Admins */}
-                {isMember && repositories.length > 0 && (
-                    <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden mb-6">
-                        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-6 py-5 flex items-center gap-4">
-                            <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
-                                <FolderTree className="w-8 h-8 text-white" />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                                    Repositori Circle
-                                </h2>
-                                <p className="text-blue-100 mt-1 text-sm font-medium">
-                                    Materi, Dokumentasi, E-Certificate, dan Rekaman Event eksklusif member
-                                </p>
-                            </div>
+                {/* Repository Section - Visible to all, but content restricted to Members */}
+                <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden mb-6">
+                    <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-6 py-5 flex items-center gap-4">
+                        <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
+                            <FolderTree className="w-8 h-8 text-white" />
                         </div>
-
-                        <div className="p-6">
-                            {reposLoading ? (
-                                <div className="py-12 flex justify-center">
-                                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-                                </div>
-                            ) : (
-                                <div className="space-y-8">
-                                    {/* Group Repositories by Event */}
-                                    {Array.from(new Set(repositories.map(r => r.event_id))).map(eventId => {
-                                        const eventRepos = repositories.filter(r => r.event_id === eventId);
-                                        // Attempt to get event details from circleEvents if it's an upcoming event, 
-                                        // otherwise it might be a past event not in `circleEvents`.
-                                        const eventInfo = circleEvents.find(e => e.id === eventId);
-                                        const eventTitle = eventInfo ? eventInfo.title : (eventRepos.length > 0 && eventRepos[0].event_id ? `Event ${eventRepos[0].event_id.split('-')[0]}` : 'General / Tidak Ada Event');
-
-                                        // Group by Category within Event
-                                        const categories = ['Materi', 'e-Certificate', 'Dokumentasi', 'Video', 'Lainnya'];
-
-                                        return (
-                                            <div key={eventId || 'general'} className="bg-gray-50 rounded-2xl border border-gray-200 p-5 shadow-sm">
-                                                <div className="flex items-center gap-3 mb-5 border-b border-gray-200 pb-3">
-                                                    <div className="bg-blue-100 p-2 rounded-lg">
-                                                        <Folder className="w-5 h-5 text-blue-600" />
-                                                    </div>
-                                                    <h3 className="text-lg font-bold text-gray-900">{eventTitle}</h3>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                                    {categories.map(category => {
-                                                        const catRepos = eventRepos.filter(r => {
-                                                            if (category === 'Lainnya') return !categories.slice(0, -1).includes(r.category || '');
-                                                            return r.category === category;
-                                                        });
-
-                                                        if (catRepos.length === 0) return null;
-
-                                                        let CatIcon = FileText;
-                                                        let catBadgeClass = "bg-gray-100 text-gray-700";
-
-                                                        if (category === 'Video') { CatIcon = Film; catBadgeClass = "bg-red-100 text-red-700 border-red-200"; }
-                                                        if (category === 'e-Certificate') { CatIcon = FileBox; catBadgeClass = "bg-amber-100 text-amber-700 border-amber-200"; }
-                                                        if (category === 'Materi') { CatIcon = FileText; catBadgeClass = "bg-blue-100 text-blue-700 border-blue-200"; }
-                                                        if (category === 'Dokumentasi') { CatIcon = Folder; catBadgeClass = "bg-purple-100 text-purple-700 border-purple-200"; }
-
-                                                        return (
-                                                            <div key={category} className="bg-white border text-sm border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                                                                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-semibold mb-3 ${catBadgeClass}`}>
-                                                                    <CatIcon className="w-3.5 h-3.5" />
-                                                                    {category}
-                                                                </div>
-
-                                                                <ul className="space-y-3">
-                                                                    {catRepos.map(repo => (
-                                                                        <li key={repo.id} className="flex flex-col gap-2 p-2.5 rounded-lg bg-gray-50 border border-gray-100 hover:border-gray-200 transition-colors group">
-                                                                            <div className="flex items-start gap-2">
-                                                                                <FileDown className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                                                                                <span className="font-medium text-gray-700 group-hover:text-blue-600 transition-colors line-clamp-2" title={repo.title}>{repo.title}</span>
-                                                                            </div>
-                                                                            <div className="flex gap-2 w-full mt-1">
-                                                                                {repo.gdrive_web_content_link && (
-                                                                                    <a href={repo.gdrive_web_content_link} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-md transition-colors border border-blue-100">
-                                                                                        <Download className="w-3.5 h-3.5" /> Download
-                                                                                    </a>
-                                                                                )}
-                                                                                {repo.gdrive_web_view_link && (
-                                                                                    <a href={repo.gdrive_web_view_link} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-md transition-colors border border-gray-200">
-                                                                                        <ExternalLink className="w-3.5 h-3.5" /> Lihat
-                                                                                    </a>
-                                                                                )}
-                                                                            </div>
-                                                                        </li>
-                                                                    ))}
-                                                                </ul>
-                                                            </div>
-                                                        )
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            )}
+                        <div>
+                            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                                Repositori Circle
+                            </h2>
+                            <p className="text-blue-100 mt-1 text-sm font-medium">
+                                Materi, Dokumentasi, E-Certificate, dan Rekaman Event eksklusif member
+                            </p>
                         </div>
                     </div>
-                )}
+
+                    <div className="p-6">
+                        {!user ? (
+                            <div className="text-center py-10">
+                                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
+                                    <FolderTree className="w-8 h-8 text-blue-500" />
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">Akses Terbatas</h3>
+                                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                                    Repositori hanya dapat diakses oleh pengguna yang memiliki akun dan tergabung dalam Circle ini. Silakan daftar atau login untuk mengakses.
+                                </p>
+                                <Link
+                                    href={`/register?redirect=/o/${circleUsername}`}
+                                    className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                                >
+                                    Login / Daftar Akun Official ID
+                                </Link>
+                            </div>
+                        ) : !isMember ? (
+                            <div className="text-center py-10">
+                                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
+                                    <FolderTree className="w-8 h-8 text-blue-500" />
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">Eksklusif Anggota</h3>
+                                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                                    Repositori eksklusif untuk Anggota Circle. Silakan bergabung dengan Circle ini untuk melihat dan mengunduh materi.
+                                </p>
+                                {!isPending && org && org.is_public && (
+                                    <button
+                                        onClick={handleJoin}
+                                        disabled={joining}
+                                        className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50"
+                                    >
+                                        {joining ? 'Memproses...' : 'Bergabung Sekarang'}
+                                    </button>
+                                )}
+                            </div>
+                        ) : reposLoading ? (
+                            <div className="py-12 flex justify-center">
+                                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                            </div>
+                        ) : repositories.length === 0 ? (
+                            <div className="text-center py-10">
+                                <div className="w-16 h-16 border-2 border-dashed border-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Folder className="w-8 h-8 text-gray-300" />
+                                </div>
+                                <p className="text-gray-500 font-medium">Belum ada file di Repositori Circle.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-8">
+                                {/* Group Repositories by Event */}
+                                {Array.from(new Set(repositories.map(r => r.event_id))).map(eventId => {
+                                    const eventRepos = repositories.filter(r => r.event_id === eventId);
+                                    const eventInfo = circleEvents.find(e => e.id === eventId);
+
+                                    // Use joined event title from DB if available, fallback to circleEvents, then fallback to ID
+                                    const eventTitle = eventInfo?.title ||
+                                        (eventRepos.length > 0 && (eventRepos[0] as any).event?.title) ||
+                                        (eventId ? `Event ${eventId.split('-')[0]}` : 'General / Tidak Ada Event');
+
+                                    // Group by Category within Event
+                                    const categories = ['Materi', 'e-Certificate', 'Dokumentasi', 'Video', 'Lainnya'];
+
+                                    return (
+                                        <div key={eventId || 'general'} className="bg-gray-50 rounded-2xl border border-gray-200 p-5 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-5 border-b border-gray-200 pb-3">
+                                                <div className="bg-blue-100 p-2 rounded-lg">
+                                                    <Folder className="w-5 h-5 text-blue-600" />
+                                                </div>
+                                                <h3 className="text-lg font-bold text-gray-900">{eventTitle}</h3>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                {categories.map(category => {
+                                                    const catRepos = eventRepos.filter(r => {
+                                                        if (category === 'Lainnya') return !categories.slice(0, -1).includes(r.category || '');
+                                                        return r.category === category;
+                                                    });
+
+                                                    if (catRepos.length === 0) return null;
+
+                                                    let CatIcon = FileText;
+                                                    let catBadgeClass = "bg-gray-100 text-gray-700";
+
+                                                    if (category === 'Video') { CatIcon = Film; catBadgeClass = "bg-red-100 text-red-700 border-red-200"; }
+                                                    if (category === 'e-Certificate') { CatIcon = FileBox; catBadgeClass = "bg-amber-100 text-amber-700 border-amber-200"; }
+                                                    if (category === 'Materi') { CatIcon = FileText; catBadgeClass = "bg-blue-100 text-blue-700 border-blue-200"; }
+                                                    if (category === 'Dokumentasi') { CatIcon = Folder; catBadgeClass = "bg-purple-100 text-purple-700 border-purple-200"; }
+
+                                                    return (
+                                                        <div key={category} className="bg-white border text-sm border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+                                                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-semibold mb-3 ${catBadgeClass}`}>
+                                                                <CatIcon className="w-3.5 h-3.5" />
+                                                                {category}
+                                                            </div>
+
+                                                            <ul className="space-y-3">
+                                                                {catRepos.map(repo => (
+                                                                    <li key={repo.id} className="flex flex-col gap-2 p-2.5 rounded-lg bg-gray-50 border border-gray-100 hover:border-gray-200 transition-colors group">
+                                                                        <div className="flex items-start gap-2">
+                                                                            <FileDown className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                                                                            <span className="font-medium text-gray-700 group-hover:text-blue-600 transition-colors line-clamp-2" title={repo.title}>{repo.title}</span>
+                                                                        </div>
+                                                                        <div className="flex gap-2 w-full mt-1">
+                                                                            {repo.gdrive_web_content_link && (
+                                                                                <a href={repo.gdrive_web_content_link} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-md transition-colors border border-blue-100">
+                                                                                    <Download className="w-3.5 h-3.5" /> Download
+                                                                                </a>
+                                                                            )}
+                                                                            {repo.gdrive_web_view_link && (
+                                                                                <a href={repo.gdrive_web_view_link} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-md transition-colors border border-gray-200">
+                                                                                    <ExternalLink className="w-3.5 h-3.5" /> Lihat
+                                                                                </a>
+                                                                            )}
+                                                                        </div>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
 
                 {/* KTA Section - For approved members */}
                 {org && (

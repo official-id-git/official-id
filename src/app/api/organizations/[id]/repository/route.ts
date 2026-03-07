@@ -29,7 +29,7 @@ export async function GET(
         // We let RLS handle the actual data filtering, but we can return early if they are not a member
         const { data: repositories, error } = await supabase
             .from('organization_repositories')
-            .select('*')
+            .select('*, event:events(title)')
             .eq('organization_id', id)
             .order('created_at', { ascending: false })
 
