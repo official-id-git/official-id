@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useOrganizations } from '@/hooks/useOrganizations'
 import { useEvents } from '@/hooks/useEvents'
+import { showToast } from '@/hooks/useToast'
 import { generateQRCode, downloadQRCode } from '@/lib/qrcode'
 import type { CircleEvent, CircleEventInsert, EventRegistration } from '@/types'
 import BottomNavigation from '@/components/layout/BottomNavigation'
@@ -215,6 +216,24 @@ export default function EventManagementPage() {
             onConfirm: async () => {
                 const success = await deleteEvent(eventId)
                 if (success) await loadEvents()
+            }
+        })
+    }
+
+    const handleCloseEvent = async (eventId: string, title: string) => {
+        setConfirmConfig({
+            isOpen: true,
+            title: 'Tutup Pendaftaran',
+            message: `Yakin ingin menutup pendaftaran untuk event "${title}"? Event ini akan dipindahkan ke tab "Event Selesai" dan tidak bisa menerima pendaftar lagi.`,
+            type: 'confirm',
+            confirmText: 'Tutup Pendaftaran',
+            confirmColor: 'red',
+            onConfirm: async () => {
+                const success = await updateEvent(eventId, { status: 'past' })
+                if (success) {
+                    showToast('Pendaftaran event berhasil ditutup', 'success')
+                    await loadEvents()
+                }
             }
         })
     }
@@ -681,6 +700,17 @@ export default function EventManagementPage() {
                                                         </svg>
                                                         Edit
                                                     </button>
+                                                    {event.status === 'upcoming' && (
+                                                        <button
+                                                            onClick={() => handleCloseEvent(event.id, event.title)}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors text-sm font-medium"
+                                                            title="Tutup Pendaftaran">
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                                            </svg>
+                                                            Tutup Pendaftaran
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => handleDelete(event.id, event.title)}
                                                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
