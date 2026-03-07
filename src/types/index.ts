@@ -23,6 +23,11 @@ export type OrganizationMember = Database['public']['Tables']['organization_memb
 export type OrganizationMemberInsert = Database['public']['Tables']['organization_members']['Insert']
 export type OrganizationMemberUpdate = Database['public']['Tables']['organization_members']['Update']
 
+// Organization repository type
+export type OrganizationRepository = Database['public']['Tables']['organization_repositories']['Row']
+export type OrganizationRepositoryInsert = Database['public']['Tables']['organization_repositories']['Insert']
+export type OrganizationRepositoryUpdate = Database['public']['Tables']['organization_repositories']['Update']
+
 // Organization request type
 export interface OrganizationRequest {
   id: string

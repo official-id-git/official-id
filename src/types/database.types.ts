@@ -528,6 +528,56 @@ export type Database = {
         }
         Relationships: []
       }
+      organization_repositories: {
+        Row: {
+          id: string
+          organization_id: string
+          title: string
+          file_type: string
+          gdrive_file_id: string
+          gdrive_folder_id: string | null
+          gdrive_web_view_link: string | null
+          gdrive_web_content_link: string | null
+          download_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          title: string
+          file_type: string
+          gdrive_file_id: string
+          gdrive_folder_id?: string | null
+          gdrive_web_view_link?: string | null
+          gdrive_web_content_link?: string | null
+          download_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          title?: string
+          file_type?: string
+          gdrive_file_id?: string
+          gdrive_folder_id?: string | null
+          gdrive_web_view_link?: string | null
+          gdrive_web_content_link?: string | null
+          download_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_repositories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       circle_broadcasts: {
         Row: {
           id: string

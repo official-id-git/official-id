@@ -11,6 +11,8 @@ import SendMessageModal from '@/components/messages/SendMessageModal'
 import KTASection from '@/components/kta/KTASection'
 import type { Organization, OrganizationMember, CircleEvent } from '@/types'
 import { showToast } from '@/hooks/useToast'
+import { FileDown, FileText, Film, FileBox, ExternalLink, Download } from 'lucide-react'
+import type { OrganizationRepository } from '@/types'
 
 interface PublicCircleClientProps {
     circleUsername: string
@@ -96,6 +98,10 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
     const [promptPaymentFile, setPromptPaymentFile] = useState<File | null>(null)
     const [promptRegSubmitting, setPromptRegSubmitting] = useState(false)
     const [promptRegSuccess, setPromptRegSuccess] = useState(false)
+
+    // Repository state
+    const [repositories, setRepositories] = useState<OrganizationRepository[]>([])
+    const [reposLoading, setReposLoading] = useState(false)
 
     // Filtered and sorted members
     const filteredMembers = useMemo(() => {
@@ -316,6 +322,24 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                 const membership = await checkMembership(orgData.id)
                 setMembershipStatus(membership.status)
                 setIsOwner(membership.isOwner)
+
+                // If member, fetch repositories
+                if (membership.status === 'APPROVED' || membership.isOwner) {
+                    setReposLoading(true)
+                    try {
+                        const repoRes = await fetch(`/api/organizations/${orgData.id}/repository`)
+                        if (repoRes.ok) {
+                            const repoData = await repoRes.json()
+                            if (repoData.success) {
+                                setRepositories(repoData.data)
+                            }
+                        }
+                    } catch (repoErr) {
+                        console.error('Failed to load repositories', repoErr)
+                    } finally {
+                        setReposLoading(false)
+                    }
+                }
             }
         } catch (err: any) {
             console.error('Error loading circle:', err)

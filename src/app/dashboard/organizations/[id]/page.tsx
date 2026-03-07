@@ -366,6 +366,29 @@ export default function OrganizationDetailPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </Link>
+
+          {/* Repository Management Button */}
+          <Link
+            href={`/dashboard/organizations/${org.id}/repository`}
+            className="group relative flex items-center gap-4 p-4 bg-gradient-to-r from-teal-500 via-emerald-500 to-green-500 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+            <div className="relative flex-shrink-0">
+              <div className="absolute inset-0 bg-white/30 rounded-xl animate-ping" style={{ animationDuration: '2s' }} />
+              <div className="relative w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-white group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 7v10c0 2.21 3.58 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.58 4 8 4s8-1.79 8-4M4 7c0-2.21 3.58-4 8-4s8 1.79 8 4m0 5c0 2.21-3.58 4-8 4s-8-1.79-8-4" />
+                </svg>
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-white font-bold text-lg">Repository Management</h3>
+              <p className="text-white/80 text-sm">Kelola file dan dokumen rahasia khusus member</p>
+            </div>
+            <svg className="w-6 h-6 text-white/80 group-hover:translate-x-1 transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
         </div>
       )}
 
