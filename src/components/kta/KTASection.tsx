@@ -195,8 +195,30 @@ export default function KTASection({ organizationId, organizationName, isMember 
         }
     }
 
-    // Don't show section if no template configured
-    if (!hasTemplate) return null
+    // Don't show full section if no template configured
+    if (!hasTemplate) {
+        return (
+            <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
+                <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 p-6">
+                    <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0" />
+                        </svg>
+                        Kartu Tanda Anggota (KTA)
+                    </h2>
+                </div>
+                <div className="p-8 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <p className="text-gray-600 font-medium">Layanan Belum Tersedia</p>
+                    <p className="text-sm text-gray-500 mt-2">Admin circle belum mengaktifkan layanan KTA untuk circle ini.</p>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
@@ -243,10 +265,17 @@ export default function KTASection({ organizationId, organizationName, isMember 
                                 </svg>
                             </div>
                             <div className="flex-1">
-                                <p className="font-semibold text-green-800">KTA Anda sudah terbit!</p>
-                                <p className="text-sm text-green-600">
-                                    No. KTA: <strong className="font-mono tracking-wide">{myKTA.kta_numbers?.kta_number || '-'}</strong>
-                                </p>
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                    <div>
+                                        <p className="font-semibold text-green-800">KTA Anda sudah terbit!</p>
+                                        <p className="text-sm text-green-600">
+                                            No. KTA: <strong className="font-mono tracking-wide">{myKTA.kta_numbers?.kta_number || '-'}</strong>
+                                        </p>
+                                    </div>
+                                    <div className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 max-w-xs">
+                                        Untuk melakukan perubahan data, harap hubungi Admin Circle.
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
