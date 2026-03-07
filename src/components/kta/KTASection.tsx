@@ -422,9 +422,10 @@ export default function KTASection({ organizationId, organizationName, isMember 
 
                 {/* KTA Application Form Modal */}
                 {showForm && (
-                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                        <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl relative">
-                            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm sm:p-6">
+                        <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl relative">
+                            {/* Sticky Header */}
+                            <div className="flex-none bg-white border-b border-gray-100 rounded-t-2xl px-6 py-4 flex items-center justify-between z-10">
                                 <h3 className="font-bold text-lg text-gray-900">Form Pengajuan KTA</h3>
                                 <button onClick={() => setShowForm(false)} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -433,8 +434,9 @@ export default function KTASection({ organizationId, organizationName, isMember 
                                 </button>
                             </div>
 
-                            <div className="p-6">
-                                <form onSubmit={handleSubmit} className="space-y-4">
+                            {/* Scrollable Form Body */}
+                            <div className="flex-1 overflow-y-auto p-6">
+                                <form id="kta-form" onSubmit={handleSubmit} className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap <span className="text-red-500">*</span></label>
                                         <input
@@ -573,32 +575,37 @@ export default function KTASection({ organizationId, organizationName, isMember 
                                         </div>
                                     </div>
 
-                                    {/* Submit Buttons */}
-                                    <div className="flex gap-3 pt-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowForm(false)}
-                                            className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
-                                        >
-                                            Batal
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            disabled={formSubmitting || loading || !formData.photoUrl}
-                                            className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                                        >
-                                            {formSubmitting ? (
-                                                <>
-                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                                    Generating KTA...
-                                                </>
-                                            ) : (
-                                                'Ajukan KTA'
-                                            )}
-                                        </button>
-                                    </div>
                                 </form>
                             </div>
+
+                            {/* Sticky Footer */}
+                            <div className="flex-none bg-white border-t border-gray-100 rounded-b-2xl p-6">
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowForm(false)}
+                                        className="w-full sm:flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors order-2 sm:order-1"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        form="kta-form"
+                                        type="submit"
+                                        disabled={formSubmitting || loading || !formData.photoUrl}
+                                        className="w-full sm:flex-1 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2 order-1 sm:order-2"
+                                    >
+                                        {formSubmitting ? (
+                                            <>
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                Memproses...
+                                            </>
+                                        ) : (
+                                            'Ajukan KTA'
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 )}

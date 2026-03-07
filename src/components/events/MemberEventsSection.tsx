@@ -183,8 +183,8 @@ export default function MemberEventsSection({ organizationId, organizationName }
                                             onClick={() => openRegModal(event.id)}
                                             disabled={isFull}
                                             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${isFull
-                                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                    : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
                                                 }`}
                                         >
                                             {isFull ? 'Penuh' : 'Daftar'}
@@ -199,9 +199,10 @@ export default function MemberEventsSection({ organizationId, organizationName }
 
             {/* Registration Modal */}
             {showRegModal && selectedEventId && user && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-                        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm sm:p-6">
+                    <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl relative">
+                        {/* Sticky Header */}
+                        <div className="flex-none bg-white border-b border-gray-100 rounded-t-2xl px-6 py-4 flex items-center justify-between z-10">
                             <h3 className="font-bold text-lg text-gray-900">Daftar Event</h3>
                             <button onClick={closeRegModal} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -210,7 +211,8 @@ export default function MemberEventsSection({ organizationId, organizationName }
                             </button>
                         </div>
 
-                        <div className="p-6">
+                        {/* Scrollable Form Body */}
+                        <div className="flex-1 overflow-y-auto p-6">
                             {regSuccess ? (
                                 <div className="text-center py-6">
                                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -220,15 +222,9 @@ export default function MemberEventsSection({ organizationId, organizationName }
                                     </div>
                                     <h4 className="text-xl font-bold text-gray-900 mb-2">Pendaftaran Berhasil!</h4>
                                     <p className="text-gray-600 mb-6 text-sm">Status pendaftaran Anda sedang diproses. Silakan cek menu Tiket Event berkala.</p>
-                                    <button
-                                        onClick={closeRegModal}
-                                        className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors"
-                                    >
-                                        Tutup
-                                    </button>
                                 </div>
                             ) : (
-                                <form onSubmit={(e) => { e.preventDefault(); handleRegister(selectedEventId) }} className="space-y-4">
+                                <form id="event-reg-form" onSubmit={(e) => { e.preventDefault(); handleRegister(selectedEventId) }} className="space-y-4">
                                     <div className="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-100">
                                         <p className="text-xs text-gray-500 mb-1">Mendaftar sebagai:</p>
                                         <p className="font-semibold text-gray-900">{user.full_name}</p>
@@ -289,18 +285,40 @@ export default function MemberEventsSection({ organizationId, organizationName }
                                         />
                                     </div>
 
-                                    <div className="pt-4">
-                                        <button
-                                            type="submit"
-                                            disabled={regSubmitting}
-                                            className="w-full py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-                                        >
-                                            {regSubmitting ? 'Memproses...' : 'Daftar Sekarang'}
-                                        </button>
-                                    </div>
                                 </form>
                             )}
                         </div>
+
+                        {/* Sticky Footer */}
+                        <div className="flex-none bg-white border-t border-gray-100 rounded-b-2xl p-6">
+                            {regSuccess ? (
+                                <button
+                                    onClick={closeRegModal}
+                                    className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors"
+                                >
+                                    Tutup
+                                </button>
+                            ) : (
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={closeRegModal}
+                                        className="w-full sm:flex-1 py-3 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors order-2 sm:order-1"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        form="event-reg-form"
+                                        type="submit"
+                                        disabled={regSubmitting}
+                                        className="w-full sm:flex-1 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors order-1 sm:order-2"
+                                    >
+                                        {regSubmitting ? 'Memproses...' : 'Daftar Sekarang'}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
                     </div>
                 </div>
             )}

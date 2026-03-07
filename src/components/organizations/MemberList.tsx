@@ -50,6 +50,8 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
   const [loadingCards, setLoadingCards] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
   const supabase = createClient()
 
   // Message modal state
@@ -141,6 +143,7 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
     const cardMatch = businessCards.some(card =>
       card.company?.toLowerCase().includes(query) ||
       card.city?.toLowerCase().includes(query) ||
+      card.job_title?.toLowerCase().includes(query) ||
       (card.business_description && card.business_description.toLowerCase().includes(query))
     )
 
@@ -160,8 +163,21 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
 
   // Derived lists from filtered members
   const pendingMembers = filteredMembersList.filter(m => m.status === 'PENDING')
-  const approvedMembers = filteredMembersList.filter(m => m.status === 'APPROVED')
+  const allApprovedMembers = filteredMembersList.filter(m => m.status === 'APPROVED')
   const rejectedMembers = filteredMembersList.filter(m => m.status === 'REJECTED')
+
+  // Pagination logic for approved members
+  const totalPages = Math.ceil(allApprovedMembers.length / itemsPerPage)
+
+  // Ensure current page is valid when filtering changes
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1)
+    }
+  }, [allApprovedMembers.length, totalPages, currentPage])
+
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const approvedMembers = allApprovedMembers.slice(startIndex, startIndex + itemsPerPage)
 
   // Avatar component with fallback
   const Avatar = ({ user, size = 'md' }: { user?: MemberWithUser['users'], size?: 'sm' | 'md' | 'lg' }) => {
@@ -279,7 +295,10 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
               onChange={async (e) => {
                 const val = e.target.value
                 const isValid = await validateInput(val)
-                if (isValid) setSearchQuery(val)
+                if (isValid) {
+                  setSearchQuery(val)
+                  setCurrentPage(1)
+                }
               }}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -288,7 +307,10 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
           {/* Sort Dropdown */}
           <select
             value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+            onChange={(e) => {
+              setSortOrder(e.target.value as 'asc' | 'desc')
+              setCurrentPage(1)
+            }}
             className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white w-full sm:w-auto"
           >
             <option value="asc">Nama: A - Z</option>
@@ -348,9 +370,9 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-          Anggota ({approvedMembers.length})
+          Anggota ({allApprovedMembers.length})
         </h3>
-        {approvedMembers.length === 0 ? (
+        {allApprovedMembers.length === 0 ? (
           <div className="text-center py-8">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -434,6 +456,29 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
                 </div>
               )
             })}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Sebelumnya
+            </button>
+            <div className="text-sm text-gray-600">
+              Halaman <span className="font-medium text-gray-900">{currentPage}</span> dari <span className="font-medium text-gray-900">{totalPages}</span>
+            </div>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Selanjutnya
+            </button>
           </div>
         )}
       </div>

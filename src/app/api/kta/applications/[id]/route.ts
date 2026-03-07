@@ -3,7 +3,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 export async function PATCH(
     request: NextRequest,
-    context: { params: Promise<{ id: string }> } | { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
         const params = await context.params
