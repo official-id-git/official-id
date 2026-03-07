@@ -320,11 +320,13 @@ export default function KTAManagementPage() {
     const [generatorUserData, setGeneratorUserData] = useState<any>(null)
 
     // Helper to setup generator and wait for it
-    // dataOverride: optional explicit data to use instead of reading from editFormData (use for regenerate with fresh DB data)
+    // dataOverride: explicit data from fresh DB fetch for regenerate
+    // ignoreEditForm: when true (regenerate flow), completely bypass stale editFormData state
     const generateClientFiles = async (
         app: KTAApplication,
         ktaNum: string,
-        dataOverride?: { fullName?: string; photoUrl?: string }
+        dataOverride?: { fullName?: string; photoUrl?: string },
+        ignoreEditForm?: boolean
     ): Promise<{ base64Image: string, base64Pdf: string } | null> => {
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://official.id'
         const verificationUrl = `${baseUrl}/o/${org.username || orgId}/verify/${app.verification_token}`
@@ -337,17 +339,25 @@ export default function KTAManagementPage() {
             errorCorrectionLevel: 'M',
         })
 
-        // Set state so the component renders the offscreen DOM
-        // Priority: dataOverride (fresh DB data) > editFormData (admin edits) > app (original application)
+        // Determine which data to use:
+        // - Regenerate path (ignoreEditForm=true): ONLY use dataOverride (fresh DB) OR app fields. Never editFormData.
+        // - Approve path (ignoreEditForm=false): editFormData takes precedence over app fields.
+        const resolvedName = ignoreEditForm
+            ? (dataOverride?.fullName || app.full_name)
+            : (dataOverride?.fullName ?? editFormData?.fullName ?? app.full_name)
+        const resolvedPhoto = ignoreEditForm
+            ? (dataOverride?.photoUrl || app.photo_url)
+            : (dataOverride?.photoUrl ?? editFormData?.photoUrl ?? app.photo_url)
+
         setGeneratorUserData({
-            fullName: dataOverride?.fullName ?? editFormData?.fullName ?? app.full_name,
+            fullName: resolvedName,
             ktaNumber: ktaNum,
-            photoUrl: dataOverride?.photoUrl ?? editFormData?.photoUrl ?? app.photo_url,
+            photoUrl: resolvedPhoto,
             qrCodeDataUrl,
         })
 
-        // Wait a tiny bit for React to flush the state and DOM to render the background template
-        await new Promise(resolve => setTimeout(resolve, 500))
+        // Wait for React to flush state and DOM to render the background template
+        await new Promise(resolve => setTimeout(resolve, 800))
 
         if (!ktaGeneratorRef.current) throw new Error("Generator ref not attached")
         return await ktaGeneratorRef.current.generateFiles()
@@ -1562,27 +1572,45 @@ export default function KTAManagementPage() {
                                     <button
                                         onClick={async () => {
                                             setRegeneratingAppId(selectedAppForRegenerate.id)
+                                            // Reset editFormData to prevent stale data from previous approvals
+                                            setEditFormData({})
                                             try {
-                                                // Fetch FRESH application data from DB to avoid stale name/photo
+                                                // Fetch FRESH data from DB in parallel: application + template
                                                 const supabaseClient = createSupabaseClient()
-                                                const { data: freshApp } = await supabaseClient
-                                                    .from('kta_applications')
-                                                    .select('full_name, photo_url')
-                                                    .eq('id', selectedAppForRegenerate.id)
-                                                    .single()
+                                                const [{ data: freshApp }, { data: freshTemplate }] = await Promise.all([
+                                                    supabaseClient
+                                                        .from('kta_applications')
+                                                        .select('*')
+                                                        .eq('id', selectedAppForRegenerate.id)
+                                                        .single(),
+                                                    supabaseClient
+                                                        .from('kta_templates')
+                                                        .select('*')
+                                                        .eq('organization_id', orgId)
+                                                        .single()
+                                                ])
 
                                                 const freshAppData = freshApp as any
                                                 const freshName: string | undefined = freshAppData?.full_name || undefined
                                                 const freshPhoto: string | undefined = freshAppData?.photo_url || undefined
 
-                                                // Render client-side using fresh DB data
+                                                // Update template in state so KTACardGenerator uses the latest design
+                                                if (freshTemplate) {
+                                                    setTemplate(freshTemplate as any)
+                                                    // Extra wait to let the template re-render in the offscreen KTACardGenerator
+                                                    await new Promise(r => setTimeout(r, 300))
+                                                }
+
+                                                // Render client-side using ONLY fresh DB data, ignoring any stale editFormData
+                                                const freshAppForGenerator = freshAppData || selectedAppForRegenerate
                                                 const files = await generateClientFiles(
-                                                    selectedAppForRegenerate,
+                                                    freshAppForGenerator,
                                                     selectedAppForRegenerate.kta_numbers?.kta_number!,
                                                     {
-                                                        fullName: freshName ?? undefined,
-                                                        photoUrl: freshPhoto ?? undefined,
-                                                    }
+                                                        fullName: freshName,
+                                                        photoUrl: freshPhoto,
+                                                    },
+                                                    true // ignoreEditForm: bypass all stale editFormData
                                                 )
                                                 if (!files) {
                                                     toast.error("Gagal merender file KTA pada browser Anda.")
