@@ -10,6 +10,7 @@ import { useEvents } from '@/hooks/useEvents'
 import SendMessageModal from '@/components/messages/SendMessageModal'
 import KTASection from '@/components/kta/KTASection'
 import type { Organization, OrganizationMember, CircleEvent } from '@/types'
+import { showToast } from '@/hooks/useToast'
 
 interface PublicCircleClientProps {
     circleUsername: string
@@ -273,7 +274,7 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
 
             setRsvpSuccess(true)
         } catch (err: any) {
-            alert(err.message)
+            showToast(err.message, 'error')
         } finally {
             setRsvpSubmitting(false)
         }
@@ -343,9 +344,9 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                 setMembershipStatus(membership.status)
 
                 if (membership.status === 'APPROVED') {
-                    alert('Berhasil bergabung dengan Circle!')
+                    showToast('Berhasil bergabung dengan Circle!', 'success')
                 } else {
-                    alert('Permintaan bergabung telah dikirim. Menunggu persetujuan admin.')
+                    showToast('Permintaan bergabung telah dikirim. Menunggu persetujuan admin.', 'info')
                 }
             }
         } catch (err: any) {
@@ -388,7 +389,7 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
             setRequestEmail('')
             setRequestMessage('')
         } catch (err: any) {
-            alert(err.message)
+            showToast(err.message, 'error')
         } finally {
             setRequesting(false)
         }
@@ -437,7 +438,7 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
             const newCount = await fetchRegistrationCount(eventId)
             setEventCounts(prev => ({ ...prev, [eventId]: newCount }))
         } catch (err: any) {
-            alert(err.message || 'Gagal mendaftar event')
+            showToast(err.message || 'Gagal mendaftar event', 'error')
         } finally {
             setPromptRegSubmitting(false)
         }
@@ -1485,7 +1486,7 @@ function CircleContent({ circleUsername }: PublicCircleClientProps) {
                                         const newCount = await fetchRegistrationCount(regEventId!)
                                         setEventCounts(prev => ({ ...prev, [regEventId!]: newCount }))
                                     } catch (err: any) {
-                                        alert(err.message || 'Gagal mendaftar')
+                                        showToast(err.message || 'Gagal mendaftar', 'error')
                                     } finally {
                                         setRegSubmitting(false)
                                     }

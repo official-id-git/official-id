@@ -16,6 +16,7 @@ import KTACardGenerator, { KTACardGeneratorRef } from '@/components/kta/KTACardG
 import ConfirmModal from '@/components/ui/ConfirmModal'
 import PromptModal from '@/components/ui/PromptModal'
 import KTASection from '@/components/kta/KTASection'
+import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 
 export default function KTAManagementPage() {
     const params = useParams()
@@ -319,7 +320,12 @@ export default function KTAManagementPage() {
     const [generatorUserData, setGeneratorUserData] = useState<any>(null)
 
     // Helper to setup generator and wait for it
-    const generateClientFiles = async (app: KTAApplication, ktaNum: string): Promise<{ base64Image: string, base64Pdf: string } | null> => {
+    // dataOverride: optional explicit data to use instead of reading from editFormData (use for regenerate with fresh DB data)
+    const generateClientFiles = async (
+        app: KTAApplication,
+        ktaNum: string,
+        dataOverride?: { fullName?: string; photoUrl?: string }
+    ): Promise<{ base64Image: string, base64Pdf: string } | null> => {
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://official.id'
         const verificationUrl = `${baseUrl}/o/${org.username || orgId}/verify/${app.verification_token}`
 
@@ -332,10 +338,11 @@ export default function KTAManagementPage() {
         })
 
         // Set state so the component renders the offscreen DOM
+        // Priority: dataOverride (fresh DB data) > editFormData (admin edits) > app (original application)
         setGeneratorUserData({
-            fullName: editFormData?.fullName || app.full_name,
+            fullName: dataOverride?.fullName ?? editFormData?.fullName ?? app.full_name,
             ktaNumber: ktaNum,
-            photoUrl: editFormData?.photoUrl || app.photo_url,
+            photoUrl: dataOverride?.photoUrl ?? editFormData?.photoUrl ?? app.photo_url,
             qrCodeDataUrl,
         })
 
@@ -400,23 +407,27 @@ export default function KTAManagementPage() {
     const handleReject = async () => {
         if (!approvalModalApp || !rejectionReason.trim()) return
 
-        if (!confirm('Apakah Anda yakin ingin menolak / membatalkan pengajuan KTA ini?')) {
-            return
-        }
-
-        setIsRejecting(true)
-        try {
-            const success = await rejectKTA(approvalModalApp.id, rejectionReason)
-            if (success) {
-                toast.success('Pengajuan KTA berhasil ditolak/dibatalkan.')
-                setApprovalModalApp(null)
-                setShowRejectInput(false)
-                setRejectionReason('')
-                loadData()
+        setConfirmModal({
+            isOpen: true,
+            title: 'Tolak / Batalkan Pengajuan KTA',
+            message: 'Apakah Anda yakin ingin menolak / membatalkan pengajuan KTA ini?',
+            isDestructive: true,
+            onConfirm: async () => {
+                setIsRejecting(true)
+                try {
+                    const success = await rejectKTA(approvalModalApp.id, rejectionReason)
+                    if (success) {
+                        toast.success('Pengajuan KTA berhasil ditolak/dibatalkan.')
+                        setApprovalModalApp(null)
+                        setShowRejectInput(false)
+                        setRejectionReason('')
+                        loadData()
+                    }
+                } finally {
+                    setIsRejecting(false)
+                }
             }
-        } finally {
-            setIsRejecting(false)
-        }
+        })
     }
 
     const handleDownload = async (type: 'pdf' | 'image', applicationId: string, fullName: string) => {
@@ -1552,8 +1563,27 @@ export default function KTAManagementPage() {
                                         onClick={async () => {
                                             setRegeneratingAppId(selectedAppForRegenerate.id)
                                             try {
-                                                // Render client-side
-                                                const files = await generateClientFiles(selectedAppForRegenerate, selectedAppForRegenerate.kta_numbers?.kta_number!)
+                                                // Fetch FRESH application data from DB to avoid stale name/photo
+                                                const supabaseClient = createSupabaseClient()
+                                                const { data: freshApp } = await supabaseClient
+                                                    .from('kta_applications')
+                                                    .select('full_name, photo_url')
+                                                    .eq('id', selectedAppForRegenerate.id)
+                                                    .single()
+
+                                                const freshAppData = freshApp as any
+                                                const freshName: string | undefined = freshAppData?.full_name || undefined
+                                                const freshPhoto: string | undefined = freshAppData?.photo_url || undefined
+
+                                                // Render client-side using fresh DB data
+                                                const files = await generateClientFiles(
+                                                    selectedAppForRegenerate,
+                                                    selectedAppForRegenerate.kta_numbers?.kta_number!,
+                                                    {
+                                                        fullName: freshName ?? undefined,
+                                                        photoUrl: freshPhoto ?? undefined,
+                                                    }
+                                                )
                                                 if (!files) {
                                                     toast.error("Gagal merender file KTA pada browser Anda.")
                                                     setRegeneratingAppId(null)

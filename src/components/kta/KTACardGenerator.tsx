@@ -177,7 +177,10 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                             top: `${scaleY(fieldPositions.photo.y)}px`,
                             width: `${scaleX(fieldPositions.photo.width)}px`,
                             height: `${scaleY(fieldPositions.photo.height)}px`,
+                            borderRadius: '50%',
+                            overflow: 'hidden',
                             backgroundColor: '#f3f4f6',
+                            boxShadow: '0 0 0 4px rgba(255,255,255,0.8), 0 2px 12px rgba(0,0,0,0.18)',
                             zIndex: 5,
                         }}
                     >
@@ -189,7 +192,7 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                                     backgroundImage: `url(${userData.photoUrl})`,
                                     backgroundSize: 'cover',
                                     backgroundPosition: 'center',
-                                    backgroundColor: '#e5e7eb', // gray-200 placeholder
+                                    backgroundColor: '#e5e7eb',
                                 }}
                             />
                         )}
@@ -204,7 +207,10 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                             width: `${scaleX(fieldPositions.qrcode.width)}px`,
                             height: `${scaleY(fieldPositions.qrcode.height)}px`,
                             backgroundColor: '#ffffff',
-                            padding: '4px',
+                            borderRadius: '12px',
+                            overflow: 'hidden',
+                            padding: '6px',
+                            boxShadow: '0 1px 8px rgba(0,0,0,0.12)',
                             zIndex: 5,
                         }}
                     >

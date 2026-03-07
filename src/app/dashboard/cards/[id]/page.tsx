@@ -11,6 +11,8 @@ import { getPublicCardUrl } from '@/lib/qrcode'
 
 import type { BusinessCard } from '@/types'
 import BottomNavigation from '@/components/layout/BottomNavigation'
+import ConfirmModal from '@/components/ui/ConfirmModal'
+import { showToast } from '@/hooks/useToast'
 
 export default function CardDetailPage() {
   const params = useParams()
@@ -18,6 +20,7 @@ export default function CardDetailPage() {
   const { user, loading: authLoading } = useAuth()
   const { fetchCard, deleteCard, regenerateQRCode, loading } = useCards()
   const [card, setCard] = useState<BusinessCard | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const [showShareModal, setShowShareModal] = useState(false)
   const [shareEmail, setShareEmail] = useState('')
@@ -41,13 +44,20 @@ export default function CardDetailPage() {
     }
   }, [user, cardId, fetchCard])
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!card) return
-    if (!confirm(`Are you sure you want to delete the card "${card.full_name}"?`)) return
+    setConfirmDelete(true)
+  }
 
+  const executeDelete = async () => {
+    if (!card) return
+    setConfirmDelete(false)
     const success = await deleteCard(card.id)
     if (success) {
+      showToast('Kartu berhasil dihapus', 'success')
       router.push('/dashboard/cards')
+    } else {
+      showToast('Gagal menghapus kartu', 'error')
     }
   }
 
@@ -129,7 +139,7 @@ export default function CardDetailPage() {
     if (!card) return
     const url = getPublicCardUrl(card.id, card.username)
     await navigator.clipboard.writeText(url)
-    alert('Link copied successfully!')
+    showToast('Link berhasil disalin!', 'success')
   }
 
   if (authLoading || loading || !card) {
@@ -594,6 +604,16 @@ export default function CardDetailPage() {
 
       {/* Bottom Navigation */}
       <BottomNavigation variant="cards" />
+
+      <ConfirmModal
+        isOpen={confirmDelete}
+        title="Hapus Kartu Bisnis"
+        message={`Yakin ingin menghapus kartu "${card?.full_name}"? Tindakan ini tidak dapat dibatalkan.`}
+        confirmText="Ya, Hapus"
+        isDestructive
+        onConfirm={executeDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   )
 }

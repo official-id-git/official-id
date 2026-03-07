@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
 import { useEvents } from '@/hooks/useEvents'
 import type { CircleEvent } from '@/types'
+import { showToast } from '@/hooks/useToast'
 
 interface MemberEventsSectionProps {
     organizationId: string
@@ -95,7 +96,7 @@ export default function MemberEventsSection({ organizationId, organizationName }
             const newCount = await fetchRegistrationCount(eventId)
             setEventCounts(prev => ({ ...prev, [eventId]: newCount }))
         } catch (err: any) {
-            alert(err.message || 'Gagal mendaftar event')
+            showToast(err.message || 'Gagal mendaftar event', 'error')
         } finally {
             setRegSubmitting(false)
         }

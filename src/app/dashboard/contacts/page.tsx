@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { useContacts, Contact, ContactInsert } from '@/hooks/useContacts'
-import { Scan, UserPlus, Send, Mail, Info } from 'lucide-react'
+import { Scan, UserPlus, Send } from 'lucide-react'
 import { useCards } from '@/hooks/useCards'
 import { ImageUpload } from '@/components/ui/ImageUpload'
 import BottomNavigation from '@/components/layout/BottomNavigation'
+import ConfirmModal from '@/components/ui/ConfirmModal'
+import { showToast } from '@/hooks/useToast'
 import type { BusinessCard } from '@/types'
 
 export default function ContactsPage() {
@@ -27,7 +29,8 @@ export default function ContactsPage() {
   const [scanResult, setScanResult] = useState<Partial<ContactInsert> | null>(null)
   const [scanRawText, setScanRawText] = useState('')
   const [scanning, setScanning] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingDeleteContact, setPendingDeleteContact] = useState<Contact | null>(null)
 
   const [formData, setFormData] = useState<ContactInsert>({
     name: '',
@@ -78,39 +81,45 @@ export default function ContactsPage() {
         scanned_image_url: scanImageUrl
       })
     } else {
-      setMessage({ type: 'error', text: result.error || 'Gagal scan kartu' })
+      showToast(result.error || 'Gagal scan kartu', 'error')
     }
     setScanning(false)
   }
 
   const handleAddContact = async () => {
     if (!formData.name) {
-      setMessage({ type: 'error', text: 'Nama wajib diisi' })
+      showToast('Nama wajib diisi', 'warning')
       return
     }
 
     const newContact = await addContact(formData)
     if (newContact) {
-      setMessage({ type: 'success', text: 'Kontak berhasil ditambahkan' })
+      showToast('Kontak berhasil ditambahkan', 'success')
       loadData()
       resetForm()
       setShowAddModal(false)
       setShowScanModal(false)
     } else {
-      setMessage({ type: 'error', text: 'Gagal menambahkan kontak' })
+      showToast('Gagal menambahkan kontak', 'error')
     }
-    setTimeout(() => setMessage(null), 3000)
   }
 
-  const handleDelete = async (contact: Contact) => {
-    if (!confirm(`Hapus kontak ${contact.name}?`)) return
+  const handleDeleteClick = (contact: Contact) => {
+    setPendingDeleteContact(contact)
+    setConfirmOpen(true)
+  }
 
-    const success = await deleteContact(contact.id)
+  const handleDelete = async () => {
+    if (!pendingDeleteContact) return
+    setConfirmOpen(false)
+    const success = await deleteContact(pendingDeleteContact.id)
     if (success) {
-      setMessage({ type: 'success', text: 'Kontak berhasil dihapus' })
+      showToast('Kontak berhasil dihapus', 'success')
       loadData()
+    } else {
+      showToast('Gagal menghapus kontak', 'error')
     }
-    setTimeout(() => setMessage(null), 3000)
+    setPendingDeleteContact(null)
   }
 
   const handleSendCard = async (cardId: string, customMessage?: string) => {
@@ -118,14 +127,13 @@ export default function ContactsPage() {
 
     const success = await sendCardToContact(selectedContact.id, cardId, customMessage)
     if (success) {
-      setMessage({ type: 'success', text: `Kartu berhasil dikirim ke ${selectedContact.email}` })
+      showToast(`Kartu berhasil dikirim ke ${selectedContact.email}`, 'success')
       loadData()
     } else {
-      setMessage({ type: 'error', text: 'Gagal mengirim kartu' })
+      showToast('Gagal mengirim kartu', 'error')
     }
     setShowSendModal(false)
     setSelectedContact(null)
-    setTimeout(() => setMessage(null), 3000)
   }
 
   const resetForm = () => {
@@ -216,13 +224,6 @@ export default function ContactsPage() {
             </div>
           </div>
         </div>
-        {/* Message */}
-        {message && (
-          <div className={`mb-4 p-4 rounded-xl ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-            {message.text}
-          </div>
-        )}
-
         {/* Contact List */}
         {loading ? (
           <div className="text-center py-12">
@@ -327,7 +328,7 @@ export default function ContactsPage() {
                     </button>
                   )}
                   <button
-                    onClick={() => handleDelete(contact)}
+                    onClick={() => handleDeleteClick(contact)}
                     className="p-2 text-red-600 hover:bg-red-50 rounded-xl"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -515,6 +516,16 @@ export default function ContactsPage() {
       )}
 
       <BottomNavigation variant="main" />
+
+      <ConfirmModal
+        isOpen={confirmOpen}
+        title="Hapus Kontak"
+        message={`Yakin ingin menghapus kontak "${pendingDeleteContact?.name}"?`}
+        confirmText="Ya, Hapus"
+        isDestructive
+        onConfirm={handleDelete}
+        onCancel={() => { setConfirmOpen(false); setPendingDeleteContact(null) }}
+      />
     </div>
   )
 }

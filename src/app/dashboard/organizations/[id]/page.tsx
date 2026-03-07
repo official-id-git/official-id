@@ -12,6 +12,8 @@ import type { Organization, OrganizationMember, OrganizationRequest } from '@/ty
 import BottomNavigation from '@/components/layout/BottomNavigation'
 import KTASection from '@/components/kta/KTASection'
 import MemberEventsSection from '@/components/events/MemberEventsSection'
+import ConfirmModal from '@/components/ui/ConfirmModal'
+import { showToast } from '@/hooks/useToast'
 
 interface Invitation {
   id: string
@@ -69,6 +71,9 @@ export default function OrganizationDetailPage() {
   const [broadcastError, setBroadcastError] = useState('')
   const [broadcastSuccess, setBroadcastSuccess] = useState('')
 
+  // Confirm modal state
+  const [confirmState, setConfirmState] = useState<{ open: boolean; title: string; message: string; action: (() => Promise<void>) | null; destructive?: boolean }>({ open: false, title: '', message: '', action: null, destructive: true })
+
   const orgId = params.id as string
 
   const loadData = async () => {
@@ -98,24 +103,34 @@ export default function OrganizationDetailPage() {
     loadData()
   }, [user, orgId])
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!org) return
-    if (!confirm(`Are you sure you want to delete Circle "${org.name}"? All members will be removed.`)) return
-
-    const success = await deleteOrganization(org.id)
-    if (success) {
-      router.push('/dashboard/organizations')
-    }
+    setConfirmState({
+      open: true,
+      title: 'Hapus Circle',
+      message: `Yakin ingin menghapus Circle "${org.name}"? Semua anggota akan dihapus.`,
+      destructive: true,
+      action: async () => {
+        const success = await deleteOrganization(org.id)
+        if (success) { showToast('Circle berhasil dihapus', 'success'); router.push('/dashboard/organizations') }
+        else showToast('Gagal menghapus Circle', 'error')
+      }
+    })
   }
 
-  const handleLeave = async () => {
+  const handleLeave = () => {
     if (!org) return
-    if (!confirm(`Are you sure you want to leave Circle "${org.name}"?`)) return
-
-    const success = await leaveOrganization(org.id)
-    if (success) {
-      router.push('/dashboard/organizations')
-    }
+    setConfirmState({
+      open: true,
+      title: 'Keluar dari Circle',
+      message: `Yakin ingin keluar dari Circle "${org.name}"?`,
+      destructive: true,
+      action: async () => {
+        const success = await leaveOrganization(org.id)
+        if (success) { showToast('Berhasil keluar dari Circle', 'success'); router.push('/dashboard/organizations') }
+        else showToast('Gagal keluar dari Circle', 'error')
+      }
+    })
   }
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -143,13 +158,18 @@ export default function OrganizationDetailPage() {
     }
   }
 
-  const handleCancelInvitation = async (invitationId: string) => {
-    if (!confirm('Cancel this invitation?')) return
-
-    const success = await cancelInvitation(invitationId)
-    if (success) {
-      setInvitations(prev => prev.filter(i => i.id !== invitationId))
-    }
+  const handleCancelInvitation = (invitationId: string) => {
+    setConfirmState({
+      open: true,
+      title: 'Batalkan Undangan',
+      message: 'Yakin ingin membatalkan undangan ini?',
+      destructive: false,
+      action: async () => {
+        const success = await cancelInvitation(invitationId)
+        if (success) { setInvitations(prev => prev.filter(i => i.id !== invitationId)); showToast('Undangan dibatalkan', 'info') }
+        else showToast('Gagal membatalkan undangan', 'error')
+      }
+    })
   }
 
   const copyToClipboard = () => {
@@ -776,6 +796,19 @@ export default function OrganizationDetailPage() {
 
       {/* Bottom Navigation */}
       <BottomNavigation variant="organizations" />
+
+      <ConfirmModal
+        isOpen={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.destructive ? 'Ya, Lanjutkan' : 'Ya'}
+        isDestructive={confirmState.destructive}
+        onConfirm={async () => {
+          setConfirmState(s => ({ ...s, open: false }))
+          if (confirmState.action) await confirmState.action()
+        }}
+        onCancel={() => setConfirmState(s => ({ ...s, open: false }))}
+      />
     </div>
   )
 }

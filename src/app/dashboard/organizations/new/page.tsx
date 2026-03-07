@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { OrgForm } from '@/components/organizations/OrgForm'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { showToast } from '@/hooks/useToast'
 
 export default function NewOrganizationPage() {
   const { user, loading } = useAuth()
@@ -12,7 +13,7 @@ export default function NewOrganizationPage() {
 
   useEffect(() => {
     if (!loading && user && user.role === 'FREE_USER') {
-      alert('Hanya pengguna berbayar yang dapat membuat Circle')
+      showToast('Hanya pengguna berbayar yang dapat membuat Circle', 'warning')
       router.push('/dashboard/organizations')
     }
   }, [user, loading, router])

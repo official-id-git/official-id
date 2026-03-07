@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import type { OrganizationRequest } from '@/types'
+import ConfirmModal from '@/components/ui/ConfirmModal'
+import { showToast } from '@/hooks/useToast'
 
 interface OrganizationRequestsProps {
     requests: OrganizationRequest[]
@@ -11,14 +13,26 @@ interface OrganizationRequestsProps {
 
 export function OrganizationRequests({ requests, onReview, onUpdate }: OrganizationRequestsProps) {
     const [processingId, setProcessingId] = useState<string | null>(null)
+    const [confirmOpen, setConfirmOpen] = useState(false)
+    const [pendingAction, setPendingAction] = useState<{ id: string; status: 'APPROVED' | 'REJECTED' } | null>(null)
 
-    const handleReview = async (id: string, status: 'APPROVED' | 'REJECTED') => {
-        if (!confirm(`Are you sure you want to ${status.toLowerCase()} this request?`)) return
+    const handleReview = (id: string, status: 'APPROVED' | 'REJECTED') => {
+        if (status === 'REJECTED') {
+            setPendingAction({ id, status })
+            setConfirmOpen(true)
+        } else {
+            executeReview(id, status)
+        }
+    }
 
+    const executeReview = async (id: string, status: 'APPROVED' | 'REJECTED') => {
         setProcessingId(id)
         const success = await onReview(id, status)
         if (success) {
             onUpdate()
+            showToast(status === 'APPROVED' ? 'Permintaan disetujui' : 'Permintaan ditolak', status === 'APPROVED' ? 'success' : 'info')
+        } else {
+            showToast('Gagal memproses permintaan', 'error')
         }
         setProcessingId(null)
     }
@@ -137,6 +151,19 @@ export function OrganizationRequests({ requests, onReview, onUpdate }: Organizat
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmOpen}
+                title="Tolak Permintaan"
+                message="Yakin ingin menolak permintaan ini? Tindakan ini tidak dapat dibatalkan."
+                confirmText="Ya, Tolak"
+                isDestructive
+                onConfirm={() => {
+                    setConfirmOpen(false)
+                    if (pendingAction) executeReview(pendingAction.id, pendingAction.status)
+                }}
+                onCancel={() => { setConfirmOpen(false); setPendingAction(null) }}
+            />
         </div>
     )
 }

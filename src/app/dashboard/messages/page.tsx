@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { useMessages } from '@/hooks/useMessages'
 import BottomNavigation from '@/components/layout/BottomNavigation'
+import ConfirmModal from '@/components/ui/ConfirmModal'
+import { showToast } from '@/hooks/useToast'
 
 type Message = {
     id: string
@@ -61,6 +63,7 @@ export default function MessagesPage() {
 
     const [messages, setMessages] = useState<Message[]>([])
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -91,12 +94,17 @@ export default function MessagesPage() {
         setMessages(prev => prev.map(m => ({ ...m, is_read: true })))
     }
 
-    const handleDelete = async (messageId: string) => {
-        if (confirm('Delete this message?')) {
-            await deleteMessage(messageId)
-            setMessages(prev => prev.filter(m => m.id !== messageId))
-            setSelectedMessage(null)
-        }
+    const handleDeleteClick = (messageId: string) => {
+        setConfirmDeleteId(messageId)
+    }
+
+    const handleDelete = async () => {
+        if (!confirmDeleteId) return
+        setConfirmDeleteId(null)
+        await deleteMessage(confirmDeleteId)
+        setMessages(prev => prev.filter(m => m.id !== confirmDeleteId))
+        setSelectedMessage(null)
+        showToast('Pesan dihapus', 'success')
     }
 
     const handleOpenMessage = (message: Message) => {
@@ -276,7 +284,7 @@ export default function MessagesPage() {
                                     Reply via WhatsApp
                                 </a>
                                 <button
-                                    onClick={() => handleDelete(selectedMessage.id)}
+                                    onClick={() => handleDeleteClick(selectedMessage.id)}
                                     className="p-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                                 >
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -290,6 +298,16 @@ export default function MessagesPage() {
             )}
 
             <BottomNavigation variant="messages" />
+
+            <ConfirmModal
+                isOpen={!!confirmDeleteId}
+                title="Hapus Pesan"
+                message="Yakin ingin menghapus pesan ini?"
+                confirmText="Ya, Hapus"
+                isDestructive
+                onConfirm={handleDelete}
+                onCancel={() => setConfirmDeleteId(null)}
+            />
         </div>
     )
 }

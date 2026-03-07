@@ -6,7 +6,9 @@ import Link from 'next/link'
 import { useOrganizations } from '@/hooks/useOrganizations'
 import { createClient } from '@/lib/supabase/client'
 import SendMessageModal from '@/components/messages/SendMessageModal'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 import { useSecurity } from '@/hooks/useSecurity'
+import { showToast } from '@/hooks/useToast'
 import type { OrganizationMember, BusinessCard } from '@/types'
 
 interface MemberListProps {
@@ -52,6 +54,9 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
+  const [confirmState, setConfirmState] = useState<{ open: boolean; title: string; message: string; action: (() => Promise<void>) | null; destructive?: boolean }>({
+    open: false, title: '', message: '', action: null, destructive: true
+  })
   const supabase = createClient()
 
   // Message modal state
@@ -100,25 +105,37 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
     setProcessingId(null)
   }
 
-  const handleReject = async (memberId: string) => {
-    if (!confirm('Yakin ingin menolak anggota ini?')) return
-    setProcessingId(memberId)
-    const success = await updateMemberStatus(memberId, 'REJECTED')
-    if (success && onUpdate) {
-      onUpdate()
-    }
-    setProcessingId(null)
+  const handleReject = (memberId: string) => {
+    setConfirmState({
+      open: true,
+      title: 'Tolak Anggota',
+      message: 'Yakin ingin menolak anggota ini?',
+      destructive: true,
+      action: async () => {
+        setProcessingId(memberId)
+        const success = await updateMemberStatus(memberId, 'REJECTED')
+        if (success) { if (onUpdate) onUpdate(); showToast('Anggota ditolak', 'info') }
+        else showToast('Gagal menolak anggota', 'error')
+        setProcessingId(null)
+      }
+    })
   }
 
-  const handleRemove = async (memberId: string) => {
-    if (!confirm('Yakin ingin menghapus anggota ini dari Circle?')) return
-    setProcessingId(memberId)
-    const success = await removeMember(memberId)
-    if (success && onUpdate) {
-      onUpdate()
-    }
-    setProcessingId(null)
-    setSelectedMember(null)
+  const handleRemove = (memberId: string) => {
+    setConfirmState({
+      open: true,
+      title: 'Hapus Anggota',
+      message: 'Yakin ingin menghapus anggota ini dari Circle?',
+      destructive: true,
+      action: async () => {
+        setProcessingId(memberId)
+        const success = await removeMember(memberId)
+        if (success) { if (onUpdate) onUpdate(); showToast('Anggota dihapus dari Circle', 'success') }
+        else showToast('Gagal menghapus anggota', 'error')
+        setProcessingId(null)
+        setSelectedMember(null)
+      }
+    })
   }
 
   const handleOpenMessage = (userId: string, userName: string) => {
@@ -660,6 +677,20 @@ export function MemberList({ members, isAdmin, onUpdate, organization, currentUs
         onClose={() => setMessageModalOpen(false)}
         recipientId={messageRecipient?.id || ''}
         recipientName={messageRecipient?.name || ''}
+      />
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText="Ya, Lanjutkan"
+        isDestructive={confirmState.destructive}
+        onConfirm={async () => {
+          setConfirmState(s => ({ ...s, open: false }))
+          if (confirmState.action) await confirmState.action()
+        }}
+        onCancel={() => setConfirmState(s => ({ ...s, open: false }))}
       />
     </div>
   )
