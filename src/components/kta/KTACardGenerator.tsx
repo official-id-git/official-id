@@ -135,7 +135,8 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                             position: 'absolute',
                             left: `${scaleX(fieldPositions.name.x)}px`,
                             top: `${scaleY(fieldPositions.name.y)}px`,
-                            width: `${scaleX(fieldPositions.name.width)}px`,
+                            // Add +150px (≈10 extra chars) beyond the template-defined width so long names aren't clipped
+                            width: `${scaleX(fieldPositions.name.width) + 150}px`,
                             height: `${scaleY(fieldPositions.name.height)}px`,
                             fontSize: `${fieldPositions.name.fontSize * (KTA_WIDTH_PX / PREVIEW_BASE_WIDTH)}px`,
                             color: fieldPositions.name.fontColor,
@@ -144,7 +145,7 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                             alignItems: 'center',
                             zIndex: 10,
                             whiteSpace: 'nowrap',
-                            overflow: 'hidden',
+                            overflow: 'visible',
                         }}
                     >
                         {userData.fullName}
