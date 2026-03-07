@@ -123,6 +123,28 @@ export async function POST(request: NextRequest) {
             throw new Error(`Gagal mengupload file KTA ke server: ${uploadError?.message || 'Unknown error'}`)
         }
 
+        // Upload to Google Drive for Archive
+        try {
+            const { uploadToGDrive, findGDriveFolderByName, createGDriveFolder } = await import('@/lib/gdrive');
+            const targetFolderName = `KTA_${circleName.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+
+            // Create or Find GDrive Folder
+            let folderId = await findGDriveFolderByName(targetFolderName);
+            if (!folderId) {
+                folderId = await createGDriveFolder(targetFolderName);
+            }
+
+            const safeFileNamePDF = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}_pdf.pdf`;
+            const safeFileNameImage = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}_image.png`;
+
+            console.log(`KTA Regenerate: Backing up to GDrive folder ${targetFolderName}...`);
+            await uploadToGDrive(pdfBuffer, safeFileNamePDF, 'application/pdf', folderId);
+            await uploadToGDrive(ktaImageBuffer, safeFileNameImage, 'image/png', folderId);
+            console.log(`KTA Regenerate: GDrive backup successful.`);
+        } catch (gdriveError: any) {
+            console.error('KTA Regenerate: GDrive backup failed (Non-fatal):', gdriveError?.message || gdriveError);
+        }
+
         // 4. Update Database
         const { data: updatedApp, error: updateError } = await adminSupabase
             .from('kta_applications')
