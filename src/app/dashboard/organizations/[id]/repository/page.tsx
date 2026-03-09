@@ -42,6 +42,7 @@ export default function RepositoryManagementPage() {
     const [categoryId, setCategoryId] = useState('')
     const [eventId, setEventId] = useState('')
     const [file, setFile] = useState<File | null>(null)
+    const [link, setLink] = useState('')
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     // Delete Confirmation State
@@ -109,68 +110,109 @@ export default function RepositoryManagementPage() {
 
     const handleUpload = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!title.trim() || !file || !categoryId || !eventId) {
-            showToast('Mohon isi judul file, kategori, event terkait, dan pilih file', 'error')
+
+        const isVideo = categoryId === 'Video'
+
+        if (!title.trim() || !categoryId || !eventId) {
+            showToast('Mohon isi judul file, kategori, dan event terkait', 'error')
             return
+        }
+
+        if (isVideo) {
+            if (!link.trim()) {
+                showToast('Mohon isi link video', 'error')
+                return
+            }
+            if (!link.startsWith('http://') && !link.startsWith('https://')) {
+                showToast('Format link tidak valid, gunakan awalan http:// atau https://', 'error')
+                return
+            }
+        } else {
+            if (!file) {
+                showToast('Mohon pilih file untuk diupload', 'error')
+                return
+            }
         }
 
         setUploading(true)
         try {
-            const ext = file.name.split('.').pop() || 'file'
-            const fileName = `${title}.${ext}`
+            if (isVideo) {
+                // Link saving directly
+                const res = await fetch(`/api/organizations/${orgId}/repository`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'link',
+                        title,
+                        category: categoryId,
+                        event_id: eventId,
+                        link
+                    }),
+                })
+                const data = await res.json()
+                if (!data.success) throw new Error(data.error || 'Gagal menyimpan link')
 
-            // 1. Get Resumable Upload URL from Server
-            const initRes = await fetch(`/api/organizations/${orgId}/repository`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'init',
-                    title,
-                    fileName,
-                    mimeType: file.type || 'application/octet-stream',
-                    category: categoryId,
-                    event_id: eventId
-                }),
-            })
-            const initData = await initRes.json()
-            if (!initData.success) throw new Error(initData.error || 'Gagal inisiasi upload')
+            } else {
+                // File uploading flow
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                const safeFile = file!
+                const ext = safeFile.name.split('.').pop() || 'file'
+                const fileName = `${title}.${ext}`
 
-            // 2. Upload file directly to Google Drive Session URI
-            const uploadRes = await fetch(initData.sessionUri, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': file.type || 'application/octet-stream',
-                },
-                body: file,
-            })
+                // 1. Get Resumable Upload URL from Server
+                const initRes = await fetch(`/api/organizations/${orgId}/repository`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'init',
+                        title,
+                        fileName,
+                        mimeType: safeFile.type || 'application/octet-stream',
+                        category: categoryId,
+                        event_id: eventId
+                    }),
+                })
+                const initData = await initRes.json()
+                if (!initData.success) throw new Error(initData.error || 'Gagal inisiasi upload')
 
-            if (!uploadRes.ok) throw new Error('Gagal mengunggah file ke Google Drive')
+                // 2. Upload file directly to Google Drive Session URI
+                const uploadRes = await fetch(initData.sessionUri, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': safeFile.type || 'application/octet-stream',
+                    },
+                    body: safeFile,
+                })
 
-            const gdriveData = await uploadRes.json()
+                if (!uploadRes.ok) throw new Error('Gagal mengunggah file ke Google Drive')
 
-            // 3. Finalize upload (Save to DB & set permissions)
-            const finRes = await fetch(`/api/organizations/${orgId}/repository`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'finalize',
-                    title,
-                    category: categoryId,
-                    event_id: eventId,
-                    fileId: gdriveData.id,
-                    webViewLink: gdriveData.webViewLink,
-                    webContentLink: gdriveData.webContentLink,
-                    targetFolderId: initData.targetFolderId,
-                    mimeType: file.type || 'application/octet-stream'
-                }),
-            })
-            const finData = await finRes.json()
-            if (!finData.success) throw new Error(finData.error || 'Gagal menyimpan data repository')
+                const gdriveData = await uploadRes.json()
 
-            showToast('File berhasil diupload', 'success')
+                // 3. Finalize upload (Save to DB & set permissions)
+                const finRes = await fetch(`/api/organizations/${orgId}/repository`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'finalize',
+                        title,
+                        category: categoryId,
+                        event_id: eventId,
+                        fileId: gdriveData.id,
+                        webViewLink: gdriveData.webViewLink,
+                        webContentLink: gdriveData.webContentLink,
+                        targetFolderId: initData.targetFolderId,
+                        mimeType: safeFile.type || 'application/octet-stream'
+                    }),
+                })
+                const finData = await finRes.json()
+                if (!finData.success) throw new Error(finData.error || 'Gagal menyimpan data repository')
+            }
+
+            showToast(isVideo ? 'Link berhasil ditambahkan' : 'File berhasil diupload', 'success')
             setTitle('')
             setCategoryId('')
             setEventId('')
+            setLink('')
             setFile(null)
             if (fileInputRef.current) fileInputRef.current.value = ''
             // Refresh list
@@ -304,28 +346,45 @@ export default function RepositoryManagementPage() {
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Pilih File
-                                        </label>
-                                        <input
-                                            type="file"
-                                            ref={fileInputRef}
-                                            onChange={handleFileChange}
-                                            accept=".pdf,.mp4,.mov,.docx,.xlsx,.pptx,.jpg,.png,.jpeg,.zip"
-                                            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 p-1 border border-gray-200 rounded-xl"
-                                            disabled={uploading}
-                                            required
-                                        />
-                                        <p className="text-xs text-gray-500 mt-2">
-                                            Maksimal 10MB. Format didukung beragam.
-                                        </p>
-                                    </div>
+                                    {categoryId === 'Video' ? (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Link Video
+                                            </label>
+                                            <input
+                                                type="url"
+                                                value={link}
+                                                onChange={(e) => setLink(e.target.value)}
+                                                placeholder="Contoh: https://drive.google.com/file/d/..."
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                                disabled={uploading}
+                                                required
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Pilih File
+                                            </label>
+                                            <input
+                                                type="file"
+                                                ref={fileInputRef}
+                                                onChange={handleFileChange}
+                                                accept=".pdf,.mp4,.mov,.docx,.xlsx,.pptx,.jpg,.png,.jpeg,.zip"
+                                                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 p-1 border border-gray-200 rounded-xl"
+                                                disabled={uploading}
+                                                required
+                                            />
+                                            <p className="text-xs text-gray-500 mt-2">
+                                                Maksimal 10MB. Format didukung beragam.
+                                            </p>
+                                        </div>
+                                    )}
 
                                     <div className="pt-2">
                                         <button
                                             type="submit"
-                                            disabled={uploading || !title || !file || !eventId || !categoryId}
+                                            disabled={uploading || !title || !eventId || !categoryId || (categoryId === 'Video' ? !link : !file)}
                                             className="w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                                         >
                                             {uploading ? (

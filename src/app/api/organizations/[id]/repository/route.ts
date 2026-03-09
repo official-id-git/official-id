@@ -180,6 +180,40 @@ export async function POST(
             return NextResponse.json({ success: true, data: repoRecord })
         }
 
+        if (action === 'link') {
+            const { title, category: categoryId, event_id: eventId, link } = payload
+
+            if (!title || !categoryId || !eventId || !link) {
+                return NextResponse.json({ error: 'Missing required link fields' }, { status: 400 })
+            }
+
+            type OrgRepoInsert = Database['public']['Tables']['organization_repositories']['Insert']
+            const insertData: OrgRepoInsert = {
+                organization_id: id,
+                title: title,
+                file_type: 'link',
+                gdrive_file_id: 'external_link',
+                gdrive_folder_id: null,
+                gdrive_web_view_link: link,
+                gdrive_web_content_link: link,
+                category: categoryId,
+                event_id: eventId
+            }
+
+            const { data: repoRecord, error: dbError } = await supabase
+                .from('organization_repositories')
+                .insert(insertData as any)
+                .select()
+                .single()
+
+            if (dbError) {
+                console.error("DB Insert failed for link.", dbError)
+                throw dbError
+            }
+
+            return NextResponse.json({ success: true, data: repoRecord })
+        }
+
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
 
     } catch (error: any) {
@@ -230,9 +264,12 @@ export async function DELETE(
             return NextResponse.json({ error: 'Repository record not found' }, { status: 404 })
         }
 
-        // Delete from Drive
+        // Delete from Drive if it's not an external link
         try {
-            await deleteFromGDrive((repo as any).gdrive_file_id)
+            const gdriveFileId = (repo as any).gdrive_file_id
+            if (gdriveFileId !== 'external_link') {
+                await deleteFromGDrive(gdriveFileId)
+            }
         } catch (e) {
             console.error("Failed to delete from GDrive, ignoring DB deletion.", e)
             return NextResponse.json({ error: 'Failed to access Google Drive' }, { status: 500 })
