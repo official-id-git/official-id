@@ -29,7 +29,7 @@ export default function PublicCardClient({ cardId }: Props) {
 
         // Initialize query builder function for cleaner logic
         const fetchCard = async () => {
-          const selectFields = 'id, user_id, full_name, job_title, company, email, phone, website, profile_photo_url, social_links, is_public, visible_fields, scan_count, created_at, updated_at, template, address, color_theme, username'
+          const selectFields = 'id, user_id, full_name, job_title, company, email, phone, website, profile_photo_url, social_links, is_public, visible_fields, scan_count, created_at, updated_at, template, address, color_theme, username, business_description, show_business_description'
 
           // 1. Try fetching by ID or Username as usual
           // Use limit(1) instead of single()/maybeSingle() to strictly avoid 406 errors on 0 rows

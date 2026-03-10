@@ -168,6 +168,11 @@ export function CardPreview({ card, template = 'professional', readonly = false 
               {card.company && (
                 <p className="text-blue-200 text-sm">{card.company}</p>
               )}
+              {(card as any).show_business_description !== false && (card as any).business_description && (
+                <p className="text-white text-sm italic mt-3 px-4 max-w-sm mx-auto opacity-90 break-words">
+                  {(card as any).business_description}
+                </p>
+              )}
             </div>
           </div>
 
@@ -305,6 +310,11 @@ export function CardPreview({ card, template = 'professional', readonly = false 
                 {card.company && (
                   <p className="text-gray-500 text-sm">{card.company}</p>
                 )}
+                {(card as any).show_business_description !== false && (card as any).business_description && (
+                  <p className="text-gray-300 text-sm italic mt-3 break-words">
+                    {(card as any).business_description}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -425,6 +435,11 @@ export function CardPreview({ card, template = 'professional', readonly = false 
             )}
             {card.company && (
               <p className="text-gray-400 text-sm">{card.company}</p>
+            )}
+            {(card as any).show_business_description !== false && (card as any).business_description && (
+              <p className="text-gray-600 text-sm italic mt-4 px-4 mx-auto max-w-sm break-words">
+                {(card as any).business_description}
+              </p>
             )}
 
             <div className="mt-6 space-y-2 text-sm">
