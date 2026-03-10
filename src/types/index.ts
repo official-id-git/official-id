@@ -75,7 +75,12 @@ export interface SocialLinks {
   instagram?: string
   facebook?: string
   github?: string
-  website?: string
+  youtube?: string
+  tiktok?: string
+  whatsapp?: string
+  telegram?: string
+  gdrive?: string
+  behance?: string
 }
 
 // Visible fields type

@@ -22,6 +22,10 @@ const SOCIAL_PLATFORMS = [
   { key: 'github', label: 'GitHub', placeholder: 'https://github.com/username' },
   { key: 'youtube', label: 'YouTube', placeholder: 'https://youtube.com/@channel' },
   { key: 'tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@username' },
+  { key: 'whatsapp', label: 'WhatsApp', placeholder: 'https://wa.me/6281234567890' },
+  { key: 'telegram', label: 'Telegram', placeholder: 'https://t.me/username' },
+  { key: 'gdrive', label: 'Google Drive', placeholder: 'https://drive.google.com/...' },
+  { key: 'behance', label: 'Behance', placeholder: 'https://behance.net/username' },
 ]
 
 
