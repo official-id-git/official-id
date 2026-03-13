@@ -8,14 +8,43 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const response = await fetch(url);
+        const parsedUrl = new URL(url);
+
+        // 1. Only allow HTTPS
+        if (parsedUrl.protocol !== 'https:') {
+            return NextResponse.json({ error: 'Only HTTPS URLs are allowed' }, { status: 400 });
+        }
+
+        // 2. Whitelist allowed domains to prevent SSRF
+        const allowedDomains = [
+            'res.cloudinary.com',
+            'lh3.googleusercontent.com',
+            'avatars.githubusercontent.com',
+            // Add other domains used in your app for user photos here
+        ];
+
+        const isAllowed = allowedDomains.some(domain => 
+            parsedUrl.hostname === domain || parsedUrl.hostname.endsWith(`.${domain}`)
+        );
+
+        if (!isAllowed) {
+            return NextResponse.json({ error: 'Domain not permitted for proxy' }, { status: 403 });
+        }
+
+        const response = await fetch(url.toString());
         
         if (!response.ok) {
             throw new Error(`Failed to fetch image: ${response.statusText}`);
         }
 
+        const contentType = response.headers.get('content-type');
+        
+        // 3. Ensure the response is actually an image
+        if (!contentType || !contentType.startsWith('image/')) {
+            throw new Error('Invalid content type. Expected an image.');
+        }
+
         const arrayBuffer = await response.arrayBuffer();
-        const contentType = response.headers.get('content-type') || 'image/jpeg';
         
         // Return the image with CORS headers
         return new NextResponse(arrayBuffer, {
