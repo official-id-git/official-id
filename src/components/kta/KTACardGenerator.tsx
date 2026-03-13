@@ -40,6 +40,30 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
     ({ templateUrl, fieldPositions, userData }, ref) => {
         const containerRef = useRef<HTMLDivElement>(null)
         const [isReady, setIsReady] = useState(false)
+        const [safeTemplateUrl, setSafeTemplateUrl] = useState(templateUrl)
+        const [safePhotoUrl, setSafePhotoUrl] = useState(userData.photoUrl)
+
+        // Pre-fetch images as Base64 to bypass html-to-image CORS and tainting issues
+        React.useEffect(() => {
+            const toBase64 = async (url: string, setter: (val: string) => void) => {
+                if (!url || url.startsWith('data:')) {
+                    setter(url);
+                    return;
+                }
+                try {
+                    const res = await fetch(url, { cache: 'no-store' });
+                    const blob = await res.blob();
+                    const reader = new FileReader();
+                    reader.onloadend = () => setter(reader.result as string);
+                    reader.readAsDataURL(blob);
+                } catch (err) {
+                    console.error('Failed to pre-fetch image to base64:', err);
+                    setter(url); // Fallback to original URL
+                }
+            };
+            if (templateUrl) toBase64(templateUrl, setSafeTemplateUrl);
+            if (userData.photoUrl) toBase64(userData.photoUrl, setSafePhotoUrl);
+        }, [templateUrl, userData.photoUrl]);
 
         useImperativeHandle(ref, () => ({
             generateFiles: async () => {
@@ -113,7 +137,7 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                             top: 0,
                             left: 0,
                             zIndex: 0,
-                            backgroundImage: `url(${templateUrl})`,
+                            backgroundImage: `url(${safeTemplateUrl})`,
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
                         }}
@@ -121,7 +145,7 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                         {/* We use an invisible image just to safely track onload for the promise if needed, 
                             though backgroundImage loading can be trickier, we'll keep the onload logic simple */}
                         <img
-                            src={templateUrl}
+                            src={safeTemplateUrl}
                             style={{ display: 'none' }}
                             onLoad={() => setIsReady(true)}
                             alt=""
@@ -185,12 +209,12 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                             zIndex: 5,
                         }}
                     >
-                        {userData.photoUrl && (
+                        {safePhotoUrl && (
                             <div
                                 style={{
                                     width: '100%',
                                     height: '100%',
-                                    backgroundImage: `url(${userData.photoUrl})`,
+                                    backgroundImage: `url(${safePhotoUrl})`,
                                     backgroundSize: 'cover',
                                     backgroundPosition: 'center',
                                     backgroundColor: '#e5e7eb',

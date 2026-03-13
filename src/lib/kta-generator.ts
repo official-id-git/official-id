@@ -89,7 +89,8 @@ export async function generateKTAImage(
 
     // 1. Draw template background
     try {
-        const templateImage = await loadImage(templateUrl)
+        const templateBuffer = await fetchImageBuffer(templateUrl)
+        const templateImage = await loadImage(templateBuffer)
         ctx.drawImage(templateImage, 0, 0, KTA_WIDTH_PX, KTA_HEIGHT_PX)
     } catch (err) {
         console.error('Failed to load template image:', err)
@@ -132,29 +133,32 @@ export async function generateKTAImage(
 
     // 4. Draw photo
     try {
-        const photoImage = await loadImage(data.photoUrl)
-        const photoX = fieldPositions.photo.x * scaleX
-        const photoY = fieldPositions.photo.y * scaleY
-        const photoW = fieldPositions.photo.width * scaleX
-        const photoH = fieldPositions.photo.height * scaleY
+        if (data.photoUrl) {
+            const photoBuffer = await fetchImageBuffer(data.photoUrl)
+            const photoImage = await loadImage(photoBuffer)
+            const photoX = fieldPositions.photo.x * scaleX
+            const photoY = fieldPositions.photo.y * scaleY
+            const photoW = fieldPositions.photo.width * scaleX
+            const photoH = fieldPositions.photo.height * scaleY
 
-        // Draw with rounded corners effect (clip)
-        ctx.save()
-        const radius = 8 * scaleX
-        ctx.beginPath()
-        ctx.moveTo(photoX + radius, photoY)
-        ctx.lineTo(photoX + photoW - radius, photoY)
-        ctx.quadraticCurveTo(photoX + photoW, photoY, photoX + photoW, photoY + radius)
-        ctx.lineTo(photoX + photoW, photoY + photoH - radius)
-        ctx.quadraticCurveTo(photoX + photoW, photoY + photoH, photoX + photoW - radius, photoY + photoH)
-        ctx.lineTo(photoX + radius, photoY + photoH)
-        ctx.quadraticCurveTo(photoX, photoY + photoH, photoX, photoY + photoH - radius)
-        ctx.lineTo(photoX, photoY + radius)
-        ctx.quadraticCurveTo(photoX, photoY, photoX + radius, photoY)
-        ctx.closePath()
-        ctx.clip()
-        ctx.drawImage(photoImage, photoX, photoY, photoW, photoH)
-        ctx.restore()
+            // Draw with rounded corners effect (clip)
+            ctx.save()
+            const radius = 8 * scaleX
+            ctx.beginPath()
+            ctx.moveTo(photoX + radius, photoY)
+            ctx.lineTo(photoX + photoW - radius, photoY)
+            ctx.quadraticCurveTo(photoX + photoW, photoY, photoX + photoW, photoY + radius)
+            ctx.lineTo(photoX + photoW, photoY + photoH - radius)
+            ctx.quadraticCurveTo(photoX + photoW, photoY + photoH, photoX + photoW - radius, photoY + photoH)
+            ctx.lineTo(photoX + radius, photoY + photoH)
+            ctx.quadraticCurveTo(photoX, photoY + photoH, photoX, photoY + photoH - radius)
+            ctx.lineTo(photoX, photoY + radius)
+            ctx.quadraticCurveTo(photoX, photoY, photoX + radius, photoY)
+            ctx.closePath()
+            ctx.clip()
+            ctx.drawImage(photoImage, photoX, photoY, photoW, photoH)
+            ctx.restore()
+        }
     } catch (err) {
         console.error('Failed to load photo:', err)
     }
