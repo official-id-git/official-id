@@ -40,30 +40,15 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
     ({ templateUrl, fieldPositions, userData }, ref) => {
         const containerRef = useRef<HTMLDivElement>(null)
         const [isReady, setIsReady] = useState(false)
-        const [safeTemplateUrl, setSafeTemplateUrl] = useState(templateUrl)
-        const [safePhotoUrl, setSafePhotoUrl] = useState(userData.photoUrl)
 
-        // Pre-fetch images as Base64 to bypass html-to-image CORS and tainting issues
-        React.useEffect(() => {
-            const toBase64 = async (url: string, setter: (val: string) => void) => {
-                if (!url || url.startsWith('data:')) {
-                    setter(url);
-                    return;
-                }
-                try {
-                    const res = await fetch(url, { cache: 'no-store' });
-                    const blob = await res.blob();
-                    const reader = new FileReader();
-                    reader.onloadend = () => setter(reader.result as string);
-                    reader.readAsDataURL(blob);
-                } catch (err) {
-                    console.error('Failed to pre-fetch image to base64:', err);
-                    setter(url); // Fallback to original URL
-                }
-            };
-            if (templateUrl) toBase64(templateUrl, setSafeTemplateUrl);
-            if (userData.photoUrl) toBase64(userData.photoUrl, setSafePhotoUrl);
-        }, [templateUrl, userData.photoUrl]);
+        const getProxyUrl = (url: string | undefined | null) => {
+            if (!url) return '';
+            if (url.startsWith('data:') || url.startsWith('/')) return url;
+            return `/api/kta/proxy-image?url=${encodeURIComponent(url)}`;
+        };
+
+        const safeTemplateUrl = getProxyUrl(templateUrl);
+        const safePhotoUrl = getProxyUrl(userData.photoUrl);
 
         useImperativeHandle(ref, () => ({
             generateFiles: async () => {
