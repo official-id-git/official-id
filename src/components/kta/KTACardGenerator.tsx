@@ -55,6 +55,35 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                 if (!containerRef.current) return null
 
                 try {
+                    // Force synchronous pre-fetch to Base64 to guarantee availability before capture
+                    const fetchToBase64 = async (url: string) => {
+                        if (!url || url.startsWith('data:')) return url;
+                        try {
+                            const fetchUrl = url.startsWith('http') ? `/api/kta/proxy-image?url=${encodeURIComponent(url)}` : url;
+                            const res = await fetch(fetchUrl);
+                            if (!res.ok) throw new Error('Proxy fetch failed');
+                            const blob = await res.blob();
+                            return new Promise<string>((resolve) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => resolve(reader.result as string);
+                                reader.readAsDataURL(blob);
+                            });
+                        } catch (e) {
+                            console.error('Failed to convert image to base64:', e);
+                            return url; // Fallback
+                        }
+                    }
+
+                    const base64Template = await fetchToBase64(templateUrl);
+                    const base64Photo = await fetchToBase64(userData.photoUrl);
+
+                    // Inject directly to DOM nodes completely avoiding React render loops/timeouts
+                    const templateDiv = containerRef.current.querySelector('.kta-template-bg') as HTMLDivElement;
+                    const photoDiv = containerRef.current.querySelector('.kta-user-photo') as HTMLDivElement;
+
+                    if (templateDiv && base64Template) templateDiv.style.backgroundImage = `url(${base64Template})`;
+                    if (photoDiv && base64Photo) photoDiv.style.backgroundImage = `url(${base64Photo})`;
+
                     // 1. Generate PNG base64
                     const dataUrl = await htmlToImage.toPng(containerRef.current, {
                         quality: 0.9,
@@ -115,6 +144,7 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                 >
                     {/* Background Template */}
                     <div
+                        className="kta-template-bg"
                         style={{
                             width: '100%',
                             height: '100%',
@@ -196,6 +226,7 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                     >
                         {safePhotoUrl && (
                             <div
+                                className="kta-user-photo"
                                 style={{
                                     width: '100%',
                                     height: '100%',
