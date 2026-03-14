@@ -9,11 +9,11 @@ import {
   getOrganizationInviteEmailTemplate,
   getShareCardEmailTemplate,
   getCircleRequestAdminNotificationTemplate,
-  getCircleRequestApprovedTemplate,
   getCircleMemberWelcomeTemplate,
   getCircleExistingApprovalInviteTemplate,
   getCircleRequestRejectedTemplate,
-  getCircleRequestUserConfirmationTemplate
+  getCircleRequestUserConfirmationTemplate,
+  getPaymentNotificationEmailTemplate
 } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
@@ -263,6 +263,26 @@ export async function POST(request: NextRequest) {
           subject: template.subject,
           html: template.html,
           from: EMAIL_SENDERS.circle
+        })
+        break
+      }
+
+      case 'payment_notification': {
+        const template = getPaymentNotificationEmailTemplate({
+          userName: data.userName,
+          userEmail: data.userEmail,
+          amount: data.amount,
+          proofUrl: data.proofUrl
+        })
+
+        logData.recipient_email = data.recipientEmail
+        logData.subject = template.subject
+
+        emailResult = await sendEmail({
+          to: data.recipientEmail,
+          subject: template.subject,
+          html: template.html,
+          from: EMAIL_SENDERS.payment
         })
         break
       }

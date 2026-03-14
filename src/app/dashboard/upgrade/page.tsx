@@ -64,6 +64,27 @@ export default function UpgradePage() {
 
       if (insertError) throw insertError
 
+      // Send email notification to admin
+      try {
+        await fetch('/api/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'payment_notification',
+            data: {
+              userName: user.full_name || 'User',
+              userEmail: user.email,
+              amount: 25000,
+              proofUrl: proofUrl,
+              recipientEmail: 'harizalbanget@gmail.com'
+            }
+          })
+        })
+      } catch (emailErr) {
+        console.error('Failed to send admin notification:', emailErr)
+        // Don't fail the submission if email fails
+      }
+
       setSuccess(true)
     } catch (err: any) {
       setError(err.message || 'Gagal mengirim bukti pembayaran')
@@ -210,9 +231,9 @@ export default function UpgradePage() {
               <div>
                 <p className="font-medium text-gray-900">Transfer ke rekening berikut</p>
                 <div className="mt-2 p-3 bg-gray-50 rounded-xl">
-                  <p className="text-sm text-gray-600">Bank BCA</p>
-                  <p className="font-mono font-bold text-lg">1234567890</p>
-                  <p className="text-sm text-gray-600">a.n. Official ID</p>
+                  <p className="text-sm text-gray-600">Bank BNI</p>
+                  <p className="font-mono font-bold text-lg">8383555538</p>
+                  <p className="text-sm text-gray-600">a.n. Harizal</p>
                 </div>
               </div>
             </div>
@@ -246,6 +267,31 @@ export default function UpgradePage() {
               {error}
             </div>
           )}
+
+          <div className="space-y-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nama Pengguna
+              </label>
+              <input
+                type="text"
+                value={user.full_name || ''}
+                disabled
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email Pengguna
+              </label>
+              <input
+                type="email"
+                value={user.email || ''}
+                disabled
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed"
+              />
+            </div>
+          </div>
 
           <div className="mb-6">
             <ImageUpload

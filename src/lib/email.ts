@@ -430,6 +430,70 @@ export function getPaymentVerifiedEmailTemplate(data: {
   }
 }
 
+export function getPaymentNotificationEmailTemplate(data: {
+  userName: string
+  userEmail: string
+  amount: number
+  proofUrl: string
+}): { subject: string; html: string } {
+  const formattedAmount = new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0
+  }).format(data.amount)
+
+  return {
+    subject: `🔔 Pembayaran Pro Baru: ${data.userName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f5f5f5;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #3B82F6, #1D4ED8); border-radius: 16px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 28px;">💰</span>
+            </div>
+            <h1 style="color: #1a1a1a; font-size: 24px; margin: 0;">Konfirmasi Pembayaran</h1>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">
+            Halo Admin,
+          </p>
+          
+          <p style="color: #666; line-height: 1.6;">
+            Seorang pengguna baru saja mengunggah bukti pembayaran untuk upgrade ke Pro.
+          </p>
+          
+          <div style="background: #f0f9ff; border-radius: 12px; padding: 16px; margin: 20px 0;">
+            <p style="margin: 0; color: #0369a1; font-weight: 600;">Detail Pembayaran:</p>
+            <p style="margin: 8px 0 0; color: #666;"><strong>Nama:</strong> ${data.userName}</p>
+            <p style="margin: 4px 0 0; color: #666;"><strong>Email:</strong> ${data.userEmail}</p>
+            <p style="margin: 4px 0 0; color: #666;"><strong>Jumlah:</strong> ${formattedAmount}</p>
+          </div>
+          
+          <div style="margin: 24px 0; text-align: center;">
+            <p style="color: #666; margin-bottom: 12px;">Bukti Pembayaran:</p>
+            <img src="${data.proofUrl}" alt="Bukti Pembayaran" style="max-width: 100%; border-radius: 8px; border: 1px solid #e5e7eb;" />
+          </div>
+          
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://officialid.app'}/admin" style="display: block; text-align: center; background: linear-gradient(135deg, #3B82F6, #1D4ED8); color: white; padding: 14px 24px; border-radius: 12px; text-decoration: none; font-weight: 600; margin: 24px 0;">
+            Buka Panel Admin
+          </a>
+          
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 32px;">
+            © ${new Date().getFullYear()} Official ID. All rights reserved.
+          </p>
+        </div>
+      </body>
+      </html>
+    `
+  }
+}
+
 export function getContactCardShareEmailTemplate(data: {
   senderName: string
   senderEmail: string
