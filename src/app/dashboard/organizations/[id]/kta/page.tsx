@@ -1775,12 +1775,12 @@ export default function KTAManagementPage() {
                     )}
 
                     {/* Hidden Offline KTA Generator DOM */}
-                    {template && generatorUserData && (
+                    {template && (
                         <KTACardGenerator
                             ref={ktaGeneratorRef}
                             templateUrl={template.template_image_url}
                             fieldPositions={template.field_positions as any}
-                            userData={generatorUserData}
+                            userData={generatorUserData || { fullName: '', ktaNumber: '', photoUrl: '', qrCodeDataUrl: '' }}
                         />
                     )}
 
