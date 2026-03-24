@@ -76,10 +76,9 @@ export async function uploadBufferToCloudinary(
     : fileName
 
   formData.append('public_id', finalPublicId)
-  formData.append('overwrite', 'true')
-  formData.append('invalidate', 'true')
 
   const response = await fetch(
+
     `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`,
     {
       method: 'POST',
