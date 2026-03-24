@@ -39,31 +39,29 @@ const PREVIEW_BASE_HEIGHT = 312
 const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
     ({ templateUrl, fieldPositions, userData }, ref) => {
         const containerRef = useRef<HTMLDivElement>(null)
-        const [isReady, setIsReady] = useState(false)
 
-        const getProxyUrl = (url: string | undefined | null) => {
-            if (!url) return '';
-            if (url.startsWith('data:') || url.startsWith('/')) return url;
-            return `/api/kta/proxy-image?url=${encodeURIComponent(url)}`;
-        };
-
-        const safeTemplateUrl = getProxyUrl(templateUrl);
-        const safePhotoUrl = getProxyUrl(userData.photoUrl);
+        // State to hold base64 versions of images for rendering
+        const [templateBase64, setTemplateBase64] = useState<string>('')
+        const [photoBase64, setPhotoBase64] = useState<string>('')
+        const [qrBase64, setQrBase64] = useState<string>('')
 
         useImperativeHandle(ref, () => ({
             generateFiles: async () => {
                 if (!containerRef.current) return null
 
                 try {
-                    // Force synchronous pre-fetch to Base64 to guarantee availability before capture
+                    // Helper: fetch external URL via proxy and convert to base64 data URL
                     const fetchToBase64 = async (url: string): Promise<string> => {
-                        if (!url || url.startsWith('data:')) return url;
-                        const fetchUrl = url.startsWith('http') ? `/api/kta/proxy-image?url=${encodeURIComponent(url)}` : url;
-                        console.log('[KTA Generator] Fetching image to base64:', fetchUrl.substring(0, 100));
+                        if (!url) return '';
+                        if (url.startsWith('data:')) return url;
+                        const fetchUrl = url.startsWith('http')
+                            ? `/api/kta/proxy-image?url=${encodeURIComponent(url)}`
+                            : url;
+                        console.log('[KTA Gen] Fetching:', fetchUrl.substring(0, 120));
                         const res = await fetch(fetchUrl);
-                        if (!res.ok) throw new Error(`Proxy fetch failed (${res.status}): ${fetchUrl.substring(0, 100)}`);
+                        if (!res.ok) throw new Error(`Proxy fetch failed (${res.status})`);
                         const blob = await res.blob();
-                        console.log(`[KTA Generator] Got blob: ${blob.size} bytes, type: ${blob.type}`);
+                        console.log(`[KTA Gen] Blob: ${blob.size} bytes, ${blob.type}`);
                         return new Promise<string>((resolve, reject) => {
                             const reader = new FileReader();
                             reader.onloadend = () => resolve(reader.result as string);
@@ -72,54 +70,49 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                         });
                     }
 
-                    // Pre-fetch both images to base64 — fail loudly if either fails
-                    console.log('[KTA Generator] Pre-fetching template and photo...');
-                    const [base64Template, base64Photo] = await Promise.all([
+                    // 1. Pre-fetch ALL images to base64 in parallel
+                    console.log('[KTA Gen] Pre-fetching all images to base64...');
+                    const [b64Template, b64Photo, b64Qr] = await Promise.all([
                         fetchToBase64(templateUrl),
                         fetchToBase64(userData.photoUrl),
+                        Promise.resolve(userData.qrCodeDataUrl), // Already base64
                     ]);
 
-                    if (!base64Template || !base64Template.startsWith('data:')) {
-                        console.error('[KTA Generator] Template fetch failed — got:', base64Template?.substring(0, 50));
-                    }
-                    if (!base64Photo || !base64Photo.startsWith('data:')) {
-                        console.error('[KTA Generator] Photo fetch failed — got:', base64Photo?.substring(0, 50));
-                    }
+                    console.log(`[KTA Gen] Template base64: ${b64Template ? b64Template.length : 0} chars`);
+                    console.log(`[KTA Gen] Photo base64: ${b64Photo ? b64Photo.length : 0} chars`);
+                    console.log(`[KTA Gen] QR base64: ${b64Qr ? b64Qr.length : 0} chars`);
 
-                    // Inject base64 directly to DOM nodes (bypassing React re-render)
-                    const templateDiv = containerRef.current.querySelector('.kta-template-bg') as HTMLDivElement;
-                    const photoDiv = containerRef.current.querySelector('.kta-user-photo') as HTMLDivElement;
+                    // 2. Set base64 into state so React re-renders <img> tags with inline data
+                    setTemplateBase64(b64Template);
+                    setPhotoBase64(b64Photo);
+                    setQrBase64(b64Qr);
 
-                    if (templateDiv && base64Template) templateDiv.style.backgroundImage = `url(${base64Template})`;
-                    if (photoDiv && base64Photo) photoDiv.style.backgroundImage = `url(${base64Photo})`;
+                    // 3. Wait for React to flush + browser to render <img> elements
+                    await new Promise(resolve => setTimeout(resolve, 300));
 
-                    // Wait for browser to decode the injected images before capture
-                    const waitForImageDecode = async (dataUrl: string) => {
-                        if (!dataUrl || !dataUrl.startsWith('data:')) return;
-                        const img = new Image();
-                        img.src = dataUrl;
-                        try {
-                            await img.decode();
-                        } catch {
-                            // decode() may fail for some formats, continue anyway
-                            console.warn('[KTA Generator] Image decode() failed, continuing...');
+                    // 4. Verify all <img> tags inside container have loaded
+                    const allImgs = containerRef.current!.querySelectorAll('img');
+                    console.log(`[KTA Gen] Found ${allImgs.length} img tags in container`);
+                    for (const img of Array.from(allImgs)) {
+                        if (img.src && !img.complete) {
+                            console.log(`[KTA Gen] Waiting for img to load: ${img.src.substring(0, 60)}...`);
+                            await new Promise<void>((resolve) => {
+                                img.onload = () => resolve();
+                                img.onerror = () => { console.warn('[KTA Gen] img load error'); resolve(); };
+                                // Safety timeout
+                                setTimeout(() => resolve(), 3000);
+                            });
                         }
-                    };
+                    }
 
-                    await Promise.all([
-                        waitForImageDecode(base64Template),
-                        waitForImageDecode(base64Photo),
-                    ]);
-
-                    // Extra delay to ensure browser paint cycle has completed
+                    // Extra paint delay
                     await new Promise(resolve => setTimeout(resolve, 500));
 
-                    // 1. Generate PNG base64 with retry logic
+                    // 5. Use html-to-image to capture — with retry
                     let dataUrl = '';
-                    const maxRetries = 3;
-                    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                    for (let attempt = 1; attempt <= 3; attempt++) {
                         try {
-                            console.log(`[KTA Generator] html-to-image attempt ${attempt}/${maxRetries}...`);
+                            console.log(`[KTA Gen] Capturing attempt ${attempt}/3...`);
                             dataUrl = await htmlToImage.toPng(containerRef.current!, {
                                 quality: 0.95,
                                 width: KTA_WIDTH_PX,
@@ -128,47 +121,40 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                                 cacheBust: true,
                                 backgroundColor: '#ffffff',
                             });
-                            if (dataUrl && dataUrl.length > 1000) {
-                                console.log(`[KTA Generator] Capture success on attempt ${attempt}, size: ${dataUrl.length}`);
+                            // Validate: a proper card image should be at least ~10KB as base64
+                            if (dataUrl && dataUrl.length > 15000) {
+                                console.log(`[KTA Gen] Capture OK (attempt ${attempt}), size: ${dataUrl.length} chars`);
                                 break;
                             }
-                            console.warn(`[KTA Generator] Capture returned suspiciously small result (${dataUrl.length}), retrying...`);
+                            console.warn(`[KTA Gen] Capture too small (${dataUrl.length}), retrying...`);
                         } catch (err) {
-                            console.error(`[KTA Generator] Capture attempt ${attempt} failed:`, err);
-                            if (attempt === maxRetries) throw err;
+                            console.error(`[KTA Gen] Capture error (attempt ${attempt}):`, err);
+                            if (attempt === 3) throw err;
                         }
-                        // Wait between retries
-                        await new Promise(resolve => setTimeout(resolve, 300 * attempt));
+                        await new Promise(resolve => setTimeout(resolve, 500 * attempt));
                     }
 
-                    if (!dataUrl) throw new Error('html-to-image capture returned empty result');
+                    if (!dataUrl || dataUrl.length < 5000) {
+                        throw new Error(`Capture result too small or empty (${dataUrl?.length || 0} chars)`);
+                    }
 
-                    // 2. Generate PDF using pdf-lib
+                    // 6. Generate PDF
                     const pdfDoc = await PDFDocument.create()
-                    const widthPt = 8.7 * 28.3465 // cm to points
+                    const widthPt = 8.7 * 28.3465
                     const heightPt = 5.5 * 28.3465
                     const page = pdfDoc.addPage([widthPt, heightPt])
 
-                    // Remove data URI prefix for pdf-lib
-                    const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '')
-                    const imgBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))
+                    const pngData = dataUrl.replace(/^data:image\/png;base64,/, '')
+                    const imgBuffer = Uint8Array.from(atob(pngData), c => c.charCodeAt(0))
 
                     const pngImage = await pdfDoc.embedPng(imgBuffer)
-                    page.drawImage(pngImage, {
-                        x: 0,
-                        y: 0,
-                        width: widthPt,
-                        height: heightPt,
-                    })
+                    page.drawImage(pngImage, { x: 0, y: 0, width: widthPt, height: heightPt })
 
                     const pdfBytes = await pdfDoc.saveAsBase64({ dataUri: true })
 
-                    return {
-                        base64Image: dataUrl,
-                        base64Pdf: pdfBytes,
-                    }
+                    return { base64Image: dataUrl, base64Pdf: pdfBytes }
                 } catch (error) {
-                    console.error('[KTA Generator] Failed to generate KTA files:', error)
+                    console.error('[KTA Gen] FAILED:', error)
                     return null
                 }
             }
@@ -178,7 +164,21 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
         const scaleX = (val: number) => (val / PREVIEW_BASE_WIDTH) * KTA_WIDTH_PX
         const scaleY = (val: number) => (val / PREVIEW_BASE_HEIGHT) * KTA_HEIGHT_PX
 
-        // We render it completely off-screen but in the DOM so html-to-image can capture it
+        // Determine which src to use: base64 (during capture) or proxy (initial render)
+        const getProxyUrl = (url: string | undefined | null) => {
+            if (!url) return '';
+            if (url.startsWith('data:') || url.startsWith('/')) return url;
+            return `/api/kta/proxy-image?url=${encodeURIComponent(url)}`;
+        };
+
+        const templateSrc = templateBase64 || getProxyUrl(templateUrl);
+        const photoSrc = photoBase64 || getProxyUrl(userData.photoUrl);
+        const qrSrc = qrBase64 || userData.qrCodeDataUrl;
+
+        // IMPORTANT: We use <img> tags instead of CSS background-image because
+        // html-to-image serializes DOM → SVG foreignObject → Canvas.
+        // CSS background-image with large base64 data URLs FAILS SILENTLY in this pipeline.
+        // <img> tags are handled correctly by html-to-image.
         return (
             <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', pointerEvents: 'none' }}>
                 <div
@@ -191,31 +191,23 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                         overflow: 'hidden',
                     }}
                 >
-                    {/* Background Template */}
-                    <div
-                        className="kta-template-bg"
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            zIndex: 0,
-                            backgroundImage: `url(${safeTemplateUrl})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                        }}
-                    >
-                        {/* We use an invisible image just to safely track onload for the promise if needed, 
-                            though backgroundImage loading can be trickier, we'll keep the onload logic simple */}
+                    {/* Background Template — using <img> tag */}
+                    {templateSrc && (
                         <img
-                            src={safeTemplateUrl}
-                            style={{ display: 'none' }}
-                            onLoad={() => setIsReady(true)}
+                            src={templateSrc}
                             alt=""
                             crossOrigin="anonymous"
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                zIndex: 0,
+                                objectFit: 'cover',
+                            }}
                         />
-                    </div>
+                    )}
 
                     {/* Name */}
                     <div
@@ -223,7 +215,6 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                             position: 'absolute',
                             left: `${scaleX(fieldPositions.name.x)}px`,
                             top: `${scaleY(fieldPositions.name.y)}px`,
-                            // Add +150px (≈10 extra chars) beyond the template-defined width so long names aren't clipped
                             width: `${scaleX(fieldPositions.name.width) + 150}px`,
                             height: `${scaleY(fieldPositions.name.height)}px`,
                             fontSize: `${fieldPositions.name.fontSize * (KTA_WIDTH_PX / PREVIEW_BASE_WIDTH)}px`,
@@ -258,7 +249,7 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                         {userData.ktaNumber}
                     </div>
 
-                    {/* Photo */}
+                    {/* Photo — using <img> tag inside rounded container */}
                     <div
                         style={{
                             position: 'absolute',
@@ -273,22 +264,22 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                             zIndex: 5,
                         }}
                     >
-                        {safePhotoUrl && (
-                            <div
-                                className="kta-user-photo"
+                        {photoSrc && (
+                            <img
+                                src={photoSrc}
+                                alt=""
+                                crossOrigin="anonymous"
                                 style={{
                                     width: '100%',
                                     height: '100%',
-                                    backgroundImage: `url(${safePhotoUrl})`,
-                                    backgroundSize: 'cover',
-                                    backgroundPosition: 'center',
-                                    backgroundColor: '#e5e7eb',
+                                    objectFit: 'cover',
+                                    display: 'block',
                                 }}
                             />
                         )}
                     </div>
 
-                    {/* QR Code */}
+                    {/* QR Code — using <img> tag */}
                     <div
                         style={{
                             position: 'absolute',
@@ -304,15 +295,15 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                             zIndex: 5,
                         }}
                     >
-                        {userData.qrCodeDataUrl && (
-                            <div
+                        {qrSrc && (
+                            <img
+                                src={qrSrc}
+                                alt=""
                                 style={{
                                     width: '100%',
                                     height: '100%',
-                                    backgroundImage: `url(${userData.qrCodeDataUrl})`,
-                                    backgroundSize: 'contain',
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'center',
+                                    objectFit: 'contain',
+                                    display: 'block',
                                 }}
                             />
                         )}
