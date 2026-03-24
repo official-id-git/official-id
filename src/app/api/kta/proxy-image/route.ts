@@ -20,7 +20,9 @@ export async function GET(request: NextRequest) {
             'res.cloudinary.com',
             'lh3.googleusercontent.com',
             'avatars.githubusercontent.com',
-            // Add other domains used in your app for user photos here
+            'supabase.co',           // Supabase Storage (*.supabase.co)
+            'media.licdn.com',       // LinkedIn profile photos
+            'postimg.cc',            // postimg hosting
         ];
 
         const isAllowed = allowedDomains.some(domain => 

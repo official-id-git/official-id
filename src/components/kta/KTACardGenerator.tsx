@@ -56,43 +56,92 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
 
                 try {
                     // Force synchronous pre-fetch to Base64 to guarantee availability before capture
-                    const fetchToBase64 = async (url: string) => {
+                    const fetchToBase64 = async (url: string): Promise<string> => {
                         if (!url || url.startsWith('data:')) return url;
-                        try {
-                            const fetchUrl = url.startsWith('http') ? `/api/kta/proxy-image?url=${encodeURIComponent(url)}` : url;
-                            const res = await fetch(fetchUrl);
-                            if (!res.ok) throw new Error('Proxy fetch failed');
-                            const blob = await res.blob();
-                            return new Promise<string>((resolve) => {
-                                const reader = new FileReader();
-                                reader.onloadend = () => resolve(reader.result as string);
-                                reader.readAsDataURL(blob);
-                            });
-                        } catch (e) {
-                            console.error('Failed to convert image to base64:', e);
-                            return url; // Fallback
-                        }
+                        const fetchUrl = url.startsWith('http') ? `/api/kta/proxy-image?url=${encodeURIComponent(url)}` : url;
+                        console.log('[KTA Generator] Fetching image to base64:', fetchUrl.substring(0, 100));
+                        const res = await fetch(fetchUrl);
+                        if (!res.ok) throw new Error(`Proxy fetch failed (${res.status}): ${fetchUrl.substring(0, 100)}`);
+                        const blob = await res.blob();
+                        console.log(`[KTA Generator] Got blob: ${blob.size} bytes, type: ${blob.type}`);
+                        return new Promise<string>((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => resolve(reader.result as string);
+                            reader.onerror = () => reject(new Error('FileReader failed'));
+                            reader.readAsDataURL(blob);
+                        });
                     }
 
-                    const base64Template = await fetchToBase64(templateUrl);
-                    const base64Photo = await fetchToBase64(userData.photoUrl);
+                    // Pre-fetch both images to base64 — fail loudly if either fails
+                    console.log('[KTA Generator] Pre-fetching template and photo...');
+                    const [base64Template, base64Photo] = await Promise.all([
+                        fetchToBase64(templateUrl),
+                        fetchToBase64(userData.photoUrl),
+                    ]);
 
-                    // Inject directly to DOM nodes completely avoiding React render loops/timeouts
+                    if (!base64Template || !base64Template.startsWith('data:')) {
+                        console.error('[KTA Generator] Template fetch failed — got:', base64Template?.substring(0, 50));
+                    }
+                    if (!base64Photo || !base64Photo.startsWith('data:')) {
+                        console.error('[KTA Generator] Photo fetch failed — got:', base64Photo?.substring(0, 50));
+                    }
+
+                    // Inject base64 directly to DOM nodes (bypassing React re-render)
                     const templateDiv = containerRef.current.querySelector('.kta-template-bg') as HTMLDivElement;
                     const photoDiv = containerRef.current.querySelector('.kta-user-photo') as HTMLDivElement;
 
                     if (templateDiv && base64Template) templateDiv.style.backgroundImage = `url(${base64Template})`;
                     if (photoDiv && base64Photo) photoDiv.style.backgroundImage = `url(${base64Photo})`;
 
-                    // 1. Generate PNG base64
-                    const dataUrl = await htmlToImage.toPng(containerRef.current, {
-                        quality: 0.9,
-                        width: KTA_WIDTH_PX,
-                        height: KTA_HEIGHT_PX,
-                        pixelRatio: 2, // Double resolution for crispy text
-                        cacheBust: true, // Fix tainted canvas issues with external images
-                        backgroundColor: '#ffffff'
-                    })
+                    // Wait for browser to decode the injected images before capture
+                    const waitForImageDecode = async (dataUrl: string) => {
+                        if (!dataUrl || !dataUrl.startsWith('data:')) return;
+                        const img = new Image();
+                        img.src = dataUrl;
+                        try {
+                            await img.decode();
+                        } catch {
+                            // decode() may fail for some formats, continue anyway
+                            console.warn('[KTA Generator] Image decode() failed, continuing...');
+                        }
+                    };
+
+                    await Promise.all([
+                        waitForImageDecode(base64Template),
+                        waitForImageDecode(base64Photo),
+                    ]);
+
+                    // Extra delay to ensure browser paint cycle has completed
+                    await new Promise(resolve => setTimeout(resolve, 500));
+
+                    // 1. Generate PNG base64 with retry logic
+                    let dataUrl = '';
+                    const maxRetries = 3;
+                    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                        try {
+                            console.log(`[KTA Generator] html-to-image attempt ${attempt}/${maxRetries}...`);
+                            dataUrl = await htmlToImage.toPng(containerRef.current!, {
+                                quality: 0.95,
+                                width: KTA_WIDTH_PX,
+                                height: KTA_HEIGHT_PX,
+                                pixelRatio: 2,
+                                cacheBust: true,
+                                backgroundColor: '#ffffff',
+                            });
+                            if (dataUrl && dataUrl.length > 1000) {
+                                console.log(`[KTA Generator] Capture success on attempt ${attempt}, size: ${dataUrl.length}`);
+                                break;
+                            }
+                            console.warn(`[KTA Generator] Capture returned suspiciously small result (${dataUrl.length}), retrying...`);
+                        } catch (err) {
+                            console.error(`[KTA Generator] Capture attempt ${attempt} failed:`, err);
+                            if (attempt === maxRetries) throw err;
+                        }
+                        // Wait between retries
+                        await new Promise(resolve => setTimeout(resolve, 300 * attempt));
+                    }
+
+                    if (!dataUrl) throw new Error('html-to-image capture returned empty result');
 
                     // 2. Generate PDF using pdf-lib
                     const pdfDoc = await PDFDocument.create()
@@ -119,7 +168,7 @@ const KTACardGenerator = forwardRef<KTACardGeneratorRef, KTACardGeneratorProps>(
                         base64Pdf: pdfBytes,
                     }
                 } catch (error) {
-                    console.error('Failed to generate KTA files:', error)
+                    console.error('[KTA Generator] Failed to generate KTA files:', error)
                     return null
                 }
             }
