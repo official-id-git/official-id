@@ -245,7 +245,28 @@ export async function POST(request: NextRequest) {
             const imageFileName = `KTA_${ktaNumberString}_image.png`
             const pdfFileName = `KTA_${ktaNumberString}_pdf.pdf`
 
+            // Cleanup existing files with the same name to prevent duplicates
+            try {
+                const { findGDriveFileByName, deleteFromGDrive } = await import('@/lib/gdrive')
+                console.log(`[GDrive DEBUG] Cleaning up existing files before upload...`)
+                
+                const existingImgId = await findGDriveFileByName(imageFileName, memberFolderId)
+                if (existingImgId) {
+                    console.log(`[GDrive DEBUG] Deleting existing image: ${existingImgId}`)
+                    await deleteFromGDrive(existingImgId)
+                }
+
+                const existingPdfId = await findGDriveFileByName(pdfFileName, memberFolderId)
+                if (existingPdfId) {
+                    console.log(`[GDrive DEBUG] Deleting existing PDF: ${existingPdfId}`)
+                    await deleteFromGDrive(existingPdfId)
+                }
+            } catch (cleanupErr) {
+                console.warn('[GDrive DEBUG] Cleanup failed (non-fatal):', cleanupErr)
+            }
+
             console.log(`[GDrive DEBUG] Uploading image "${imageFileName}" to folder ${memberFolderId}...`)
+
             const imgResult = await uploadToGDrive(ktaImageBuffer, imageFileName, 'image/png', memberFolderId)
             console.log(`[GDrive DEBUG] Image uploaded OK. fileId=${imgResult.fileId} link=${imgResult.webViewLink}`)
 

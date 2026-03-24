@@ -96,6 +96,32 @@ export async function findGDriveFolderByName(folderName: string, parentFolderId?
 }
 
 /**
+ * Find a file by name in the target GDrive folder.
+ */
+export async function findGDriveFileByName(fileName: string, parentFolderId?: string): Promise<string | null> {
+    const accessToken = await getAccessToken();
+    const parent = parentFolderId || GDRIVE_FOLDER_ID;
+    const safeFileName = fileName.replace(/'/g, "\\'");
+
+    const query = `name='${safeFileName}' and '${parent}' in parents and mimeType!='application/vnd.google-apps.folder' and trashed=false`;
+
+    const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id)&supportsAllDrives=true&includeItemsFromAllDrives=true`;
+
+    const searchRes = await fetch(url, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (searchRes.ok) {
+        const searchData = await searchRes.json();
+        if (searchData.files && searchData.files.length > 0) {
+            return searchData.files[0].id;
+        }
+    }
+    return null;
+}
+
+
+/**
  * Initiate a resumable upload to Google Drive.
  * Returns the resumable session URI.
  */

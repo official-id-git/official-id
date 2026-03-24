@@ -69,8 +69,15 @@ export async function uploadBufferToCloudinary(
 
   // We keep the original filename including extension, so Cloudinary properly identifies the format (e.g. .pdf)
   // when storing it as an image resource.
-  const finalPublicId = fileName
+  // Remove extension from public_id to prevent double extensions (e.g. .png.png)
+  // Cloudinary adds the extension automatically based on the resource type and format.
+  const finalPublicId = fileName.includes('.') 
+    ? fileName.substring(0, fileName.lastIndexOf('.')) 
+    : fileName
+
   formData.append('public_id', finalPublicId)
+  formData.append('overwrite', 'true')
+  formData.append('invalidate', 'true')
 
   const response = await fetch(
     `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`,
@@ -79,6 +86,7 @@ export async function uploadBufferToCloudinary(
       body: formData,
     }
   )
+
 
   if (!response.ok) {
     const error = await response.json()
