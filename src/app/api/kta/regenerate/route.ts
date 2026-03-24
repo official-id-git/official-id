@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
             const targetFolderName = `official-id_kta/KTA_${circleName.replace(/[^a-zA-Z0-9_-]/g, '_')}`
 
             // Upload PDF to Cloudinary
-            const safeFileNamePDF = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}_pdf.pdf`
+            const safeFileNamePDF = `KTA_${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}_pdf.pdf`
             console.log(`KTA Regenerate: Uploading PDF to Cloudinary`)
 
             cloudinaryPdfResult = await uploadBufferToCloudinary(
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
             console.log(`KTA Regenerate: PDF uploaded successfully. URL: ${cloudinaryPdfResult.secure_url}`)
 
             // Upload Image to Cloudinary
-            const safeFileNameImage = `${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}_image.png`
+            const safeFileNameImage = `KTA_${ktaNumberString}_${application.full_name.replace(/[^a-zA-Z0-9 ]/g, '_')}_image.png`
             console.log(`KTA Regenerate: Uploading PNG to Cloudinary folder ${targetFolderName}`)
 
             cloudinaryImageResult = await uploadBufferToCloudinary(
@@ -120,6 +120,7 @@ export async function POST(request: NextRequest) {
                 safeFileNameImage,
                 targetFolderName
             )
+
             console.log(`KTA Regenerate: PNG uploaded successfully. URL: ${cloudinaryImageResult.secure_url}`)
 
         } catch (uploadError: any) {
@@ -194,28 +195,18 @@ export async function POST(request: NextRequest) {
                     console.log(`[GDrive DEBUG] Member folder CREATED with ID: ${memberFolderId}`)
                 }
 
-                const imageFileName = `KTA_${ktaNumberString}_image.png`
-                const pdfFileName = `KTA_${ktaNumberString}_pdf.pdf`
-
-                // Cleanup existing files with the same name to prevent duplicates
+                // Exhaustive Cleanup: Delete ANY existing files for this KTA number
                 try {
-                    const { findGDriveFileByName, deleteFromGDrive } = await import('@/lib/gdrive')
-                    console.log(`[GDrive DEBUG] Cleaning up existing files before upload...`)
-                    
-                    const existingImgId = await findGDriveFileByName(imageFileName, memberFolderId)
-                    if (existingImgId) {
-                        console.log(`[GDrive DEBUG] Deleting existing image: ${existingImgId}`)
-                        await deleteFromGDrive(existingImgId)
-                    }
-
-                    const existingPdfId = await findGDriveFileByName(pdfFileName, memberFolderId)
-                    if (existingPdfId) {
-                        console.log(`[GDrive DEBUG] Deleting existing PDF: ${existingPdfId}`)
-                        await deleteFromGDrive(existingPdfId)
-                    }
+                    const { cleanGDriveFolder } = await import('@/lib/gdrive')
+                    console.log(`[GDrive DEBUG] Exhaustively cleaning up existing files for KTA: ${ktaNumberString}...`)
+                    await cleanGDriveFolder(memberFolderId, ktaNumberString)
                 } catch (cleanupErr) {
                     console.warn('[GDrive DEBUG] Cleanup failed (non-fatal):', cleanupErr)
                 }
+
+                // Standardized Filenames matching Cloudinary exactly
+                const imageFileName = `KTA_${ktaNumberString}_image.png`
+                const pdfFileName = `KTA_${ktaNumberString}_pdf.pdf`
 
                 console.log(`[GDrive DEBUG] Uploading image "${imageFileName}" to folder ${memberFolderId}...`)
 

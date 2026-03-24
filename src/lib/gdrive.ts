@@ -120,6 +120,52 @@ export async function findGDriveFileByName(fileName: string, parentFolderId?: st
     return null;
 }
 
+/**
+ * Deletes all files matching a specific pattern (like KTA Number) inside a GDrive folder.
+ * This ensures no old versions (with different extensions or names) are left behind.
+ */
+export async function cleanGDriveFolder(folderId: string, namePattern: string): Promise<void> {
+    const accessToken = await getAccessToken();
+    const safePattern = namePattern.replace(/'/g, "\\'");
+
+    // Query searches for any file containing the pattern in its name inside the target folder
+    const query = `name contains '${safePattern}' and '${folderId}' in parents and mimeType!='application/vnd.google-apps.folder' and trashed=false`;
+    const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true`;
+
+    try {
+        const searchRes = await fetch(url, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+
+        if (!searchRes.ok) {
+            console.error('[GDrive Cleanup] Search failed:', await searchRes.text());
+            return;
+        }
+
+        const searchData = await searchRes.json();
+        const files = searchData.files || [];
+
+        if (files.length === 0) {
+            console.log(`[GDrive Cleanup] No existing files found matching pattern: ${namePattern}`);
+            return;
+        }
+
+        console.log(`[GDrive Cleanup] Found ${files.length} existing file(s) matching "${namePattern}". Deleting...`);
+        
+        // Delete all matches concurrently
+        await Promise.all(
+            files.map(async (file: { id: string; name: string }) => {
+                console.log(`[GDrive Cleanup] Deleting: ${file.name} (${file.id})`);
+                await deleteFromGDrive(file.id);
+            })
+        );
+        
+        console.log(`[GDrive Cleanup] Successfully deleted ${files.length} old file(s).`);
+
+    } catch (err) {
+        console.error('[GDrive Cleanup] Error during cleanup:', err);
+    }
+}
 
 /**
  * Initiate a resumable upload to Google Drive.
@@ -130,6 +176,7 @@ export async function initiateResumableUpload(
     mimeType: string,
     folderId?: string,
     origin?: string
+
 ): Promise<string> {
     const accessToken = await getAccessToken();
     const targetFolder = folderId || GDRIVE_FOLDER_ID;
