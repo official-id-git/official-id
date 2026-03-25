@@ -15,7 +15,11 @@ export interface CloudinaryUploadResult {
 /**
  * Upload image to Cloudinary with auto compression
  */
-export async function uploadToCloudinary(file: File, folder: string = 'official-id'): Promise<CloudinaryUploadResult> {
+export async function uploadToCloudinary(
+  file: File, 
+  folder: string = 'official-id',
+  publicId?: string
+): Promise<CloudinaryUploadResult> {
   if (!CLOUD_NAME || !UPLOAD_PRESET) {
     throw new Error('Cloudinary belum dikonfigurasi. Pastikan NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME dan NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ada di .env.local')
   }
@@ -24,6 +28,10 @@ export async function uploadToCloudinary(file: File, folder: string = 'official-
   formData.append('file', file)
   formData.append('upload_preset', UPLOAD_PRESET)
   formData.append('folder', folder)
+  
+  if (publicId) {
+    formData.append('public_id', publicId)
+  }
 
   const response = await fetch(
     `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,

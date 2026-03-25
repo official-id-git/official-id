@@ -187,7 +187,7 @@ export default function KTAManagementPage() {
     const proceedUploadFlow = async (file: File) => {
         setUploadingTemplate(true)
         try {
-            const result = await uploadToCloudinary(file, 'official-id/kta-templates')
+            const result = await uploadToCloudinary(file, 'official-id/kta-templates', `template_${orgId}`)
             setTemplateImageUrl(result.secure_url)
             toast.success('Template berhasil diunggah')
         } catch (err: any) {
