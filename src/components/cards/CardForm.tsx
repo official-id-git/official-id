@@ -748,7 +748,7 @@ export function CardForm({ card, mode }: CardFormProps) {
                 <div className="flex-1 w-full space-y-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Label / Nama Tombol (contoh: "Download File Sambol")
+                      Label / Nama Tombol (contoh: "Unduh Dokumen")
                     </label>
                     <input
                       type="text"
