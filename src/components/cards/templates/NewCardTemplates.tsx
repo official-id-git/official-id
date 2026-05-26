@@ -3,7 +3,7 @@
 import React from 'react'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
-import { Mail, Phone, Globe, MapPin, Linkedin, Twitter, Github, Instagram, Facebook } from 'lucide-react'
+import { Mail, Phone, Globe, MapPin, Linkedin, Twitter, Github, Instagram, Facebook , FileText } from 'lucide-react'
 import type { BusinessCard } from '@/types'
 import PixelBlast from '@/components/effects/PixelBlast'
 import FaultyTerminal from '@/components/effects/FaultyTerminal'
@@ -106,6 +106,16 @@ export const MMBatch8Card = ({ card, visibleFields, socialLinks, onGenerateVCard
                         <span className="break-all">{card.website}</span>
                     </a>
                 )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg text-gray-800 hover:bg-gray-100 transition-all border border-gray-200 hover:border-gray-400">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
                 {(() => {
                     const loc = getLocationDisplay(card, visibleFields)
                     if (!loc.hasAny) return null
@@ -211,6 +221,16 @@ export const KabayanGroupCard = ({ card, visibleFields, socialLinks, onGenerateV
                             <span className="break-all">{card.website}</span>
                         </a>
                     )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg text-gray-900 hover:bg-gray-100 transition-all border border-gray-300 hover:border-gray-500">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
                     {(() => {
                         const loc = getLocationDisplay(card, visibleFields)
                         if (!loc.hasAny) return null
@@ -322,6 +342,16 @@ export const MickeyCard = ({ card, visibleFields, socialLinks, onGenerateVCard, 
                         <span className="break-all text-sm">{card.website}</span>
                     </a>
                 )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg text-gray-900 hover:bg-gray-100 transition-all border border-gray-300 shadow-sm">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
                 {(() => {
                     const loc = getLocationDisplay(card, visibleFields)
                     if (!loc.hasAny) return null
@@ -447,6 +477,16 @@ export const BettyBoopCard = ({ card, visibleFields, socialLinks, onGenerateVCar
                         <span className="break-all text-sm">{card.website}</span>
                     </a>
                 )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg text-pink-900 hover:bg-pink-100 transition-all border border-pink-300 shadow-sm">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
                 {(() => {
                     const loc = getLocationDisplay(card, visibleFields)
                     if (!loc.hasAny) return null
@@ -562,6 +602,16 @@ export const FelixTheCatCard = ({ card, visibleFields, socialLinks, onGenerateVC
                         <span className="break-all text-sm">{card.website}</span>
                     </a>
                 )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg text-gray-900 hover:bg-gray-200 transition-all border-2 border-black shadow-sm">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
                 {(() => {
                     const loc = getLocationDisplay(card, visibleFields)
                     if (!loc.hasAny) return null
@@ -672,6 +722,16 @@ export const IPTIKICard = ({ card, visibleFields, socialLinks, onGenerateVCard, 
                         <span className="break-all">{card.website}</span>
                     </a>
                 )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg text-gray-900 hover:bg-gray-100 transition-all border border-gray-200 hover:border-gray-400">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
                 {(() => {
                     const loc = getLocationDisplay(card, visibleFields)
                     if (!loc.hasAny) return null

@@ -139,12 +139,14 @@ export function CardForm({ card, mode }: CardFormProps) {
     template: (card as any)?.template || 'professional',
     username: card?.username || '',
     social_links: (card?.social_links as Record<string, string>) || {},
+    custom_links: (card as any)?.custom_links || [],
     is_public: card?.is_public ?? true,
     visible_fields: (card?.visible_fields as Record<string, boolean>) || {
       email: true,
       phone: true,
       website: true,
       social_links: true,
+      custom_links: true,
       address: true,
       city: true,
     },
@@ -437,6 +439,30 @@ export function CardForm({ card, mode }: CardFormProps) {
     }))
   }
 
+  const handleAddCustomLink = () => {
+    setFormData(prev => ({
+      ...prev,
+      custom_links: [...(prev.custom_links || []), { id: crypto.randomUUID(), label: '', url: '' }]
+    }))
+  }
+
+  const handleCustomLinkChange = (id: string, field: 'label' | 'url', value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      custom_links: prev.custom_links.map((link: any) => 
+        link.id === id ? { ...link, [field]: value } : link
+      )
+    }))
+  }
+
+  const handleRemoveCustomLink = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      custom_links: prev.custom_links.filter((link: any) => link.id !== id)
+    }))
+  }
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError(null)
@@ -699,6 +725,76 @@ export function CardForm({ card, mode }: CardFormProps) {
           </div>
         </div>
 
+        {/* Custom Links */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Dokumen Tambahan / Custom Links</h3>
+              <p className="text-sm text-gray-500">Tambahkan link ke Google Drive, Portfolio, Menu, dll (maks. 5)</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddCustomLink}
+              disabled={(formData as any).custom_links?.length >= 5}
+              className="px-4 py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 disabled:opacity-50 text-sm font-medium transition-colors"
+            >
+              + Tambah Link
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {(formData as any).custom_links?.map((link: any, index: number) => (
+              <div key={link.id} className="flex flex-col md:flex-row gap-3 items-start p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <div className="flex-1 w-full space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Label / Nama Tombol (contoh: "Download File Sambol")
+                    </label>
+                    <input
+                      type="text"
+                      value={link.label}
+                      onChange={(e) => handleCustomLinkChange(link.id, 'label', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="Contoh: Portfolio Terbaru"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      URL / Link Tujuan
+                    </label>
+                    <input
+                      type="url"
+                      value={link.url}
+                      onChange={(e) => handleCustomLinkChange(link.id, 'url', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="https://..."
+                      required
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveCustomLink(link.id)}
+                  className="mt-6 md:mt-5 p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors shrink-0"
+                  title="Hapus link"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+            
+            {!(formData as any).custom_links?.length && (
+              <div className="text-center py-6 border-2 border-dashed border-gray-200 rounded-lg text-gray-500">
+                Belum ada custom link ditambahkan
+              </div>
+            )}
+          </div>
+        </div>
+
+
         {/* Template Selection Carousel */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Pilih Template Kartu</h3>
@@ -773,6 +869,7 @@ export function CardForm({ card, mode }: CardFormProps) {
                         ...formData,
                         template: TEMPLATES[currentTemplateIndex].id,
                         social_links: formData.social_links,
+                        custom_links: (formData as any).custom_links,
                         business_description: (formData as any).business_description || '',
                         show_business_description: (formData as any).visible_fields?.business_description ?? true
                       }}
@@ -1011,6 +1108,7 @@ export function CardForm({ card, mode }: CardFormProps) {
                   { key: 'email', label: 'Email' },
                   { key: 'phone', label: 'Telepon' },
                   { key: 'website', label: 'Website' },
+                  { key: 'custom_links', label: 'Custom Links' },
                   { key: 'social_links', label: 'Sosial Media' },
                   { key: 'address', label: 'Alamat' },
                   { key: 'city', label: 'Kota' },

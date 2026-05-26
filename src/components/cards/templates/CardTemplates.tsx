@@ -1,5 +1,5 @@
 import React from 'react'
-import { Mail, Phone, Globe, Linkedin, Twitter, Github, Instagram, Facebook, MapPin } from 'lucide-react'
+import { Mail, Phone, Globe, Linkedin, Twitter, Github, Instagram, Facebook, MapPin , FileText } from 'lucide-react'
 import type { BusinessCard } from '@/types'
 import Image from 'next/image'
 
@@ -97,6 +97,16 @@ export const ModernDarkCard = ({ card, visibleFields, socialLinks, onGenerateVCa
                         <span className="break-all">{card.website}</span>
                     </a>
                 )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-3 bg-slate-800/50 rounded-lg text-gray-300 hover:bg-slate-700/50 transition-all border border-slate-700 hover:border-purple-500">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
                 {(() => {
                     const loc = getLocationDisplay(card, visibleFields)
                     if (!loc.hasAny) return null
@@ -209,6 +219,16 @@ export const CreativeCard = ({ card, visibleFields, socialLinks, onGenerateVCard
                         <span className="text-gray-700 break-all">{card.website}</span>
                     </a>
                 )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl hover:from-blue-100 hover:to-cyan-100 transition-all group">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
                 {(() => {
                     const loc = getLocationDisplay(card, visibleFields)
                     if (!loc.hasAny) return null
@@ -314,6 +334,16 @@ export const MinimalWhiteCard = ({ card, visibleFields, socialLinks, onGenerateV
                         <span className="break-all text-sm">{card.website}</span>
                     </a>
                 )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-700 hover:text-gray-900 transition-colors">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
                 {(() => {
                     const loc = getLocationDisplay(card, visibleFields)
                     if (!loc.hasAny) return null
@@ -432,6 +462,16 @@ export const ElegantCard = ({ card, visibleFields, socialLinks, onGenerateVCard,
                         <span className="text-amber-900 break-all">{card.website}</span>
                     </a>
                 )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 bg-white/80 rounded-xl hover:bg-white transition-all shadow-sm">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
                 {(() => {
                     const loc = getLocationDisplay(card, visibleFields)
                     if (!loc.hasAny) return null
@@ -547,6 +587,16 @@ export const CorporateCard = ({ card, visibleFields, socialLinks, onGenerateVCar
                         </a>
                     </div>
                 )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 py-3 border-b border-gray-200">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
             </div>
 
             {visibleFields.social_links && Object.keys(socialLinks).length > 0 && (
@@ -657,6 +707,16 @@ export const TechCard = ({ card, visibleFields, socialLinks, onGenerateVCard, re
                     <span className="text-gray-300 break-all text-sm">{card.website}</span>
                 </a>
             )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-gray-900/50 rounded-lg border border-cyan-500/20 hover:border-cyan-500 transition-all group">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
 
             {(() => {
                 const loc = getLocationDisplay(card, visibleFields)
@@ -789,6 +849,16 @@ export const ArtisticCard = ({ card, visibleFields, socialLinks, onGenerateVCard
                         <span className="text-gray-800 break-all">{card.website}</span>
                     </a>
                 )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 bg-white/70 backdrop-blur-sm rounded-2xl hover:bg-white transition-all shadow-sm">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
 
                 {(() => {
                     const loc = getLocationDisplay(card, visibleFields)
@@ -913,6 +983,16 @@ export const LuxuryCard = ({ card, visibleFields, socialLinks, onGenerateVCard, 
                     <span className="text-gray-200 break-all text-sm">{card.website}</span>
                 </a>
             )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 bg-gray-800/50 rounded-lg border border-yellow-600/30 hover:border-yellow-500 transition-all">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
             {(() => {
                 const loc = getLocationDisplay(card, visibleFields)
                 if (!loc.hasAny) return null
@@ -1035,6 +1115,16 @@ export const VibrantCard = ({ card, visibleFields, socialLinks, onGenerateVCard,
                         <span className="text-gray-800 break-all">{card.website}</span>
                     </a>
                 )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-100 to-cyan-100 rounded-2xl hover:from-blue-200 hover:to-cyan-200 transition-all group">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
 
                 {(() => {
                     const loc = getLocationDisplay(card, visibleFields)

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useCallback } from 'react'
+import { FileText } from 'lucide-react';
 import Image from 'next/image'
 import type { BusinessCard } from '@/types'
 
@@ -230,6 +231,16 @@ export function CardPreview({ card, template = 'professional', readonly = false 
                 <span className="break-all">{card.website}</span>
               </a>
             )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition-colors">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
 
             {/* Address and City Display */}
             {(() => {
@@ -363,6 +374,16 @@ export function CardPreview({ card, template = 'professional', readonly = false 
                   <span className="break-all">{card.website}</span>
                 </a>
               )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-300 hover:text-white transition-colors">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
               {/* Address and City Display - Modern */}
               {(() => {
                 const address = (card as any).address
@@ -478,6 +499,16 @@ export function CardPreview({ card, template = 'professional', readonly = false 
                   {card.website}
                 </a>
               )}
+                    {/* Custom Links */}
+                    {visibleFields.custom_links !== false && (card as any).custom_links && ((card as any).custom_links.length > 0) && (
+                        (card as any).custom_links.map((link: any) => (
+                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="block text-gray-600 hover:text-gray-900 transition-colors">
+                                <FileText className="w-5 h-5 shrink-0 opacity-80" />
+                                <span className="break-all">{link.label}</span>
+                            </a>
+                        ))
+                    )}
+
               {/* Address and City - Minimal */}
               {(() => {
                 const address = (card as any).address

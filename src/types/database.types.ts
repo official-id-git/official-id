@@ -70,6 +70,7 @@ export type Database = {
           city: string | null
           business_description: string | null
           show_business_description: boolean
+          custom_links: Json | null
         }
         Insert: {
           id?: string
@@ -92,6 +93,7 @@ export type Database = {
           city?: string | null
           business_description?: string | null
           show_business_description?: boolean
+          custom_links?: Json | null
         }
         Update: {
           id?: string
@@ -114,6 +116,7 @@ export type Database = {
           city?: string | null
           business_description?: string | null
           show_business_description?: boolean
+          custom_links?: Json | null
         }
         Relationships: []
       }
