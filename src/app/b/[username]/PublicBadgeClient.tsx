@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useCards } from '@/hooks/useCards'
-import Badge3D from '@/components/badge/Badge3D'
+import dynamic from 'next/dynamic'
+
+const Badge3D = dynamic(() => import('@/components/badge/Badge3D'), { ssr: false })
 import { Loader2 } from 'lucide-react'
 import type { BusinessCard } from '@/types'
 import Link from 'next/link'

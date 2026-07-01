@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { useCards } from '@/hooks/useCards'
-import Badge3D from '@/components/badge/Badge3D'
+import dynamic from 'next/dynamic'
+
+const Badge3D = dynamic(() => import('@/components/badge/Badge3D'), { ssr: false })
 import { Facebook, Linkedin, Link as LinkIcon, Loader2, ArrowLeft, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import type { BusinessCard } from '@/types'
