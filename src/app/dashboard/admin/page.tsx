@@ -173,6 +173,27 @@ export default function AdminDashboard() {
             </div>
           </Link>
 
+          {/* Card Management */}
+          <Link href="/dashboard/admin/cards" className="block">
+            <div className="bg-white rounded-2xl shadow-sm p-6 hover:shadow-md transition-shadow border-2 border-transparent hover:border-purple-500">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center">
+                  <svg className="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Manajemen Kartu</h3>
+                  <p className="text-gray-500 text-sm">Lihat dan kelola kartu bisnis pengguna</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500">{stats?.totalCards || 0} kartu dibuat</span>
+                <span className="text-purple-600 font-medium">Kelola →</span>
+              </div>
+            </div>
+          </Link>
+
           {/* Payment Verification */}
           <Link href="/dashboard/admin/payments" className="block">
             <div className="bg-white rounded-2xl shadow-sm p-6 hover:shadow-md transition-shadow border-2 border-transparent hover:border-green-500 relative">

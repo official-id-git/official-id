@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { User, PaymentTransaction, UserRole, PaymentStatus } from '@/types'
+import type { User, PaymentTransaction, UserRole, PaymentStatus, BusinessCard } from '@/types'
 
 interface AdminStats {
   totalUsers: number
@@ -233,6 +233,66 @@ export function useAdmin() {
     }
   }, [supabase])
 
+  // Fetch all business cards with pagination
+  const fetchCards = useCallback(async (
+    page: number = 1,
+    limit: number = 20,
+    search: string = ''
+  ): Promise<{ cards: (BusinessCard & { users?: User })[], total: number }> => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      let query = supabase
+        .from('business_cards')
+        .select('*, users(id, full_name, email, avatar_url)', { count: 'exact' })
+
+      if (search) {
+        query = query.or(`full_name.ilike.%${search}%,company.ilike.%${search}%`)
+      }
+
+      const from = (page - 1) * limit
+      const to = from + limit - 1
+
+      const { data: cards, error: fetchError, count } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to)
+
+      if (fetchError) throw fetchError
+
+      return {
+        cards: cards || [],
+        total: count || 0
+      }
+    } catch (err: any) {
+      setError(err.message)
+      return { cards: [], total: 0 }
+    } finally {
+      setLoading(false)
+    }
+  }, [supabase])
+
+  // Delete card
+  const deleteCard = useCallback(async (cardId: string): Promise<boolean> => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const { error: deleteError } = await supabase
+        .from('business_cards')
+        .delete()
+        .eq('id', cardId)
+
+      if (deleteError) throw deleteError
+      return true
+    } catch (err: any) {
+      setError(err.message)
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }, [supabase])
+
   // Approve payment
   const approvePayment = useCallback(async (
     paymentId: string,
@@ -339,6 +399,8 @@ export function useAdmin() {
     fetchPayments,
     approvePayment,
     rejectPayment,
-    fetchPaymentDetail
+    fetchPaymentDetail,
+    fetchCards,
+    deleteCard
   }
 }
