@@ -3,6 +3,7 @@
 import * as THREE from 'three'
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { Canvas, extend, useThree, useFrame } from '@react-three/fiber'
+import { useControls } from 'leva'
 import { Suspense } from 'react'
 import { useGLTF, useTexture, Environment, Lightformer, Text, Resize, RenderTexture, PerspectiveCamera, Image } from '@react-three/drei'
 import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphericalJoint } from '@react-three/rapier'
@@ -47,12 +48,18 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
   const link = user?.username ? `official.id/c/${user.username}` : 'official.id'
   const photoUrl = user?.photo_url || ''
 
+  const { textX, textY, textScale } = useControls('Badge Layout', {
+    textX: { value: 0, min: -3, max: 3, step: 0.01 },
+    textY: { value: 0, min: -3, max: 3, step: 0.01 },
+    textScale: { value: 1, min: 0.1, max: 3, step: 0.01 }
+  })
+
   return (
     <>
       <PerspectiveCamera makeDefault manual aspect={1.05} position={[0.49, 0.22, 2]} />
       <color attach="background" args={[badgeColor]} />
       
-      <group position={[-1.1, 0.7, 0]} rotation={[0, Math.PI, Math.PI]}>
+      <group position={[textX, textY, 0]} scale={[textScale, textScale, textScale]} rotation={[0, Math.PI, Math.PI]}>
         
         {/* TEMPORARILY DISABLED IMAGE TO PREVENT CRASH */}
         <mesh position={[0, -0.6, 0]}>
