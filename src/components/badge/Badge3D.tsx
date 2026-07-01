@@ -48,31 +48,37 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
   const link = user?.username ? `official.id/c/${user.username}` : 'official.id'
   const photoUrl = user?.photo_url || ''
 
-  const { textX, textY, textScale } = useControls('Badge Layout', {
-    textX: { value: 0, min: -3, max: 3, step: 0.01 },
-    textY: { value: 0, min: -3, max: 3, step: 0.01 },
-    textScale: { value: 1, min: 0.1, max: 3, step: 0.01 }
-  })
+  // Remove Leva to lock in the layout
+  // const { textX, textY, textScale } = useControls('Badge Layout', { ... })
 
   return (
     <>
       <PerspectiveCamera makeDefault manual aspect={1.05} position={[0.49, 0.22, 2]} />
       <color attach="background" args={[badgeColor]} />
       
-      <group position={[textX, textY, 0]} scale={[textScale, textScale, textScale]} rotation={[0, Math.PI, Math.PI]}>
+      <group position={[0, -0.3, 0]} rotation={[0, Math.PI, Math.PI]}>
         
-        {/* TEMPORARILY DISABLED IMAGE TO PREVENT CRASH */}
-        <mesh position={[0, -0.6, 0]}>
-          <circleGeometry args={[0.3, 32]} />
-          <meshBasicMaterial color="#9ca3af" />
-        </mesh>
+        {photoUrl ? (
+          <Image 
+            url={photoUrl} 
+            transparent 
+            radius={0.5} 
+            position={[0, 0.9, 0]} 
+            scale={[0.6, 0.6]} 
+          />
+        ) : (
+          <mesh position={[0, 0.9, 0]}>
+            <circleGeometry args={[0.3, 32]} />
+            <meshBasicMaterial color="#9ca3af" />
+          </mesh>
+        )}
         
         <Text
           fontSize={0.25}
           color={textColor}
           anchorX="center"
           anchorY="middle"
-          position={[0, 0, 0]}>
+          position={[0, 0.4, 0]}>
           {fullName}
         </Text>
         
@@ -81,7 +87,7 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
             color={textColor}
             anchorX="center"
             anchorY="middle"
-            position={[0, -0.2, 0]}>
+            position={[0, 0.2, 0]}>
             {email}
         </Text>
         
@@ -90,7 +96,7 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
             color={textColor}
             anchorX="center"
             anchorY="middle"
-            position={[0, -0.35, 0]}>
+            position={[0, 0.0, 0]}>
             {whatsapp}
         </Text>
         
@@ -99,7 +105,7 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
             color={textColor}
             anchorX="center"
             anchorY="middle"
-            position={[0, -0.55, 0]}>
+            position={[0, -0.2, 0]}>
             {link}
         </Text>
         
@@ -224,7 +230,7 @@ function Band({ maxSpeed = 50, minSpeed = 10, badgeColor = '#000000', lanyardCol
         {/* @ts-ignore */}
         <meshLineGeometry />
         {/* @ts-ignore */}
-        <meshLineMaterial color="#ffffff" depthTest={false} resolution={[width, height]} useMap map={texture} repeat={[-0.5, 1]} lineWidth={1} />
+        <meshLineMaterial color="#ffffff" depthTest={false} resolution={[width, height]} useMap map={texture} repeat={[-1, 1]} lineWidth={1} />
       </mesh>
     </>
   )
