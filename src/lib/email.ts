@@ -1641,3 +1641,159 @@ export const getKtaRejectedEmailTemplate = (data: RejectedKTAParams) => {
     `
   }
 }
+
+// ----------------------------------------------------------------------
+// Broadcast Promo Templates
+// ----------------------------------------------------------------------
+
+export function getCreateCardPromoTemplate(data: { userName: string }): { subject: string; html: string } {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'
+  const year = new Date().getFullYear()
+  return {
+    subject: 'Buat Kartu Nama Digital Profesional Anda Sekarang (Gratis!)',
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f5f5f5;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #3B82F6, #1D4ED8); border-radius: 16px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 28px;">📇</span>
+            </div>
+            <h1 style="color: #1a1a1a; font-size: 24px; margin: 0;">Buat Kesan Pertama yang Tak Terlupakan</h1>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">Halo <strong>${data.userName}</strong>,</p>
+          <p style="color: #666; line-height: 1.6;">Tahukah Anda bahwa kartu nama digital dapat membantu Anda terhubung lebih cepat dan terlihat lebih profesional? Di Official.id, Anda bisa membuat kartu nama digital gratis!</p>
+          
+          <div style="background: #f0f9ff; border-radius: 12px; padding: 16px; margin: 20px 0; border-left: 4px solid #3B82F6;">
+            <p style="margin: 0 0 8px; color: #0369a1; font-weight: 600;">Langkah Mudah Membuat Kartu:</p>
+            <ol style="margin: 0; color: #666; padding-left: 20px; line-height: 1.6;">
+              <li>Masuk ke Dashboard Official.id</li>
+              <li>Klik menu <strong>"Kartu Bisnis"</strong> dan pilih "Buat Kartu"</li>
+              <li>Isi data diri Anda</li>
+              <li>Simpan, dan bagikan tautan profil atau kode QR Anda!</li>
+            </ol>
+          </div>
+          
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${siteUrl}/dashboard/cards/new" style="display: inline-block; background: linear-gradient(135deg, #3B82F6, #1D4ED8); color: white; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: 600;">
+              Buat Kartu Sekarang
+            </a>
+          </div>
+          
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 32px;">
+            © ${year} Official ID. Digital Ecosystem for Professionals.
+          </p>
+        </div>
+      </body>
+      </html>
+    `
+  }
+}
+
+export function getProUpgradePromoTemplate(data: { userName: string }): { subject: string; html: string } {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'
+  const year = new Date().getFullYear()
+  return {
+    subject: 'Tingkatkan Profesionalisme Anda: Upgrade ke PRO (Hanya Rp 25.000 Selamanya!)',
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f5f5f5;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #F59E0B, #D97706); border-radius: 16px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 28px;">⭐</span>
+            </div>
+            <h1 style="color: #1a1a1a; font-size: 24px; margin: 0;">Buka Semua Fitur Premium!</h1>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">Halo <strong>${data.userName}</strong>,</p>
+          <p style="color: #666; line-height: 1.6;">Kartu nama digital Anda sudah aktif, namun Anda dapat membuatnya jauh lebih hebat. Tingkatkan akun Anda ke tingkat <strong>PRO</strong> hanya dengan satu kali bayar (lifetime)!</p>
+          
+          <div style="background: #fffbeb; border-radius: 12px; padding: 16px; margin: 20px 0; border-left: 4px solid #F59E0B;">
+            <p style="margin: 0 0 8px; color: #b45309; font-weight: 600;">Keuntungan Pengguna PRO:</p>
+            <ul style="margin: 0; color: #666; padding-left: 20px; line-height: 1.6;">
+              <li><strong>20 Kartu Bisnis:</strong> Buat kartu berbeda untuk setiap portofolio atau bisnis Anda. (Free hanya 1)</li>
+              <li><strong>Buat Organisasi (Circle):</strong> Bentuk komunitas atau perusahaan Anda sendiri di Official.id.</li>
+              <li><strong>Fitur Premium Lengkap:</strong> Akses ke template eksklusif dan kustomisasi URL (segera).</li>
+              <li><strong>Bayar Sekali:</strong> Hanya Rp 25.000 untuk akses selamanya!</li>
+            </ul>
+          </div>
+          
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${siteUrl}/dashboard/upgrade" style="display: inline-block; background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: 600;">
+              Upgrade ke PRO Sekarang
+            </a>
+          </div>
+          
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 32px;">
+            © ${year} Official ID. Digital Ecosystem for Professionals.
+          </p>
+        </div>
+      </body>
+      </html>
+    `
+  }
+}
+
+export function getCompleteProfilePromoTemplate(data: { userName: string }): { subject: string; html: string } {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://official.id'
+  const year = new Date().getFullYear()
+  return {
+    subject: 'Jadikan Kartu Bisnis Anda Lebih Keren dengan Foto Profil!',
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f5f5f5;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #8B5CF6, #6D28D9); border-radius: 16px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 28px;">📷</span>
+            </div>
+            <h1 style="color: #1a1a1a; font-size: 24px; margin: 0;">Lengkapi Profil Anda</h1>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6;">Halo <strong>${data.userName}</strong>,</p>
+          <p style="color: #666; line-height: 1.6;">Kami perhatikan kartu bisnis digital Anda belum memiliki foto profil. Kartu dengan foto profesional akan meningkatkan kepercayaan klien dan relasi Anda secara drastis.</p>
+          
+          <div style="background: #faf5ff; border-radius: 12px; padding: 16px; margin: 20px 0; border-left: 4px solid #8B5CF6;">
+            <p style="margin: 0 0 8px; color: #5b21b6; font-weight: 600;">Langkah Memasang Foto & Template:</p>
+            <ol style="margin: 0; color: #666; padding-left: 20px; line-height: 1.6;">
+              <li>Masuk ke Dashboard Official.id dan buka <strong>Kartu Bisnis</strong> Anda.</li>
+              <li>Klik <strong>Edit</strong> pada kartu Anda.</li>
+              <li>Pada bagian Foto Profil, pilih foto terbaik Anda lalu unggah.</li>
+              <li>Di bawah pengaturan kartu, Anda juga bisa <strong>Memilih Template</strong> baru agar kartu tampil lebih estetik!</li>
+              <li>Klik Simpan, dan lihat hasilnya.</li>
+            </ol>
+          </div>
+          
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${siteUrl}/dashboard/cards" style="display: inline-block; background: linear-gradient(135deg, #8B5CF6, #6D28D9); color: white; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: 600;">
+              Lengkapi Kartu Anda
+            </a>
+          </div>
+          
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 32px;">
+            © ${year} Official ID. Digital Ecosystem for Professionals.
+          </p>
+        </div>
+      </body>
+      </html>
+    `
+  }
+}
+

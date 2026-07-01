@@ -389,6 +389,51 @@ export function useAdmin() {
     }
   }, [supabase])
 
+  // Fetch users for broadcast based on type
+  const fetchBroadcastTargetUsers = useCallback(async (type: string): Promise<{ id: string, email: string, full_name: string }[]> => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      // We fetch all users, along with their business cards to apply filters
+      const { data, error: fetchError } = await supabase
+        .from('users')
+        .select('id, email, full_name, role, business_cards(id, profile_photo_url)')
+        
+      if (fetchError) throw fetchError
+      if (!data) return []
+
+      let filteredUsers = data
+
+      if (type === 'create_card') {
+        // Users who haven't created a business card
+        filteredUsers = data.filter((u: any) => !u.business_cards || u.business_cards.length === 0)
+      } else if (type === 'upgrade_pro') {
+        // Users who have a business card but are not PAID_USER
+        filteredUsers = data.filter((u: any) => 
+          u.business_cards && u.business_cards.length > 0 && u.role !== 'PAID_USER'
+        )
+      } else if (type === 'complete_profile') {
+        // Users who have a business card but missing profile photo
+        filteredUsers = data.filter((u: any) => 
+          u.business_cards && u.business_cards.some((c: any) => !c.profile_photo_url)
+        )
+      }
+
+      return filteredUsers.map((u: any) => ({
+        id: u.id,
+        email: u.email,
+        full_name: u.full_name
+      }))
+
+    } catch (err: any) {
+      setError(err.message)
+      return []
+    } finally {
+      setLoading(false)
+    }
+  }, [supabase])
+
   return {
     loading,
     error,
@@ -401,6 +446,7 @@ export function useAdmin() {
     rejectPayment,
     fetchPaymentDetail,
     fetchCards,
-    deleteCard
+    deleteCard,
+    fetchBroadcastTargetUsers
   }
 }
