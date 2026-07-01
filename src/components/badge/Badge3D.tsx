@@ -1,7 +1,7 @@
 'use client'
 
 import * as THREE from 'three'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { Canvas, extend, useThree, useFrame } from '@react-three/fiber'
 import { Suspense } from 'react'
 import { useGLTF, useTexture, Environment, Lightformer, Text3D, Center, Resize, RenderTexture, PerspectiveCamera } from '@react-three/drei'
@@ -12,7 +12,6 @@ extend({ MeshLineGeometry, MeshLineMaterial })
 
 // Preload assets
 useGLTF.preload('https://assets.vercel.com/image/upload/contentful/image/e5382hct74si/5huRVDzcoDwnbgrKUo1Lzs/53b6dd7d6b4ffcdbd338fa60265949e1/tag.glb')
-useTexture.preload('https://assets.vercel.com/image/upload/contentful/image/e5382hct74si/SOT1hmCesOHxEYxL7vkoZ/c57b29c85912047c414311723320c16b/band.jpg')
 
 export interface UserData {
   full_name?: string
@@ -25,35 +24,40 @@ export interface Badge3DProps {
   user?: UserData
 }
 
+function getContrastColor(hexColor: string) {
+  const hex = hexColor.replace('#', '')
+  const r = parseInt(hex.substring(0, 2), 16) || 0
+  const g = parseInt(hex.substring(2, 4), 16) || 0
+  const b = parseInt(hex.substring(4, 6), 16) || 0
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000
+  return yiq >= 128 ? '#000000' : '#ffffff'
+}
+
 // Scene rendering the texture for the badge
 function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: string }) {
-  const texture = useTexture('https://assets.vercel.com/image/upload/contentful/image/e5382hct74si/SOT1hmCesOHxEYxL7vkoZ/c57b29c85912047c414311723320c16b/band.jpg')
-  const planeWidth = 2
-  const textureAspect = 1
-  
   const names = (user?.full_name || 'Official ID').split(' ')
   const firstName = names[0]
   const lastName = names.length > 1 ? names.slice(1).join(' ') : ''
   const company = user?.company || 'Official User'
+  
+  const textColor = getContrastColor(badgeColor)
 
   return (
     <>
       <PerspectiveCamera makeDefault manual aspect={1.05} position={[0.49, 0.22, 2]} />
-      <mesh>
-        <planeGeometry args={[planeWidth, -planeWidth / textureAspect]} />
-        <meshBasicMaterial transparent alphaMap={texture} side={THREE.BackSide} color={badgeColor} />
-      </mesh>
+      <color attach="background" args={[badgeColor]} />
       
-      <Center bottom right>
-        <Resize width height>
+      <Center bottom right position={[-0.3, -0.7, 0]}>
+        <group scale={0.5}>
           <Text3D
             bevelEnabled={false}
             bevelSize={0}
             font="https://raw.githubusercontent.com/mrdoob/three.js/master/examples/fonts/helvetiker_bold.typeface.json"
             height={0}
+            size={0.3}
             rotation={[0, Math.PI, Math.PI]}>
             {firstName}
-            <meshBasicMaterial color="#ffffff" />
+            <meshBasicMaterial color={textColor} />
           </Text3D>
           {lastName && (
             <Text3D
@@ -61,10 +65,11 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
               bevelSize={0}
               font="https://raw.githubusercontent.com/mrdoob/three.js/master/examples/fonts/helvetiker_bold.typeface.json"
               height={0}
-              position={[0, 1.4, 0]}
+              size={0.3}
+              position={[0, 0.4, 0]}
               rotation={[0, Math.PI, Math.PI]}>
               {lastName}
-              <meshBasicMaterial color="#ffffff" />
+              <meshBasicMaterial color={textColor} />
             </Text3D>
           )}
           <Text3D
@@ -72,13 +77,13 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
               bevelSize={0}
               font="https://raw.githubusercontent.com/mrdoob/three.js/master/examples/fonts/helvetiker_regular.typeface.json"
               height={0}
-              position={[0, lastName ? 2.8 : 1.4, 0]}
-              scale={0.5}
+              size={0.15}
+              position={[0, lastName ? 0.8 : 0.4, 0]}
               rotation={[0, Math.PI, Math.PI]}>
               {company}
-              <meshBasicMaterial color="#aaaaaa" />
+              <meshBasicMaterial color={textColor} />
           </Text3D>
-        </Resize>
+        </group>
       </Center>
     </>
   )
@@ -90,7 +95,25 @@ function Band({ maxSpeed = 50, minSpeed = 10, badgeColor = '#000000', lanyardCol
   const segmentProps = { type: 'dynamic' as const, canSleep: true, colliders: false, angularDamping: 2, linearDamping: 2 }
   
   const { nodes, materials } = useGLTF('https://assets.vercel.com/image/upload/contentful/image/e5382hct74si/5huRVDzcoDwnbgrKUo1Lzs/53b6dd7d6b4ffcdbd338fa60265949e1/tag.glb') as any
-  const texture = useTexture('https://assets.vercel.com/image/upload/contentful/image/e5382hct74si/SOT1hmCesOHxEYxL7vkoZ/c57b29c85912047c414311723320c16b/band.jpg')
+  const texture = useMemo(() => {
+    if (typeof document === 'undefined') return new THREE.Texture()
+    const canvas = document.createElement('canvas')
+    canvas.width = 1024
+    canvas.height = 128
+    const context = canvas.getContext('2d')
+    if (context) {
+      context.fillStyle = lanyardColor
+      context.fillRect(0, 0, canvas.width, canvas.height)
+      context.fillStyle = getContrastColor(lanyardColor)
+      context.font = 'bold 80px Arial'
+      context.textAlign = 'center'
+      context.textBaseline = 'middle'
+      context.fillText('official.id', canvas.width / 2, canvas.height / 2)
+    }
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+    return tex
+  }, [lanyardColor])
   
   const { width, height } = useThree((state) => state.size)
   const [curve] = useState(() => new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]))
@@ -136,7 +159,6 @@ function Band({ maxSpeed = 50, minSpeed = 10, badgeColor = '#000000', lanyardCol
 
   // @ts-ignore
   curve.curveType = 'chordal'
-  texture.wrapS = texture.wrapT = THREE.RepeatWrapping
 
   return (
     <>
@@ -167,7 +189,7 @@ function Band({ maxSpeed = 50, minSpeed = 10, badgeColor = '#000000', lanyardCol
                 clearcoatRoughness={0.15} 
                 roughness={0.3} 
                 metalness={0.5} 
-                color={badgeColor}
+                color="#ffffff"
               >
                 <RenderTexture attach="map" height={2000} width={2000} anisotropy={16}>
                   <BadgeTexture user={user} badgeColor={badgeColor} />
@@ -183,7 +205,7 @@ function Band({ maxSpeed = 50, minSpeed = 10, badgeColor = '#000000', lanyardCol
         {/* @ts-ignore */}
         <meshLineGeometry />
         {/* @ts-ignore */}
-        <meshLineMaterial color={lanyardColor} depthTest={false} resolution={[width, height]} useMap map={texture} repeat={[-3, 1]} lineWidth={1} />
+        <meshLineMaterial color="#ffffff" depthTest={false} resolution={[width, height]} useMap map={texture} repeat={[-3, 1]} lineWidth={1} />
       </mesh>
     </>
   )
