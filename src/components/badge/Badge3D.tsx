@@ -367,6 +367,7 @@ function Band({
               {/* Front face */}
               <Html
                 transform
+                center
                 position={[0, 0.48, 0.015]}
                 rotation={[0, 0, 0]}
                 scale={0.055}
@@ -377,6 +378,7 @@ function Band({
               {/* Back face */}
               <Html
                 transform
+                center
                 position={[0, 0.48, -0.015]}
                 rotation={[0, Math.PI, 0]}
                 scale={0.055}
