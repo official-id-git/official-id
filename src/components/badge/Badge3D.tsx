@@ -49,7 +49,6 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
       
       <group position={[0.49, 0.3, 0]} rotation={[0, Math.PI, Math.PI]}>
         <Text
-          font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2"
           fontSize={0.25}
           color={textColor}
           anchorX="center"
@@ -59,7 +58,6 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
         </Text>
         {lastName && (
           <Text
-            font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2"
             fontSize={0.25}
             color={textColor}
             anchorX="center"
@@ -69,7 +67,6 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
           </Text>
         )}
         <Text
-            font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2"
             fontSize={0.12}
             color={textColor}
             anchorX="center"
