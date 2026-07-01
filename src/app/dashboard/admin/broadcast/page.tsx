@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { useAdmin } from '@/hooks/useAdmin'
+import { getTemplatePreview } from './actions'
 
 type TemplateType = 'create_card' | 'upgrade_pro' | 'complete_profile' | 'custom'
 
@@ -27,6 +28,7 @@ export default function BroadcastEmailPage() {
   const [errors, setErrors] = useState<string[]>([])
   
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [preview, setPreview] = useState<{ subject: string, html: string } | null>(null)
 
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'APP_ADMIN')) {
@@ -37,6 +39,20 @@ export default function BroadcastEmailPage() {
   useEffect(() => {
     loadTargets()
   }, [templateType])
+
+  useEffect(() => {
+    const loadPreview = async () => {
+      const p = await getTemplatePreview(templateType, customSubject, customMessage)
+      setPreview(p)
+    }
+    
+    // Add simple debounce for custom inputs
+    const timer = setTimeout(() => {
+      loadPreview()
+    }, 500)
+    
+    return () => clearTimeout(timer)
+  }, [templateType, customSubject, customMessage])
 
   const loadTargets = async () => {
     setLoadingTargets(true)
@@ -247,6 +263,27 @@ export default function BroadcastEmailPage() {
           </div>
         )}
       </div>
+
+      {preview && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+          <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Draft Template Email (Preview)</h2>
+          
+          <div>
+            <p className="text-sm text-gray-500 mb-1">Subjek:</p>
+            <p className="font-medium text-gray-900 bg-gray-50 p-3 rounded-lg border border-gray-200">
+              {preview.subject}
+            </p>
+          </div>
+          
+          <div>
+            <p className="text-sm text-gray-500 mb-1">Isi Email:</p>
+            <div 
+              className="border border-gray-200 rounded-lg p-4 max-h-[500px] overflow-y-auto bg-gray-50"
+              dangerouslySetInnerHTML={{ __html: preview.html }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
