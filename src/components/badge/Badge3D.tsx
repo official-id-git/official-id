@@ -56,25 +56,26 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
       <PerspectiveCamera makeDefault manual aspect={1.05} position={[0.49, 0.22, 2]} />
       <color attach="background" args={[badgeColor]} />
       
-      <group position={[0, -0.3, 0]} scale={[0.54, 0.54, 0.54]} rotation={[0, Math.PI, Math.PI]}>
+      <group position={[0, -0.6, 0]} scale={[0.54, 0.54, 0.54]} rotation={[0, Math.PI, Math.PI]}>
         
-        {photoUrl ? (
+        {/* Placeholder mesh that always renders behind the photo */}
+        <mesh position={[0, 0.55, 0]}>
+          <circleGeometry args={[0.3, 32]} />
+          <meshBasicMaterial color="#9ca3af" />
+        </mesh>
+
+        {photoUrl && (
           <Image 
             url={photoUrl} 
             transparent 
             radius={0.5} 
-            position={[0, 1.0, 0]} 
+            position={[0, 0.55, 0.01]} 
             scale={[0.6, 0.6]} 
           />
-        ) : (
-          <mesh position={[0, 1.0, 0]}>
-            <circleGeometry args={[0.3, 32]} />
-            <meshBasicMaterial color="#9ca3af" />
-          </mesh>
         )}
         
         <Text
-          fontSize={0.25}
+          fontSize={0.35}
           color={textColor}
           anchorX="center"
           anchorY="middle"
@@ -83,29 +84,29 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
         </Text>
         
         <Text
-            fontSize={0.08}
+            fontSize={0.12}
             color={textColor}
             anchorX="center"
             anchorY="middle"
-            position={[0, -0.3, 0]}>
+            position={[0, -0.25, 0]}>
             {email}
         </Text>
         
         <Text
-            fontSize={0.08}
+            fontSize={0.12}
             color={textColor}
             anchorX="center"
             anchorY="middle"
-            position={[0, -0.6, 0]}>
+            position={[0, -0.4, 0]}>
             {whatsapp}
         </Text>
         
         <Text
-            fontSize={0.1}
+            fontSize={0.12}
             color={textColor}
             anchorX="center"
             anchorY="middle"
-            position={[0, -0.9, 0]}>
+            position={[0, -0.55, 0]}>
             {link}
         </Text>
         
