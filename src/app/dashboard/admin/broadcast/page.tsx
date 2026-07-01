@@ -126,6 +126,11 @@ export default function BroadcastEmailPage() {
       setTotalSuccess(successCount)
       setTotalFailed(failedCount)
       setProgress(Math.round(((i + 1) / chunks.length) * 100))
+
+      // Jeda 1 detik antar batch (10 email) untuk mencegah rate limit dari server/API
+      if (i < chunks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
     }
 
     setIsBroadcasting(false)
