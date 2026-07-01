@@ -1673,10 +1673,11 @@ export function getCreateCardPromoTemplate(data: { userName: string }): { subjec
           <div style="background: #f0f9ff; border-radius: 12px; padding: 16px; margin: 20px 0; border-left: 4px solid #3B82F6;">
             <p style="margin: 0 0 8px; color: #0369a1; font-weight: 600;">Langkah Mudah Membuat Kartu:</p>
             <ol style="margin: 0; color: #666; padding-left: 20px; line-height: 1.6;">
-              <li>Masuk ke Dashboard Official.id</li>
-              <li>Klik menu <strong>"Kartu Bisnis"</strong> dan pilih "Buat Kartu"</li>
-              <li>Isi data diri Anda</li>
-              <li>Simpan, dan bagikan tautan profil atau kode QR Anda!</li>
+              <li>click menu Cards</li>
+              <li>click tombol Create New Card</li>
+              <li>lengkapi data form</li>
+              <li>pilihan template yang paling kamu sukai, jika kamu adalah organisasi atau perusahaan ingin membuat desain template kartu bisnis digital sendiri, seperti template MM Batch 8, hubungi admin chat whatsapp 081283835553</li>
+              <li>jika semua disi dan dipilih click tombol Buat Kartu</li>
             </ol>
           </div>
           
@@ -1684,6 +1685,12 @@ export function getCreateCardPromoTemplate(data: { userName: string }): { subjec
             <a href="${siteUrl}/dashboard/cards/new" style="display: inline-block; background: linear-gradient(135deg, #3B82F6, #1D4ED8); color: white; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: 600;">
               Buat Kartu Sekarang
             </a>
+          </div>
+
+          <div style="background: #eef2ff; border-radius: 12px; padding: 16px; margin: 20px 0; border-left: 4px solid #6366f1;">
+            <p style="margin: 0; color: #4338ca; line-height: 1.6;">
+              Untuk kamu yang buat kartu nama digital di official.id kini ada fitur lain yang otomatis kamu dapatkan yaitu badge click menu Badge
+            </p>
           </div>
           
           <p style="color: #999; font-size: 12px; text-align: center; margin-top: 32px;">
@@ -1785,6 +1792,12 @@ export function getCompleteProfilePromoTemplate(data: { userName: string }): { s
             <a href="${siteUrl}/dashboard/cards" style="display: inline-block; background: linear-gradient(135deg, #8B5CF6, #6D28D9); color: white; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: 600;">
               Lengkapi Kartu Anda
             </a>
+          </div>
+
+          <div style="background: #eef2ff; border-radius: 12px; padding: 16px; margin: 20px 0; border-left: 4px solid #6366f1;">
+            <p style="margin: 0; color: #4338ca; line-height: 1.6;">
+              Untuk kamu yang buat kartu nama digital di official.id kini ada fitur lain yang otomatis kamu dapatkan yaitu badge click menu Badge
+            </p>
           </div>
           
           <p style="color: #999; font-size: 12px; text-align: center; margin-top: 32px;">
