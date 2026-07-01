@@ -130,112 +130,112 @@ export default function BadgeSettingsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left Column: Preview */}
-        <div className="bg-gray-900 rounded-3xl overflow-hidden h-[600px] shadow-lg relative border-4 border-gray-800">
-          <Badge3D 
-            badgeColor={badgeColor} 
-            lanyardColor={lanyardColor} 
-            user={{ 
-              full_name: card.full_name, 
-              company: card.company || '',
-              job_title: card.job_title || '',
-              email: card.email,
-              whatsapp: card.phone,
-              photo_url: card.profile_photo_url || '',
-              username: (card as any).username
-            }} 
-          />
-          <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
-            <span className="bg-black/50 text-white/80 text-xs px-3 py-1 rounded-full backdrop-blur-md">
-              Tarik badge menggunakan kursor/jari
-            </span>
+      {/* Full-width Badge Preview */}
+      <div className="bg-gray-900 rounded-3xl overflow-hidden h-[600px] shadow-lg relative border-4 border-gray-800 mb-6">
+        <Badge3D 
+          badgeColor={badgeColor} 
+          lanyardColor={lanyardColor} 
+          user={{ 
+            full_name: card.full_name, 
+            company: card.company || '',
+            job_title: card.job_title || '',
+            email: card.email,
+            whatsapp: card.phone,
+            photo_url: card.profile_photo_url || '',
+            username: (card as any).username
+          }} 
+        />
+        <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
+          <span className="bg-black/50 text-white/80 text-xs px-3 py-1 rounded-full backdrop-blur-md">
+            Tarik badge menggunakan kursor/jari
+          </span>
+        </div>
+      </div>
+
+      {/* Settings — horizontal on desktop, stacked on mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Color Settings */}
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-bold text-gray-900 mb-6">Pengaturan Warna</h2>
+          
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Warna Tali Lanyard
+              </label>
+              <div className="flex items-center gap-4">
+                <input 
+                  type="color" 
+                  value={lanyardColor}
+                  onChange={(e) => setLanyardColor(e.target.value)}
+                  className="w-12 h-12 rounded cursor-pointer border-0 p-0"
+                />
+                <span className="text-sm text-gray-500 font-mono uppercase">{lanyardColor}</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Warna Kartu Badge
+              </label>
+              <div className="flex items-center gap-4">
+                <input 
+                  type="color" 
+                  value={badgeColor}
+                  onChange={(e) => setBadgeColor(e.target.value)}
+                  className="w-12 h-12 rounded cursor-pointer border-0 p-0"
+                />
+                <span className="text-sm text-gray-500 font-mono uppercase">{badgeColor}</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-70 font-medium"
+            >
+              {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+              Simpan Pengaturan
+            </button>
           </div>
         </div>
 
-        {/* Right Column: Settings */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-            <h2 className="text-lg font-bold text-gray-900 mb-6">Pengaturan Warna</h2>
-            
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Warna Tali Lanyard
-                </label>
-                <div className="flex items-center gap-4">
-                  <input 
-                    type="color" 
-                    value={lanyardColor}
-                    onChange={(e) => setLanyardColor(e.target.value)}
-                    className="w-12 h-12 rounded cursor-pointer border-0 p-0"
-                  />
-                  <span className="text-sm text-gray-500 font-mono uppercase">{lanyardColor}</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Warna Kartu Badge
-                </label>
-                <div className="flex items-center gap-4">
-                  <input 
-                    type="color" 
-                    value={badgeColor}
-                    onChange={(e) => setBadgeColor(e.target.value)}
-                    className="w-12 h-12 rounded cursor-pointer border-0 p-0"
-                  />
-                  <span className="text-sm text-gray-500 font-mono uppercase">{badgeColor}</span>
-                </div>
-              </div>
-
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-70 font-medium"
-              >
-                {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                Simpan Pengaturan
-              </button>
-            </div>
+        {/* Share Badge */}
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-bold text-gray-900 mb-6">Bagikan Badge</h2>
+          
+          <div className="flex items-center bg-gray-50 p-3 rounded-xl mb-6">
+            <span className="text-sm text-gray-500 truncate flex-1 font-mono pl-2">
+              {badgeUrl}
+            </span>
+            <button 
+              onClick={copyToClipboard}
+              className="ml-2 p-2 bg-white text-gray-700 rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50"
+              title="Copy Link"
+            >
+              <LinkIcon className="w-4 h-4" />
+            </button>
           </div>
 
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-            <h2 className="text-lg font-bold text-gray-900 mb-6">Bagikan Badge</h2>
-            
-            <div className="flex items-center bg-gray-50 p-3 rounded-xl mb-6">
-              <span className="text-sm text-gray-500 truncate flex-1 font-mono pl-2">
-                {badgeUrl}
-              </span>
-              <button 
-                onClick={copyToClipboard}
-                className="ml-2 p-2 bg-white text-gray-700 rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50"
-                title="Copy Link"
-              >
-                <LinkIcon className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <a 
-                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(badgeUrl)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 py-3 px-4 bg-[#0A66C2] text-white rounded-xl hover:bg-[#004182] transition-colors font-medium"
-              >
-                <Linkedin className="w-5 h-5" />
-                <span>LinkedIn</span>
-              </a>
-              <a 
-                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(badgeUrl)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 py-3 px-4 bg-[#1877F2] text-white rounded-xl hover:bg-[#0c5bbf] transition-colors font-medium"
-              >
-                <Facebook className="w-5 h-5" />
-                <span>Facebook</span>
-              </a>
-            </div>
+          <div className="grid grid-cols-2 gap-4">
+            <a 
+              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(badgeUrl)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 py-3 px-4 bg-[#0A66C2] text-white rounded-xl hover:bg-[#004182] transition-colors font-medium"
+            >
+              <Linkedin className="w-5 h-5" />
+              <span>LinkedIn</span>
+            </a>
+            <a 
+              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(badgeUrl)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 py-3 px-4 bg-[#1877F2] text-white rounded-xl hover:bg-[#0c5bbf] transition-colors font-medium"
+            >
+              <Facebook className="w-5 h-5" />
+              <span>Facebook</span>
+            </a>
           </div>
         </div>
       </div>
