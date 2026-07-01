@@ -866,6 +866,8 @@ export function CardForm({ card, mode }: CardFormProps) {
                         updated_at: new Date().toISOString(),
                         qr_code_url: '',
                         scan_count: 0,
+                        badge_color: '#000000',
+                        lanyard_color: '#000000',
                         ...formData,
                         template: TEMPLATES[currentTemplateIndex].id,
                         social_links: formData.social_links,

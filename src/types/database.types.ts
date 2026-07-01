@@ -71,6 +71,8 @@ export type Database = {
           business_description: string | null
           show_business_description: boolean
           custom_links: Json | null
+          badge_color: string | null
+          lanyard_color: string | null
         }
         Insert: {
           id?: string
@@ -94,6 +96,8 @@ export type Database = {
           business_description?: string | null
           show_business_description?: boolean
           custom_links?: Json | null
+          badge_color?: string | null
+          lanyard_color?: string | null
         }
         Update: {
           id?: string
@@ -117,6 +121,8 @@ export type Database = {
           business_description?: string | null
           show_business_description?: boolean
           custom_links?: Json | null
+          badge_color?: string | null
+          lanyard_color?: string | null
         }
         Relationships: []
       }
