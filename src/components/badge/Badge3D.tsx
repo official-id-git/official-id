@@ -351,7 +351,7 @@ function Band({
               {/* Front face */}
               <Html
                 transform
-                position={[-0.08, 0.48, 0.015]}
+                position={[0, 0.48, 0.015]}
                 rotation={[0, 0, 0]}
                 scale={0.055}
                 occlude
@@ -361,7 +361,7 @@ function Band({
               {/* Back face */}
               <Html
                 transform
-                position={[0.08, 0.48, -0.015]}
+                position={[0, 0.48, -0.015]}
                 rotation={[0, Math.PI, 0]}
                 scale={0.055}
                 occlude
