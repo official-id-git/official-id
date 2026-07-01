@@ -3,7 +3,6 @@
 import * as THREE from 'three'
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { Canvas, extend, useThree, useFrame } from '@react-three/fiber'
-import { useControls } from 'leva'
 import { Suspense } from 'react'
 import { useGLTF, useTexture, Environment, Lightformer, Text, Resize, RenderTexture, PerspectiveCamera, Image } from '@react-three/drei'
 import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphericalJoint } from '@react-three/rapier'
@@ -56,11 +55,11 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
       <PerspectiveCamera makeDefault manual aspect={1.05} position={[0.49, 0.22, 2]} />
       <color attach="background" args={[badgeColor]} />
       
-      <group position={[0, -0.2, 0]} scale={[0.54, 0.54, 0.54]} rotation={[0, Math.PI, Math.PI]}>
+      <group position={[0, 0, 0]} scale={[0.54, 0.54, 0.54]} rotation={[0, Math.PI, Math.PI]}>
         
-        {/* Placeholder mesh that always renders behind the photo */}
-        <mesh position={[0, 0.6, 0]} rotation={[Math.PI, 0, 0]}>
-          <circleGeometry args={[0.3, 32]} />
+        {/* Photo placeholder */}
+        <mesh position={[0, 0.75, 0]}>
+          <circleGeometry args={[0.35, 32]} />
           <meshBasicMaterial color="#9ca3af" side={THREE.DoubleSide} />
         </mesh>
 
@@ -69,9 +68,8 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
             url={photoUrl} 
             transparent 
             radius={0.5} 
-            position={[0, 0.6, 0.01]} 
-            rotation={[Math.PI, 0, 0]}
-            scale={[0.6, 0.6]} 
+            position={[0, 0.75, 0.01]} 
+            scale={[0.7, 0.7]} 
           />
         )}
         
@@ -80,25 +78,25 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
           color={textColor}
           anchorX="center"
           anchorY="middle"
-          position={[0, 0, 0]}>
+          position={[0, 0.2, 0]}>
           {fullName}
         </Text>
         
         <Text
-            fontSize={0.12}
+            fontSize={0.14}
             color={textColor}
             anchorX="center"
             anchorY="middle"
-            position={[0, -0.25, 0]}>
+            position={[0, 0.0, 0]}>
             {email}
         </Text>
         
         <Text
-            fontSize={0.12}
+            fontSize={0.14}
             color={textColor}
             anchorX="center"
             anchorY="middle"
-            position={[0, -0.4, 0]}>
+            position={[0, -0.17, 0]}>
             {whatsapp}
         </Text>
         
@@ -107,7 +105,7 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
             color={textColor}
             anchorX="center"
             anchorY="middle"
-            position={[0, -0.55, 0]}>
+            position={[0, -0.32, 0]}>
             {link}
         </Text>
         
@@ -125,14 +123,14 @@ function Band({ maxSpeed = 50, minSpeed = 10, badgeColor = '#000000', lanyardCol
   const texture = useMemo(() => {
     if (typeof document === 'undefined') return new THREE.Texture()
     const canvas = document.createElement('canvas')
-    canvas.width = 1024
-    canvas.height = 128
+    canvas.width = 512
+    canvas.height = 64
     const context = canvas.getContext('2d')
     if (context) {
       context.fillStyle = lanyardColor
       context.fillRect(0, 0, canvas.width, canvas.height)
       context.fillStyle = getContrastColor(lanyardColor)
-      context.font = 'bold 80px Arial'
+      context.font = 'bold 36px Arial'
       context.textAlign = 'center'
       context.textBaseline = 'middle'
       context.fillText('official.id', canvas.width / 2, canvas.height / 2)
@@ -232,7 +230,7 @@ function Band({ maxSpeed = 50, minSpeed = 10, badgeColor = '#000000', lanyardCol
         {/* @ts-ignore */}
         <meshLineGeometry />
         {/* @ts-ignore */}
-        <meshLineMaterial color="#ffffff" depthTest={false} resolution={[width, height]} useMap map={texture} repeat={[-1, 1]} lineWidth={1} />
+        <meshLineMaterial color="#ffffff" depthTest={false} resolution={[width, height]} useMap map={texture} repeat={[-3, 1]} lineWidth={1} />
       </mesh>
     </>
   )
