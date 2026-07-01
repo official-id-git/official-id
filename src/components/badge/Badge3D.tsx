@@ -10,7 +10,6 @@ import { MeshLineGeometry, MeshLineMaterial } from 'meshline'
 
 extend({ MeshLineGeometry, MeshLineMaterial })
 
-// Preload assets
 useGLTF.preload('https://assets.vercel.com/image/upload/contentful/image/e5382hct74si/5huRVDzcoDwnbgrKUo1Lzs/53b6dd7d6b4ffcdbd338fa60265949e1/tag.glb')
 
 export interface UserData {
@@ -51,23 +50,28 @@ function Band({
     j2 = useRef<any>(null),
     j3 = useRef<any>(null),
     card = useRef<any>(null)
+
   const vec = new THREE.Vector3(),
     ang = new THREE.Vector3(),
     rot = new THREE.Vector3(),
     dir = new THREE.Vector3()
+
+  // Detect touch device for sensitivity tuning
+  const isTouch = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
+
+  // Mobile: less damping = more responsive / immersive feel
   const segmentProps = {
     type: 'dynamic' as const,
-    canSleep: true,
+    canSleep: false,
     colliders: false as const,
-    angularDamping: 2,
-    linearDamping: 2,
+    angularDamping: isTouch ? 1.2 : 2,
+    linearDamping: isTouch ? 1.2 : 2,
   }
 
   const { nodes, materials } = useGLTF(
     'https://assets.vercel.com/image/upload/contentful/image/e5382hct74si/5huRVDzcoDwnbgrKUo1Lzs/53b6dd7d6b4ffcdbd338fa60265949e1/tag.glb'
   ) as any
 
-  // Build lanyard texture from canvas with color + text
   const lanyardTexture = useMemo(() => {
     if (typeof document === 'undefined') return new THREE.Texture()
     const canvas = document.createElement('canvas')
@@ -101,17 +105,98 @@ function Band({
   const [dragged, drag] = useState<THREE.Vector3 | false>(false)
   const [hovered, hover] = useState(false)
 
+  // Rope joints
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1])
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1])
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1])
   useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.45, 0]])
 
+  // Cursor
   useEffect(() => {
     if (hovered) {
       document.body.style.cursor = dragged ? 'grabbing' : 'grab'
       return () => void (document.body.style.cursor = 'auto')
     }
   }, [hovered, dragged])
+
+  // ──────────────────────────────────────────
+  // Shake detection (mobile/tablet)
+  // ──────────────────────────────────────────
+  useEffect(() => {
+    if (!isTouch) return
+    let lastShakeTime = 0
+
+    const applyShake = () => {
+      if (!card.current) return
+      ;[card, j1, j2, j3, fixed].forEach((ref) => ref.current?.wakeUp?.())
+      card.current.applyImpulse(
+        {
+          x: (Math.random() - 0.5) * 18,
+          y: 6 + Math.random() * 4,
+          z: (Math.random() - 0.5) * 8,
+        },
+        true
+      )
+      j3.current?.applyImpulse({ x: (Math.random() - 0.5) * 6, y: 2, z: 0 }, true)
+    }
+
+    const handleMotion = (e: DeviceMotionEvent) => {
+      const acc = e.accelerationIncludingGravity
+      if (!acc) return
+      const magnitude = Math.sqrt((acc.x || 0) ** 2 + (acc.y || 0) ** 2 + (acc.z || 0) ** 2)
+      const now = Date.now()
+      if (magnitude > 22 && now - lastShakeTime > 600) {
+        lastShakeTime = now
+        applyShake()
+      }
+    }
+
+    // iOS 13+ requires permission
+    const requestAndListen = async () => {
+      if (
+        typeof (DeviceMotionEvent as any).requestPermission === 'function'
+      ) {
+        try {
+          const perm = await (DeviceMotionEvent as any).requestPermission()
+          if (perm === 'granted') window.addEventListener('devicemotion', handleMotion)
+        } catch (_) {}
+      } else {
+        window.addEventListener('devicemotion', handleMotion)
+      }
+    }
+    requestAndListen()
+    return () => window.removeEventListener('devicemotion', handleMotion)
+  }, [isTouch])
+
+  // ──────────────────────────────────────────
+  // Gyroscope tilt response (mobile/tablet)
+  // ──────────────────────────────────────────
+  const tiltRef = useRef({ x: 0, z: 0 })
+  useEffect(() => {
+    if (!isTouch) return
+
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      // gamma: left/right tilt -90→90, beta: front/back -180→180
+      const gx = ((e.gamma || 0) / 90) * 2.5   // scale to world force
+      const gz = ((e.beta  || 0) / 180) * 1.5
+      tiltRef.current = { x: gx, z: gz }
+    }
+
+    const requestAndListen = async () => {
+      if (
+        typeof (DeviceOrientationEvent as any).requestPermission === 'function'
+      ) {
+        try {
+          const perm = await (DeviceOrientationEvent as any).requestPermission()
+          if (perm === 'granted') window.addEventListener('deviceorientation', handleOrientation)
+        } catch (_) {}
+      } else {
+        window.addEventListener('deviceorientation', handleOrientation)
+      }
+    }
+    requestAndListen()
+    return () => window.removeEventListener('deviceorientation', handleOrientation)
+  }, [isTouch])
 
   useFrame((state, delta) => {
     if (dragged) {
@@ -125,7 +210,9 @@ function Band({
         z: vec.z - (dragged as THREE.Vector3).z,
       })
     }
+
     if (fixed.current) {
+      // Smooth rope
       ;[j1, j2].forEach((ref) => {
         if (!ref.current.lerped)
           ref.current.lerped = new THREE.Vector3().copy(ref.current.translation())
@@ -143,9 +230,20 @@ function Band({
       curve.points[2].copy(j1.current.lerped)
       curve.points[3].copy(fixed.current.translation())
       band.current.geometry.setPoints(curve.getPoints(32))
+
+      // Y-rotation damping
       ang.copy(card.current.angvel())
       rot.copy(card.current.rotation())
       card.current.setAngvel({ x: ang.x, y: ang.y - rot.y * 0.25, z: ang.z })
+
+      // Tilt force (mobile gyroscope)
+      if (isTouch && !dragged && (Math.abs(tiltRef.current.x) > 0.05 || Math.abs(tiltRef.current.z) > 0.05)) {
+        card.current.wakeUp?.()
+        card.current.applyImpulse(
+          { x: tiltRef.current.x * delta * 0.8, y: 0, z: tiltRef.current.z * delta * 0.8 },
+          false
+        )
+      }
     }
   })
 
@@ -162,7 +260,6 @@ function Band({
   const subtitle = jobTitle || company || 'Official.id'
   const publicUrl = user?.username ? `official.id/c/${user.username}` : 'official.id'
 
-  // Badge face content (HTML overlay on the 3D card)
   const badgeContent = (
     <div
       style={{
@@ -184,31 +281,15 @@ function Band({
     >
       {/* TOP: brand */}
       <div style={{ textAlign: 'center', width: '100%' }}>
-        <div
-          style={{
-            fontSize: '20px',
-            fontWeight: 900,
-            letterSpacing: '4px',
-            textTransform: 'uppercase',
-            opacity: 0.9,
-          }}
-        >
+        <div style={{ fontSize: '20px', fontWeight: 900, letterSpacing: '4px', textTransform: 'uppercase', opacity: 0.9 }}>
           OFFICIAL.ID
         </div>
-        <div
-          style={{
-            fontSize: '11px',
-            letterSpacing: '3px',
-            opacity: 0.5,
-            marginTop: '4px',
-            textTransform: 'uppercase',
-          }}
-        >
+        <div style={{ fontSize: '11px', letterSpacing: '3px', opacity: 0.5, marginTop: '4px', textTransform: 'uppercase' }}>
           Digital Business Card
         </div>
       </div>
 
-      {/* MIDDLE: photo */}
+      {/* MIDDLE: photo + info */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px' }}>
         {photoUrl ? (
           <img
@@ -242,46 +323,21 @@ function Band({
           </div>
         )}
 
-        {/* Name & subtitle */}
         <div style={{ textAlign: 'center' }}>
-          <div
-            style={{
-              fontSize: '40px',
-              fontWeight: 900,
-              lineHeight: 1.1,
-              textShadow: '0 2px 12px rgba(0,0,0,0.5)',
-            }}
-          >
+          <div style={{ fontSize: '40px', fontWeight: 900, lineHeight: 1.1, textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
             {fullName}
           </div>
-          <div
-            style={{
-              fontSize: '18px',
-              fontWeight: 600,
-              marginTop: '8px',
-              opacity: 0.75,
-            }}
-          >
+          <div style={{ fontSize: '18px', fontWeight: 600, marginTop: '8px', opacity: 0.75 }}>
             {subtitle}
           </div>
-
-          <div
-            style={{
-              marginTop: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px',
-              fontSize: '15px',
-              opacity: 0.85,
-            }}
-          >
+          <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '14px', opacity: 0.8 }}>
             {email && <div>{email}</div>}
             {whatsapp && <div>{whatsapp}</div>}
           </div>
         </div>
       </div>
 
-      {/* BOTTOM: URL */}
+      {/* BOTTOM: URL + status */}
       <div
         style={{
           width: '100%',
@@ -292,47 +348,34 @@ function Band({
           justifyContent: 'space-between',
         }}
       >
-        <span
-          style={{
-            fontSize: '15px',
-            fontFamily: 'monospace',
-            fontWeight: 700,
-            letterSpacing: '1px',
-            opacity: 0.8,
-          }}
-        >
+        <span style={{ fontSize: '15px', fontFamily: 'monospace', fontWeight: 700, letterSpacing: '1px', opacity: 0.8 }}>
           {publicUrl}
         </span>
-        <div
-          style={{
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            background: '#10b981',
-            boxShadow: '0 0 12px #10b981',
-          }}
-        />
+        <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 12px #10b981' }} />
       </div>
     </div>
   )
 
   return (
     <>
+      {/* Physics bodies — start at vertical equilibrium so badge hangs centered from frame 1 */}
       <group position={[0, 4, 0]}>
         <RigidBody ref={fixed} {...segmentProps} type="fixed">
           <mesh />
         </RigidBody>
-        <RigidBody position={[0.5, 0, 0]} ref={j1} {...segmentProps}>
+        {/* j1–j3 start directly BELOW the fixed point (x=0) so card settles centered */}
+        <RigidBody position={[0, -1, 0]} ref={j1} {...segmentProps}>
           <BallCollider args={[0.1]} />
         </RigidBody>
-        <RigidBody position={[1, 0, 0]} ref={j2} {...segmentProps}>
+        <RigidBody position={[0, -2, 0]} ref={j2} {...segmentProps}>
           <BallCollider args={[0.1]} />
         </RigidBody>
-        <RigidBody position={[1.5, 0, 0]} ref={j3} {...segmentProps}>
+        <RigidBody position={[0, -3, 0]} ref={j3} {...segmentProps}>
           <BallCollider args={[0.1]} />
         </RigidBody>
+        {/* Card center starts at [0, 4-4.45, 0] = [0, -0.45, 0] — exactly the hang equilibrium */}
         <RigidBody
-          position={[2, 0, 0]}
+          position={[0, -4.45, 0]}
           ref={card}
           {...segmentProps}
           type={dragged ? 'kinematicPosition' : 'dynamic'}
@@ -365,25 +408,11 @@ function Band({
                 metalness={0.4}
               />
               {/* Front face */}
-              <Html
-                transform
-                center
-                position={[0, 0.48, 0.015]}
-                rotation={[0, 0, 0]}
-                scale={0.055}
-                occlude
-              >
+              <Html transform center position={[0, 0.48, 0.015]} rotation={[0, 0, 0]} scale={0.055} occlude>
                 {badgeContent}
               </Html>
               {/* Back face */}
-              <Html
-                transform
-                center
-                position={[0, 0.48, -0.015]}
-                rotation={[0, Math.PI, 0]}
-                scale={0.055}
-                occlude
-              >
+              <Html transform center position={[0, 0.48, -0.015]} rotation={[0, Math.PI, 0]} scale={0.055} occlude>
                 {badgeContent}
               </Html>
             </mesh>
@@ -427,34 +456,10 @@ export default function Badge3D({
           </Physics>
           <Environment background blur={0.75}>
             <color attach="background" args={['#111111']} />
-            <Lightformer
-              intensity={2}
-              color="white"
-              position={[0, -1, 5]}
-              rotation={[0, 0, Math.PI / 3]}
-              scale={[100, 0.1, 1]}
-            />
-            <Lightformer
-              intensity={3}
-              color="white"
-              position={[-1, -1, 1]}
-              rotation={[0, 0, Math.PI / 3]}
-              scale={[100, 0.1, 1]}
-            />
-            <Lightformer
-              intensity={3}
-              color="white"
-              position={[1, 1, 1]}
-              rotation={[0, 0, Math.PI / 3]}
-              scale={[100, 0.1, 1]}
-            />
-            <Lightformer
-              intensity={10}
-              color="white"
-              position={[-10, 0, 14]}
-              rotation={[0, Math.PI / 2, Math.PI / 3]}
-              scale={[100, 10, 1]}
-            />
+            <Lightformer intensity={2} color="white" position={[0, -1, 5]} rotation={[0, 0, Math.PI / 3]} scale={[100, 0.1, 1]} />
+            <Lightformer intensity={3} color="white" position={[-1, -1, 1]} rotation={[0, 0, Math.PI / 3]} scale={[100, 0.1, 1]} />
+            <Lightformer intensity={3} color="white" position={[1, 1, 1]} rotation={[0, 0, Math.PI / 3]} scale={[100, 0.1, 1]} />
+            <Lightformer intensity={10} color="white" position={[-10, 0, 14]} rotation={[0, Math.PI / 2, Math.PI / 3]} scale={[100, 10, 1]} />
           </Environment>
         </Suspense>
       </Canvas>
