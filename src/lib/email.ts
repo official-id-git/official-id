@@ -1672,7 +1672,7 @@ export function getCreateCardPromoTemplate(data: { userName: string }): { subjec
           
           <div style="background: #f0f9ff; border-radius: 12px; padding: 16px; margin: 20px 0; border-left: 4px solid #3B82F6;">
             <p style="margin: 0 0 8px; color: #0369a1; font-weight: 600;">Langkah Mudah Membuat Kartu:</p>
-            <ol style="margin: 0; color: #666; padding-left: 20px; line-height: 1.6;">
+            <ol style="margin: 0; color: #666; padding-left: 20px; line-height: 1.6; list-style-type: decimal;">
               <li>click menu Cards</li>
               <li>click tombol Create New Card</li>
               <li>lengkapi data form</li>
@@ -1779,7 +1779,7 @@ export function getCompleteProfilePromoTemplate(data: { userName: string }): { s
           
           <div style="background: #faf5ff; border-radius: 12px; padding: 16px; margin: 20px 0; border-left: 4px solid #8B5CF6;">
             <p style="margin: 0 0 8px; color: #5b21b6; font-weight: 600;">Langkah Memasang Foto & Template:</p>
-            <ol style="margin: 0; color: #666; padding-left: 20px; line-height: 1.6;">
+            <ol style="margin: 0; color: #666; padding-left: 20px; line-height: 1.6; list-style-type: decimal;">
               <li>Masuk ke Dashboard Official.id dan buka <strong>Kartu Bisnis</strong> Anda.</li>
               <li>Klik <strong>Edit</strong> pada kartu Anda.</li>
               <li>Pada bagian Foto Profil, pilih foto terbaik Anda lalu unggah.</li>
