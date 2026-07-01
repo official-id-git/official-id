@@ -68,10 +68,10 @@ export default function PublicBadgeClient({ cardId }: { cardId: string }) {
           lanyardColor={lanyardColor} 
           user={{ 
             full_name: card.full_name, 
-            company: card.company || 'Official.id',
+            company: card.company || '',
+            job_title: card.job_title || '',
             email: card.email,
-            whatsapp: card.whatsapp,
-            photo_url: card.photo_url,
+            photo_url: card.profile_photo_url || '',
             username: (card as any).username
           }} 
         />

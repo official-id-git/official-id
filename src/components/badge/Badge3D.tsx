@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { Canvas, extend, useThree, useFrame } from '@react-three/fiber'
 import { Suspense } from 'react'
-import { useGLTF, useTexture, Environment, Lightformer, Text, Resize, RenderTexture, PerspectiveCamera, Image } from '@react-three/drei'
+import { useGLTF, Environment, Lightformer, Html } from '@react-three/drei'
 import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphericalJoint } from '@react-three/rapier'
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline'
 
@@ -16,6 +16,7 @@ useGLTF.preload('https://assets.vercel.com/image/upload/contentful/image/e5382hc
 export interface UserData {
   full_name?: string
   company?: string
+  job_title?: string
   photo_url?: string
   username?: string
   email?: string
@@ -37,111 +38,66 @@ function getContrastColor(hexColor: string) {
   return yiq >= 128 ? '#000000' : '#ffffff'
 }
 
-// Scene rendering the texture for the badge
-function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: string }) {
-  const textColor = getContrastColor(badgeColor)
-  
-  const fullName = user?.full_name || 'Official User'
-  const email = user?.email || 'user@official.id'
-  const whatsapp = user?.whatsapp || '-'
-  const link = user?.username ? `official.id/c/${user.username}` : 'official.id'
-  const photoUrl = user?.photo_url || ''
+function Band({
+  maxSpeed = 50,
+  minSpeed = 10,
+  badgeColor = '#000000',
+  lanyardColor = '#000000',
+  user,
+}: Badge3DProps & { maxSpeed?: number; minSpeed?: number }) {
+  const band = useRef<any>(null),
+    fixed = useRef<any>(null),
+    j1 = useRef<any>(null),
+    j2 = useRef<any>(null),
+    j3 = useRef<any>(null),
+    card = useRef<any>(null)
+  const vec = new THREE.Vector3(),
+    ang = new THREE.Vector3(),
+    rot = new THREE.Vector3(),
+    dir = new THREE.Vector3()
+  const segmentProps = {
+    type: 'dynamic' as const,
+    canSleep: true,
+    colliders: false as const,
+    angularDamping: 2,
+    linearDamping: 2,
+  }
 
-  // Remove Leva to lock in the layout
-  // const { textX, textY, textScale } = useControls('Badge Layout', { ... })
+  const { nodes, materials } = useGLTF(
+    'https://assets.vercel.com/image/upload/contentful/image/e5382hct74si/5huRVDzcoDwnbgrKUo1Lzs/53b6dd7d6b4ffcdbd338fa60265949e1/tag.glb'
+  ) as any
 
-  return (
-    <>
-      <PerspectiveCamera makeDefault manual aspect={1.05} position={[0.49, 0.22, 2]} />
-      <color attach="background" args={[badgeColor]} />
-      
-      <group position={[0, 0, 0]} scale={[0.54, 0.54, 0.54]} rotation={[0, Math.PI, Math.PI]}>
-        
-        {/* Photo placeholder */}
-        <mesh position={[0, 0.75, 0]}>
-          <circleGeometry args={[0.35, 32]} />
-          <meshBasicMaterial color="#9ca3af" side={THREE.DoubleSide} />
-        </mesh>
-
-        {photoUrl && (
-          <Image 
-            url={photoUrl} 
-            transparent 
-            radius={0.5} 
-            position={[0, 0.75, 0.01]} 
-            scale={[0.7, 0.7]} 
-          />
-        )}
-        
-        <Text
-          fontSize={0.35}
-          color={textColor}
-          anchorX="center"
-          anchorY="middle"
-          position={[0, 0.2, 0]}>
-          {fullName}
-        </Text>
-        
-        <Text
-            fontSize={0.14}
-            color={textColor}
-            anchorX="center"
-            anchorY="middle"
-            position={[0, 0.0, 0]}>
-            {email}
-        </Text>
-        
-        <Text
-            fontSize={0.14}
-            color={textColor}
-            anchorX="center"
-            anchorY="middle"
-            position={[0, -0.17, 0]}>
-            {whatsapp}
-        </Text>
-        
-        <Text
-            fontSize={0.12}
-            color={textColor}
-            anchorX="center"
-            anchorY="middle"
-            position={[0, -0.32, 0]}>
-            {link}
-        </Text>
-        
-      </group>
-    </>
-  )
-}
-
-function Band({ maxSpeed = 50, minSpeed = 10, badgeColor = '#000000', lanyardColor = '#000000', user }: Badge3DProps & { maxSpeed?: number, minSpeed?: number }) {
-  const band = useRef<any>(null), fixed = useRef<any>(null), j1 = useRef<any>(null), j2 = useRef<any>(null), j3 = useRef<any>(null), card = useRef<any>(null)
-  const vec = new THREE.Vector3(), ang = new THREE.Vector3(), rot = new THREE.Vector3(), dir = new THREE.Vector3()
-  const segmentProps = { type: 'dynamic' as const, canSleep: true, colliders: false, angularDamping: 2, linearDamping: 2 }
-  
-  const { nodes, materials } = useGLTF('https://assets.vercel.com/image/upload/contentful/image/e5382hct74si/5huRVDzcoDwnbgrKUo1Lzs/53b6dd7d6b4ffcdbd338fa60265949e1/tag.glb') as any
-  const texture = useMemo(() => {
+  // Build lanyard texture from canvas with color + text
+  const lanyardTexture = useMemo(() => {
     if (typeof document === 'undefined') return new THREE.Texture()
     const canvas = document.createElement('canvas')
     canvas.width = 512
     canvas.height = 64
-    const context = canvas.getContext('2d')
-    if (context) {
-      context.fillStyle = lanyardColor
-      context.fillRect(0, 0, canvas.width, canvas.height)
-      context.fillStyle = getContrastColor(lanyardColor)
-      context.font = 'bold 36px Arial'
-      context.textAlign = 'center'
-      context.textBaseline = 'middle'
-      context.fillText('official.id', canvas.width / 2, canvas.height / 2)
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      ctx.fillStyle = lanyardColor
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.fillStyle = getContrastColor(lanyardColor)
+      ctx.font = 'bold 28px Arial'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText('official.id', canvas.width / 2, canvas.height / 2)
     }
     const tex = new THREE.CanvasTexture(canvas)
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping
     return tex
   }, [lanyardColor])
-  
+
   const { width, height } = useThree((state) => state.size)
-  const [curve] = useState(() => new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]))
+  const [curve] = useState(
+    () =>
+      new THREE.CatmullRomCurve3([
+        new THREE.Vector3(),
+        new THREE.Vector3(),
+        new THREE.Vector3(),
+        new THREE.Vector3(),
+      ])
+  )
   const [dragged, drag] = useState<THREE.Vector3 | false>(false)
   const [hovered, hover] = useState(false)
 
@@ -163,13 +119,24 @@ function Band({ maxSpeed = 50, minSpeed = 10, badgeColor = '#000000', lanyardCol
       dir.copy(vec).sub(state.camera.position).normalize()
       vec.add(dir.multiplyScalar(state.camera.position.length()))
       ;[card, j1, j2, j3, fixed].forEach((ref) => ref.current?.wakeUp())
-      card.current?.setNextKinematicTranslation({ x: vec.x - dragged.x, y: vec.y - dragged.y, z: vec.z - dragged.z })
+      card.current?.setNextKinematicTranslation({
+        x: vec.x - (dragged as THREE.Vector3).x,
+        y: vec.y - (dragged as THREE.Vector3).y,
+        z: vec.z - (dragged as THREE.Vector3).z,
+      })
     }
     if (fixed.current) {
       ;[j1, j2].forEach((ref) => {
-        if (!ref.current.lerped) ref.current.lerped = new THREE.Vector3().copy(ref.current.translation())
-        const clampedDistance = Math.max(0.1, Math.min(1, ref.current.lerped.distanceTo(ref.current.translation())))
-        ref.current.lerped.lerp(ref.current.translation(), delta * (minSpeed + clampedDistance * (maxSpeed - minSpeed)))
+        if (!ref.current.lerped)
+          ref.current.lerped = new THREE.Vector3().copy(ref.current.translation())
+        const clampedDistance = Math.max(
+          0.1,
+          Math.min(1, ref.current.lerped.distanceTo(ref.current.translation()))
+        )
+        ref.current.lerped.lerp(
+          ref.current.translation(),
+          delta * (minSpeed + clampedDistance * (maxSpeed - minSpeed))
+        )
       })
       curve.points[0].copy(j3.current.translation())
       curve.points[1].copy(j2.current.lerped)
@@ -185,58 +152,253 @@ function Band({ maxSpeed = 50, minSpeed = 10, badgeColor = '#000000', lanyardCol
   // @ts-ignore
   curve.curveType = 'chordal'
 
+  const textColor = getContrastColor(badgeColor)
+  const photoUrl = user?.photo_url || ''
+  const fullName = user?.full_name || 'Official User'
+  const company = user?.company || ''
+  const jobTitle = user?.job_title || ''
+  const subtitle = jobTitle || company || 'Official.id'
+  const publicUrl = user?.username ? `official.id/c/${user.username}` : 'official.id'
+
+  // Badge face content (HTML overlay on the 3D card)
+  const badgeContent = (
+    <div
+      style={{
+        width: '420px',
+        height: '650px',
+        padding: '28px 24px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        color: textColor,
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        boxSizing: 'border-box',
+        pointerEvents: 'none',
+        background: 'transparent',
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden',
+      }}
+    >
+      {/* TOP: brand */}
+      <div style={{ textAlign: 'center', width: '100%' }}>
+        <div
+          style={{
+            fontSize: '20px',
+            fontWeight: 900,
+            letterSpacing: '4px',
+            textTransform: 'uppercase',
+            opacity: 0.9,
+          }}
+        >
+          OFFICIAL.ID
+        </div>
+        <div
+          style={{
+            fontSize: '11px',
+            letterSpacing: '3px',
+            opacity: 0.5,
+            marginTop: '4px',
+            textTransform: 'uppercase',
+          }}
+        >
+          Digital Business Card
+        </div>
+      </div>
+
+      {/* MIDDLE: photo */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px' }}>
+        {photoUrl ? (
+          <img
+            src={photoUrl}
+            alt="Profile"
+            crossOrigin="anonymous"
+            style={{
+              width: '200px',
+              height: '200px',
+              borderRadius: '50%',
+              objectFit: 'cover',
+              border: `5px solid ${textColor}`,
+              boxShadow: '0 8px 30px rgba(0,0,0,0.6)',
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width: '200px',
+              height: '200px',
+              borderRadius: '50%',
+              background: 'rgba(128,128,128,0.3)',
+              border: `5px solid ${textColor}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.6)',
+            }}
+          >
+            <span style={{ fontSize: '72px' }}>👤</span>
+          </div>
+        )}
+
+        {/* Name & subtitle */}
+        <div style={{ textAlign: 'center' }}>
+          <div
+            style={{
+              fontSize: '40px',
+              fontWeight: 900,
+              lineHeight: 1.1,
+              textShadow: '0 2px 12px rgba(0,0,0,0.5)',
+            }}
+          >
+            {fullName}
+          </div>
+          <div
+            style={{
+              fontSize: '18px',
+              fontWeight: 600,
+              marginTop: '8px',
+              opacity: 0.75,
+            }}
+          >
+            {subtitle}
+          </div>
+        </div>
+      </div>
+
+      {/* BOTTOM: URL */}
+      <div
+        style={{
+          width: '100%',
+          borderTop: `1px solid ${textColor}44`,
+          paddingTop: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <span
+          style={{
+            fontSize: '15px',
+            fontFamily: 'monospace',
+            fontWeight: 700,
+            letterSpacing: '1px',
+            opacity: 0.8,
+          }}
+        >
+          {publicUrl}
+        </span>
+        <div
+          style={{
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            background: '#10b981',
+            boxShadow: '0 0 12px #10b981',
+          }}
+        />
+      </div>
+    </div>
+  )
+
   return (
     <>
       <group position={[0, 4, 0]}>
-        <RigidBody ref={fixed} {...segmentProps} colliders={false as const} type="fixed" />
-        <RigidBody position={[0.5, 0, 0]} ref={j1} {...segmentProps} colliders={false as const}>
+        <RigidBody ref={fixed} {...segmentProps} type="fixed">
+          <mesh />
+        </RigidBody>
+        <RigidBody position={[0.5, 0, 0]} ref={j1} {...segmentProps}>
           <BallCollider args={[0.1]} />
         </RigidBody>
-        <RigidBody position={[1, 0, 0]} ref={j2} {...segmentProps} colliders={false as const}>
+        <RigidBody position={[1, 0, 0]} ref={j2} {...segmentProps}>
           <BallCollider args={[0.1]} />
         </RigidBody>
-        <RigidBody position={[1.5, 0, 0]} ref={j3} {...segmentProps} colliders={false as const}>
+        <RigidBody position={[1.5, 0, 0]} ref={j3} {...segmentProps}>
           <BallCollider args={[0.1]} />
         </RigidBody>
-        <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} colliders={false as const} type={dragged ? 'kinematicPosition' : 'dynamic'}>
+        <RigidBody
+          position={[2, 0, 0]}
+          ref={card}
+          {...segmentProps}
+          type={dragged ? 'kinematicPosition' : 'dynamic'}
+        >
           <CuboidCollider args={[0.8, 1.125, 0.01]} />
           <group
             scale={2.25}
             position={[0, -1.2, -0.05]}
             onPointerOver={() => hover(true)}
             onPointerOut={() => hover(false)}
-            onPointerUp={(e) => { (e.target as Element).releasePointerCapture(e.pointerId); drag(false); }}
-            onPointerDown={(e) => { (e.target as Element).setPointerCapture(e.pointerId); drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation()))); }}>
-            
+            onPointerUp={(e) => {
+              ;(e.target as Element).releasePointerCapture(e.pointerId)
+              drag(false)
+            }}
+            onPointerDown={(e) => {
+              ;(e.target as Element).setPointerCapture(e.pointerId)
+              drag(
+                new THREE.Vector3()
+                  .copy(e.point)
+                  .sub(vec.copy(card.current.translation()))
+              )
+            }}
+          >
             <mesh geometry={nodes.card.geometry}>
-              <meshPhysicalMaterial 
-                clearcoat={1} 
-                clearcoatRoughness={0.15} 
-                roughness={0.3} 
-                metalness={0.5} 
-                color="#ffffff"
+              <meshPhysicalMaterial
+                color={badgeColor}
+                clearcoat={1}
+                clearcoatRoughness={0.15}
+                roughness={0.3}
+                metalness={0.4}
+              />
+              {/* Front face */}
+              <Html
+                transform
+                position={[0, 0.48, 0.015]}
+                rotation={[0, 0, 0]}
+                scale={0.055}
+                occlude
               >
-                <RenderTexture attach="map" height={2000} width={2000} anisotropy={16}>
-                  <BadgeTexture user={user} badgeColor={badgeColor} />
-                </RenderTexture>
-              </meshPhysicalMaterial>
+                {badgeContent}
+              </Html>
+              {/* Back face */}
+              <Html
+                transform
+                position={[0, 0.48, -0.015]}
+                rotation={[0, Math.PI, 0]}
+                scale={0.055}
+                occlude
+              >
+                {badgeContent}
+              </Html>
             </mesh>
             <mesh geometry={nodes.clip.geometry} material={materials.metal} material-roughness={0.3} />
             <mesh geometry={nodes.clamp.geometry} material={materials.metal} />
           </group>
         </RigidBody>
       </group>
+
+      {/* Lanyard rope */}
       <mesh ref={band}>
         {/* @ts-ignore */}
         <meshLineGeometry />
         {/* @ts-ignore */}
-        <meshLineMaterial color="#ffffff" depthTest={false} resolution={[width, height]} useMap map={texture} repeat={[-3, 1]} lineWidth={1} />
+        <meshLineMaterial
+          color="#ffffff"
+          depthTest={false}
+          resolution={[width, height]}
+          useMap
+          map={lanyardTexture}
+          repeat={[-3, 1]}
+          lineWidth={1}
+        />
       </mesh>
     </>
   )
 }
 
-export default function Badge3D({ badgeColor = '#000000', lanyardColor = '#000000', user }: Badge3DProps) {
+export default function Badge3D({
+  badgeColor = '#000000',
+  lanyardColor = '#000000',
+  user,
+}: Badge3DProps) {
   return (
     <div className="w-full h-full relative" style={{ touchAction: 'none' }}>
       <Canvas camera={{ position: [0, 0, 13], fov: 25 }}>
@@ -247,10 +409,34 @@ export default function Badge3D({ badgeColor = '#000000', lanyardColor = '#00000
           </Physics>
           <Environment background blur={0.75}>
             <color attach="background" args={['#111111']} />
-            <Lightformer intensity={2} color="white" position={[0, -1, 5]} rotation={[0, 0, Math.PI / 3]} scale={[100, 0.1, 1]} />
-            <Lightformer intensity={3} color="white" position={[-1, -1, 1]} rotation={[0, 0, Math.PI / 3]} scale={[100, 0.1, 1]} />
-            <Lightformer intensity={3} color="white" position={[1, 1, 1]} rotation={[0, 0, Math.PI / 3]} scale={[100, 0.1, 1]} />
-            <Lightformer intensity={10} color="white" position={[-10, 0, 14]} rotation={[0, Math.PI / 2, Math.PI / 3]} scale={[100, 10, 1]} />
+            <Lightformer
+              intensity={2}
+              color="white"
+              position={[0, -1, 5]}
+              rotation={[0, 0, Math.PI / 3]}
+              scale={[100, 0.1, 1]}
+            />
+            <Lightformer
+              intensity={3}
+              color="white"
+              position={[-1, -1, 1]}
+              rotation={[0, 0, Math.PI / 3]}
+              scale={[100, 0.1, 1]}
+            />
+            <Lightformer
+              intensity={3}
+              color="white"
+              position={[1, 1, 1]}
+              rotation={[0, 0, Math.PI / 3]}
+              scale={[100, 0.1, 1]}
+            />
+            <Lightformer
+              intensity={10}
+              color="white"
+              position={[-10, 0, 14]}
+              rotation={[0, Math.PI / 2, Math.PI / 3]}
+              scale={[100, 10, 1]}
+            />
           </Environment>
         </Suspense>
       </Canvas>
