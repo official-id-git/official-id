@@ -71,6 +71,7 @@ export default function PublicBadgeClient({ cardId }: { cardId: string }) {
             company: card.company || '',
             job_title: card.job_title || '',
             email: card.email,
+            whatsapp: card.phone,
             photo_url: card.profile_photo_url || '',
             username: (card as any).username
           }} 

@@ -262,6 +262,20 @@ function Band({
           >
             {subtitle}
           </div>
+
+          <div
+            style={{
+              marginTop: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              fontSize: '15px',
+              opacity: 0.85,
+            }}
+          >
+            {email && <div>{email}</div>}
+            {whatsapp && <div>{whatsapp}</div>}
+          </div>
         </div>
       </div>
 
