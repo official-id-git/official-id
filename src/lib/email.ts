@@ -1676,7 +1676,7 @@ export function getCreateCardPromoTemplate(data: { userName: string }): { subjec
               <li>click menu Cards</li>
               <li>click tombol Create New Card</li>
               <li>lengkapi data form</li>
-              <li>pilihan template yang paling kamu sukai, jika kamu adalah organisasi atau perusahaan ingin membuat desain template kartu bisnis digital sendiri, seperti template MM Batch 8, hubungi admin chat whatsapp 081283835553</li>
+              <li>pilihan template yang paling kamu sukai, jika kamu adalah organisasi atau perusahaan ingin membuat desain template kartu bisnis digital sendiri, seperti template MM Batch 8, hubungi admin <a href="https://wa.me/6281283835553?text=hi%2C%20admin%20saya%20mau%20buat%20template%20premiun%20di%20offficial.id" target="_blank" style="color: #3B82F6; text-decoration: none; font-weight: 600;">chat whatsapp 081283835553</a></li>
               <li>jika semua disi dan dipilih click tombol Buat Kartu</li>
             </ol>
           </div>
