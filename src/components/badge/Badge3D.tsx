@@ -8,6 +8,24 @@ import { useGLTF, Environment, Lightformer, Html } from '@react-three/drei'
 import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphericalJoint } from '@react-three/rapier'
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline'
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CameraAdjuster — zooms camera in on wide/desktop viewports so badge isn't tiny
+// ─────────────────────────────────────────────────────────────────────────────
+function CameraAdjuster() {
+  const { camera, size } = useThree()
+
+  useEffect(() => {
+    const aspect = size.width / size.height
+    // On portrait (mobile/tablet) keep default z=13
+    // On landscape/wide (desktop) bring camera closer proportionally
+    const z = aspect > 1 ? Math.max(5.5, 13 / aspect) : 13
+    camera.position.z = z
+    camera.updateProjectionMatrix()
+  }, [camera, size.width, size.height])
+
+  return null
+}
+
 extend({ MeshLineGeometry, MeshLineMaterial })
 
 useGLTF.preload('https://assets.vercel.com/image/upload/contentful/image/e5382hct74si/5huRVDzcoDwnbgrKUo1Lzs/53b6dd7d6b4ffcdbd338fa60265949e1/tag.glb')
@@ -230,6 +248,15 @@ function Band({
       rot.copy(card.current.rotation())
       card.current.setAngvel({ x: ang.x, y: ang.y - rot.y * 0.25, z: ang.z })
 
+      // Gentle centering spring — desktop only (non-touch), pulls badge toward x=0
+      if (!isTouch && !dragged) {
+        const pos = card.current.translation()
+        if (Math.abs(pos.x) > 0.15) {
+          card.current.wakeUp?.()
+          card.current.applyImpulse({ x: -pos.x * 0.8, y: 0, z: 0 }, true)
+        }
+      }
+
       // Gyroscope tilt force
       if (isTouch && !dragged && (Math.abs(tiltRef.current.x) > 0.05 || Math.abs(tiltRef.current.z) > 0.05)) {
         card.current.wakeUp?.()
@@ -441,6 +468,7 @@ export default function Badge3D({ badgeColor = '#000000', lanyardColor = '#00000
     <div className="w-full h-full relative" style={{ touchAction: 'none' }}>
       <Canvas camera={{ position: [0, 0, 13], fov: 25 }}>
         <ambientLight intensity={Math.PI} />
+        <CameraAdjuster />
         <Suspense fallback={null}>
           <Physics interpolate gravity={[0, -40, 0]} timeStep={1 / 60}>
             <Band badgeColor={badgeColor} lanyardColor={lanyardColor} user={user} />
