@@ -113,6 +113,10 @@ export async function POST(request: NextRequest) {
         metadata: { recipientName: recipient.full_name },
         sent_at: emailResult.success ? new Date().toISOString() : null
       })
+
+      // Rate limit protection: Resend free tier limits to 2 req/sec.
+      // Wait 500ms before sending the next email.
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
 
     return NextResponse.json({
