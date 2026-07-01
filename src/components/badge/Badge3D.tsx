@@ -157,6 +157,8 @@ function Band({
   const fullName = user?.full_name || 'Official User'
   const company = user?.company || ''
   const jobTitle = user?.job_title || ''
+  const email = user?.email || ''
+  const whatsapp = user?.whatsapp || ''
   const subtitle = jobTitle || company || 'Official.id'
   const publicUrl = user?.username ? `official.id/c/${user.username}` : 'official.id'
 
