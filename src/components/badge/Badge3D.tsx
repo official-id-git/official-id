@@ -3,6 +3,7 @@
 import * as THREE from 'three'
 import { useEffect, useRef, useState } from 'react'
 import { Canvas, extend, useThree, useFrame } from '@react-three/fiber'
+import { Suspense } from 'react'
 import { useGLTF, useTexture, Environment, Lightformer, Text3D, Center, Resize, RenderTexture, PerspectiveCamera } from '@react-three/drei'
 import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphericalJoint } from '@react-three/rapier'
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline'
@@ -195,16 +196,18 @@ export default function Badge3D({ badgeColor = '#000000', lanyardColor = '#00000
     <div className="w-full h-full relative" style={{ touchAction: 'none' }}>
       <Canvas camera={{ position: [0, 0, 13], fov: 25 }}>
         <ambientLight intensity={Math.PI} />
-        <Physics interpolate gravity={[0, -40, 0]} timeStep={1 / 60}>
-          <Band badgeColor={badgeColor} lanyardColor={lanyardColor} user={user} />
-        </Physics>
-        <Environment background blur={0.75}>
-          <color attach="background" args={['#111111']} />
-          <Lightformer intensity={2} color="white" position={[0, -1, 5]} rotation={[0, 0, Math.PI / 3]} scale={[100, 0.1, 1]} />
-          <Lightformer intensity={3} color="white" position={[-1, -1, 1]} rotation={[0, 0, Math.PI / 3]} scale={[100, 0.1, 1]} />
-          <Lightformer intensity={3} color="white" position={[1, 1, 1]} rotation={[0, 0, Math.PI / 3]} scale={[100, 0.1, 1]} />
-          <Lightformer intensity={10} color="white" position={[-10, 0, 14]} rotation={[0, Math.PI / 2, Math.PI / 3]} scale={[100, 10, 1]} />
-        </Environment>
+        <Suspense fallback={null}>
+          <Physics interpolate gravity={[0, -40, 0]} timeStep={1 / 60}>
+            <Band badgeColor={badgeColor} lanyardColor={lanyardColor} user={user} />
+          </Physics>
+          <Environment background blur={0.75}>
+            <color attach="background" args={['#111111']} />
+            <Lightformer intensity={2} color="white" position={[0, -1, 5]} rotation={[0, 0, Math.PI / 3]} scale={[100, 0.1, 1]} />
+            <Lightformer intensity={3} color="white" position={[-1, -1, 1]} rotation={[0, 0, Math.PI / 3]} scale={[100, 0.1, 1]} />
+            <Lightformer intensity={3} color="white" position={[1, 1, 1]} rotation={[0, 0, Math.PI / 3]} scale={[100, 0.1, 1]} />
+            <Lightformer intensity={10} color="white" position={[-10, 0, 14]} rotation={[0, Math.PI / 2, Math.PI / 3]} scale={[100, 10, 1]} />
+          </Environment>
+        </Suspense>
       </Canvas>
     </div>
   )

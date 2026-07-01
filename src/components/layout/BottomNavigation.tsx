@@ -149,6 +149,11 @@ export default function BottomNavigation({
             <span className="text-xs text-gray-500">Circle</span>
           </Link>
 
+          <Link href="/dashboard/badge" className="flex flex-col items-center gap-1 py-2 px-2 min-w-[56px]">
+            <Badge className="w-6 h-6 text-gray-400" />
+            <span className="text-xs text-gray-500">Badge</span>
+          </Link>
+
         </div>
       </div>
     )
@@ -192,6 +197,12 @@ export default function BottomNavigation({
             <span className="text-xs text-gray-500">Circle</span>
           </Link>
 
+          {/* Badge */}
+          <Link href="/dashboard/badge" className="flex flex-col items-center gap-1 py-2 px-2 min-w-[56px]">
+            <Badge className="w-6 h-6 text-gray-400" />
+            <span className="text-xs text-gray-500">Badge</span>
+          </Link>
+
         </div>
       </div>
     )
@@ -229,6 +240,11 @@ export default function BottomNavigation({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
             <span className="text-xs text-gray-500">Cards</span>
+          </Link>
+
+          <Link href="/dashboard/badge" className="flex flex-col items-center gap-1 py-2 px-3 min-w-[64px]">
+            <Badge className="w-6 h-6 text-gray-400" />
+            <span className="text-xs text-gray-500">Badge</span>
           </Link>
         </div>
       </div>
