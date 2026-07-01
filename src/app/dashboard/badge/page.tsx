@@ -136,7 +136,14 @@ export default function BadgeSettingsPage() {
           <Badge3D 
             badgeColor={badgeColor} 
             lanyardColor={lanyardColor} 
-            user={{ full_name: card.full_name, company: card.company || 'Official.id' }} 
+            user={{ 
+              full_name: card.full_name, 
+              company: card.company || 'Official.id',
+              email: card.email,
+              whatsapp: card.whatsapp,
+              photo_url: card.photo_url,
+              username: (card as any).username
+            }} 
           />
           <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
             <span className="bg-black/50 text-white/80 text-xs px-3 py-1 rounded-full backdrop-blur-md">

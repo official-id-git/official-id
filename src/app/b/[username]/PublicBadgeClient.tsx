@@ -66,7 +66,14 @@ export default function PublicBadgeClient({ cardId }: { cardId: string }) {
         <Badge3D 
           badgeColor={badgeColor} 
           lanyardColor={lanyardColor} 
-          user={{ full_name: card.full_name, company: card.company || 'Official.id' }} 
+          user={{ 
+            full_name: card.full_name, 
+            company: card.company || 'Official.id',
+            email: card.email,
+            whatsapp: card.whatsapp,
+            photo_url: card.photo_url,
+            username: (card as any).username
+          }} 
         />
         <div className="absolute bottom-8 left-0 right-0 text-center pointer-events-none z-10">
           <span className="bg-black/50 text-white/80 text-xs px-3 py-1 rounded-full backdrop-blur-md">

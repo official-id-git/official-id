@@ -4,9 +4,11 @@ import * as THREE from 'three'
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { Canvas, extend, useThree, useFrame } from '@react-three/fiber'
 import { Suspense } from 'react'
-import { useGLTF, useTexture, Environment, Lightformer, Text, Resize, RenderTexture, PerspectiveCamera } from '@react-three/drei'
+import { useGLTF, useTexture, Environment, Lightformer, Text, Resize, RenderTexture, PerspectiveCamera, Image } from '@react-three/drei'
 import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphericalJoint } from '@react-three/rapier'
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline'
+
+const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNTYiIGhlaWdodD0iMjU2IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE5IDIxdi0yYTQgNCAwIDAgMC00LTRIOWE0IDQgMCAwIDAtNCA0djIiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjciIHI9IjQiLz48L3N2Zz4='
 
 extend({ MeshLineGeometry, MeshLineMaterial })
 
@@ -16,6 +18,10 @@ useGLTF.preload('https://assets.vercel.com/image/upload/contentful/image/e5382hc
 export interface UserData {
   full_name?: string
   company?: string
+  photo_url?: string
+  username?: string
+  email?: string
+  whatsapp?: string
 }
 
 export interface Badge3DProps {
@@ -35,45 +41,64 @@ function getContrastColor(hexColor: string) {
 
 // Scene rendering the texture for the badge
 function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: string }) {
-  const names = (user?.full_name || 'Official ID').split(' ')
-  const firstName = names[0]
-  const lastName = names.length > 1 ? names.slice(1).join(' ') : ''
-  const company = user?.company || 'Official User'
-  
   const textColor = getContrastColor(badgeColor)
+  
+  const fullName = user?.full_name || 'Official User'
+  const email = user?.email || 'user@official.id'
+  const whatsapp = user?.whatsapp || '-'
+  const link = user?.username ? `official.id/c/${user.username}` : 'official.id'
+  const photoUrl = user?.photo_url || DEFAULT_AVATAR
 
   return (
     <>
       <PerspectiveCamera makeDefault manual aspect={1.05} position={[0.49, 0.22, 2]} />
       <color attach="background" args={[badgeColor]} />
       
-      <group position={[0.49, 0.3, 0]} rotation={[0, Math.PI, Math.PI]}>
+      <group position={[0.49, 0.22, 0]} rotation={[0, Math.PI, Math.PI]}>
+        
+        <Image 
+          url={photoUrl} 
+          position={[0, 0.5, 0]} 
+          scale={[0.7, 0.7]} 
+          transparent 
+        />
+        
         <Text
-          fontSize={0.25}
+          fontSize={0.18}
           color={textColor}
           anchorX="center"
           anchorY="middle"
           position={[0, 0, 0]}>
-          {firstName}
+          {fullName}
         </Text>
-        {lastName && (
-          <Text
-            fontSize={0.25}
-            color={textColor}
-            anchorX="center"
-            anchorY="middle"
-            position={[0, -0.3, 0]}>
-            {lastName}
-          </Text>
-        )}
+        
         <Text
-            fontSize={0.12}
+            fontSize={0.08}
             color={textColor}
             anchorX="center"
             anchorY="middle"
-            position={[0, lastName ? -0.65 : -0.35, 0]}>
-            {company}
+            position={[0, -0.2, 0]}>
+            {email}
         </Text>
+        
+        <Text
+            fontSize={0.08}
+            color={textColor}
+            anchorX="center"
+            anchorY="middle"
+            position={[0, -0.35, 0]}>
+            {whatsapp}
+        </Text>
+        
+        <Text
+            fontSize={0.1}
+            color={textColor}
+            anchorX="center"
+            anchorY="middle"
+            position={[0, -0.55, 0]}>
+            {link}
+        </Text>
+        
       </group>
     </>
   )
@@ -195,7 +220,7 @@ function Band({ maxSpeed = 50, minSpeed = 10, badgeColor = '#000000', lanyardCol
         {/* @ts-ignore */}
         <meshLineGeometry />
         {/* @ts-ignore */}
-        <meshLineMaterial color="#ffffff" depthTest={false} resolution={[width, height]} useMap map={texture} repeat={[-3, 1]} lineWidth={1} />
+        <meshLineMaterial color="#ffffff" depthTest={false} resolution={[width, height]} useMap map={texture} repeat={[-1, 1]} lineWidth={1} />
       </mesh>
     </>
   )
