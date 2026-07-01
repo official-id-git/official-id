@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { Canvas, extend, useThree, useFrame } from '@react-three/fiber'
 import { Suspense } from 'react'
-import { useGLTF, useTexture, Environment, Lightformer, Text3D, Center, Resize, RenderTexture, PerspectiveCamera } from '@react-three/drei'
+import { useGLTF, useTexture, Environment, Lightformer, Text, Resize, RenderTexture, PerspectiveCamera } from '@react-three/drei'
 import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphericalJoint } from '@react-three/rapier'
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline'
 
@@ -47,44 +47,37 @@ function BadgeTexture({ user, badgeColor }: { user?: UserData, badgeColor: strin
       <PerspectiveCamera makeDefault manual aspect={1.05} position={[0.49, 0.22, 2]} />
       <color attach="background" args={[badgeColor]} />
       
-      <Center bottom right position={[-0.3, -0.7, 0]}>
-        <group scale={0.5}>
-          <Text3D
-            bevelEnabled={false}
-            bevelSize={0}
-            font="https://raw.githubusercontent.com/mrdoob/three.js/master/examples/fonts/helvetiker_bold.typeface.json"
-            height={0}
-            size={0.3}
-            rotation={[0, Math.PI, Math.PI]}>
-            {firstName}
-            <meshBasicMaterial color={textColor} />
-          </Text3D>
-          {lastName && (
-            <Text3D
-              bevelEnabled={false}
-              bevelSize={0}
-              font="https://raw.githubusercontent.com/mrdoob/three.js/master/examples/fonts/helvetiker_bold.typeface.json"
-              height={0}
-              size={0.3}
-              position={[0, 0.4, 0]}
-              rotation={[0, Math.PI, Math.PI]}>
-              {lastName}
-              <meshBasicMaterial color={textColor} />
-            </Text3D>
-          )}
-          <Text3D
-              bevelEnabled={false}
-              bevelSize={0}
-              font="https://raw.githubusercontent.com/mrdoob/three.js/master/examples/fonts/helvetiker_regular.typeface.json"
-              height={0}
-              size={0.15}
-              position={[0, lastName ? 0.8 : 0.4, 0]}
-              rotation={[0, Math.PI, Math.PI]}>
-              {company}
-              <meshBasicMaterial color={textColor} />
-          </Text3D>
-        </group>
-      </Center>
+      <group position={[0.49, 0.3, 0]} rotation={[0, Math.PI, Math.PI]}>
+        <Text
+          font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2"
+          fontSize={0.25}
+          color={textColor}
+          anchorX="center"
+          anchorY="middle"
+          position={[0, 0, 0]}>
+          {firstName}
+        </Text>
+        {lastName && (
+          <Text
+            font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2"
+            fontSize={0.25}
+            color={textColor}
+            anchorX="center"
+            anchorY="middle"
+            position={[0, -0.3, 0]}>
+            {lastName}
+          </Text>
+        )}
+        <Text
+            font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2"
+            fontSize={0.12}
+            color={textColor}
+            anchorX="center"
+            anchorY="middle"
+            position={[0, lastName ? -0.65 : -0.35, 0]}>
+            {company}
+        </Text>
+      </group>
     </>
   )
 }
