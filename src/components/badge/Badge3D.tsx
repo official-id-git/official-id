@@ -163,15 +163,13 @@ function Band({ maxSpeed = 50, minSpeed = 10, badgeColor = '#000000', lanyardCol
             
             <mesh geometry={nodes.card.geometry}>
               <meshPhysicalMaterial 
-                map={materials.base.map} 
-                map-anisotropy={16} 
                 clearcoat={1} 
                 clearcoatRoughness={0.15} 
                 roughness={0.3} 
                 metalness={0.5} 
                 color={badgeColor}
               >
-                <RenderTexture attach="map" height={2000} width={2000}>
+                <RenderTexture attach="map" height={2000} width={2000} anisotropy={16}>
                   <BadgeTexture user={user} badgeColor={badgeColor} />
                 </RenderTexture>
               </meshPhysicalMaterial>
