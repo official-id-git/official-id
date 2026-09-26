@@ -32,7 +32,10 @@ import ThreeVoxelTreeScene from "@/components/qr/ThreeVoxelTreeScene";
 import WebARModal from "@/components/qr/WebARModal";
 
 export default function TreeICQRStudio() {
-  const [url, setUrl] = useState("https://official.id/harizal");
+  const [destinationUrl, setDestinationUrl] = useState("https://official.id");
+  const [slug, setSlug] = useState("demo");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [shortlinkBase, setShortlinkBase] = useState("https://official.id");
   const [season, setSeason] = useState<SeasonType>("summer");
   const [viewMode, setViewMode] = useState<"3d" | "qr">("3d");
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -44,7 +47,46 @@ export default function TreeICQRStudio() {
 
   React.useEffect(() => {
     setIsMounted(true);
+    if (typeof window !== "undefined") {
+      setShortlinkBase(window.location.origin);
+    }
   }, []);
+
+  // 1. Teks yang benar-benar dicetak di QR code fisik: shortlink menuju mode scan AR /[slug]/q
+  const qrText = `${shortlinkBase}/${slug}/q`;
+  // 2. Link share untuk dibagikan di medsos / bio: /[slug]
+  const shareLink = `${shortlinkBase}/${slug}`;
+  // 3. Snippet embed untuk website / iframe:
+  const embedSnippet = `<div class="official-id-tree" data-slug="${slug}"></div>\n<script src="${shortlinkBase}/embed.js" async></script>`;
+
+  // Debounced auto-save ke Supabase saat user mengubah URL tujuan atau musim
+  React.useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (!destinationUrl || !/^https?:\/\//i.test(destinationUrl)) return;
+      setSaveStatus("saving");
+      try {
+        const res = await fetch("/api/links", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            destination: destinationUrl,
+            season,
+            slug: slug !== "demo" ? slug : undefined,
+          }),
+        });
+        const data = await res.json();
+        if (data.ok && data.slug) {
+          setSlug(data.slug);
+          setSaveStatus("saved");
+          setTimeout(() => setSaveStatus("idle"), 2500);
+        }
+      } catch {
+        setSaveStatus("idle");
+      }
+    }, 650);
+
+    return () => clearTimeout(timer);
+  }, [destinationUrl, season, slug]);
 
   // Trakteer Modal Opener (Interactive embed popup & fallback)
   const openTrakteerModal = () => {
@@ -102,7 +144,7 @@ export default function TreeICQRStudio() {
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(shareLink);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };
@@ -112,8 +154,8 @@ export default function TreeICQRStudio() {
       try {
         await navigator.share({
           title: "My 3D Voxel Magic Tree QR Code — official.id",
-          text: `Check out my 3D Voxel Magic Tree QR Code generated on official.id: ${url}`,
-          url: window.location.href,
+          text: `Buka 3D Voxel Magic Tree ini: ${shareLink}`,
+          url: shareLink,
         });
       } catch {
         handleCopyLink();
@@ -129,37 +171,37 @@ export default function TreeICQRStudio() {
       if (dataUrl) {
         const a = document.createElement("a");
         a.href = dataUrl;
-        a.download = `official-id-voxel-tree-${season}-${viewMode}.png`;
+        a.download = `official-id-magic-tree-${slug}-${season}-${viewMode}.png`;
         a.click();
       }
     }
   };
 
   const handleExportGoxelJson = () => {
-    const { matrix, size } = generateQrMatrix(url);
+    const { matrix, size } = generateQrMatrix(qrText);
     const voxels = generateVoxelTree(matrix, size, season);
 
     const json = exportVoxelsToJson(voxels, {
       title: "official.id 3D Voxel Magic Tree QR",
-      url,
+      url: qrText,
     });
 
     const blob = new Blob([json], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `official-id-voxel-tree.json`;
+    a.download = `official-id-voxel-tree-${slug}.json`;
     a.click();
   };
 
   const handleExportGoxelCsv = () => {
-    const { matrix, size } = generateQrMatrix(url);
+    const { matrix, size } = generateQrMatrix(qrText);
     const voxels = generateVoxelTree(matrix, size, season);
 
     const csv = exportVoxelsToCsv(voxels);
     const blob = new Blob([csv], { type: "text/csv" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `official-id-voxel-tree.csv`;
+    a.download = `official-id-voxel-tree-${slug}.csv`;
     a.click();
   };
 
@@ -244,8 +286,8 @@ export default function TreeICQRStudio() {
         <div className="w-full max-w-[560px] aspect-square max-h-[62vh] relative rounded-3xl overflow-hidden shadow-2xl shadow-stone-900/10 border border-stone-300/40">
           {isMounted && (
             <ThreeVoxelTreeScene
-              url={url}
-              qrText={url}
+              url={destinationUrl}
+              qrText={qrText}
               season={season}
               viewMode={viewMode}
               onViewModeToggle={() => setViewMode(viewMode === "3d" ? "qr" : "3d")}
@@ -283,14 +325,80 @@ export default function TreeICQRStudio() {
       </div>
 
       {/* Bottom Controls Bar (Exactly matching tree.icqr.com) */}
-      <footer className="w-full max-w-xl mx-auto px-4 pb-8 flex flex-col items-center gap-3 z-30">
+      <footer className="w-full max-w-xl mx-auto px-4 pb-8 flex flex-col items-center gap-2.5 z-30">
+        {/* Dynamic 3-Channel URLs Capsule */}
+        <div className="w-full flex flex-col gap-1.5 p-3 rounded-2xl bg-white/90 backdrop-blur-md border border-stone-200/90 text-xs shadow-sm">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="text-stone-500 text-[11px] font-semibold shrink-0">QR Cetak:</span>
+              <span className="font-mono text-emerald-800 font-bold truncate text-[11px]">
+                {qrText}
+              </span>
+              {saveStatus === "saving" && (
+                <span className="text-[10px] text-amber-600 font-medium shrink-0 animate-pulse">
+                  (Menyimpan...)
+                </span>
+              )}
+              {saveStatus === "saved" && (
+                <span className="text-[10px] text-emerald-600 font-medium shrink-0">
+                  ✓ Tersimpan
+                </span>
+              )}
+            </div>
+            <a
+              href={`/${slug}/q`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2.5 py-1 rounded-xl bg-emerald-700 hover:bg-emerald-600 active:scale-95 text-white text-[11px] font-semibold flex items-center gap-1 transition shrink-0 shadow-sm"
+              title="Buka simulasi WebAR hasil scan poster"
+            >
+              <span>Test AR</span>
+              <ArrowUpRightFromSquare className="w-3 h-3" />
+            </a>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 border-t border-stone-100 pt-1.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-stone-500 text-[11px] font-semibold shrink-0">Share:</span>
+              <span className="font-mono text-stone-700 truncate text-[11px]">
+                {shareLink}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <a
+                href={`/${slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-[10px] font-semibold flex items-center gap-1 transition"
+                title="Buka halaman share whitelabel"
+              >
+                <span>Lihat</span>
+                <ArrowUpRightFromSquare className="w-3 h-3" />
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(embedSnippet);
+                  setIsCopied(true);
+                  setTimeout(() => setIsCopied(false), 2000);
+                }}
+                className="px-2 py-1 rounded-xl bg-stone-800 hover:bg-stone-900 active:scale-95 text-white text-[10px] font-semibold transition"
+                title="Salin kode HTML embed untuk dipasang di website"
+              >
+                Copy Embed
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* URL Input & Share Capsule Bar */}
         <div className="w-full flex items-center bg-white/95 rounded-2xl shadow-sm border border-stone-200/80 p-1.5 pl-4 gap-2 backdrop-blur-md transition-all focus-within:ring-2 focus-within:ring-stone-400/40">
           <input
             type="text"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="Ketik URL tujuan..."
+            value={destinationUrl}
+            onChange={(e) => setDestinationUrl(e.target.value)}
+            placeholder="Ketik URL tujuan (misal: https://instagram.com/anda)..."
             className="flex-1 bg-transparent text-stone-800 text-sm font-medium outline-none placeholder:text-stone-400 truncate"
           />
 
@@ -540,8 +648,8 @@ export default function TreeICQRStudio() {
 
       {/* WebAR Augmented Reality Modal */}
       <WebARModal
-        url={url}
-        qrText={url}
+        url={destinationUrl}
+        qrText={qrText}
         season={season}
         isOpen={showARModal}
         mode="preview"

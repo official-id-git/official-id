@@ -98,12 +98,15 @@ uniform float uGrowth;
 `;
 
 const WIND_PROJECT_VERTEX = /* glsl */ `
-// Animasi tumbuh per-voxel: pop scale elastis
-float g = clamp((uGrowth - aGrowDelay) / 0.22, 0.0, 1.0);
+// Animasi tumbuh per-voxel: lantai QR langsung terlihat, batang & daun bermekaran
+float g = (aGrowDelay <= 0.0) ? 1.0 : clamp((uGrowth - aGrowDelay) / 0.20, 0.0, 1.0);
 float popScale = sin(g * 1.5707963);
-vec3 transformed = position * popScale;
+transformed = position * popScale;
 
 vec4 mvPosition = vec4( transformed, 1.0 );
+#ifdef USE_BATCHING
+  mvPosition = batchingMatrix * mvPosition;
+#endif
 #ifdef USE_INSTANCING
   mvPosition = instanceMatrix * mvPosition;
 #endif
@@ -164,19 +167,21 @@ function buildWindAttributes(voxels: VoxelItem[]) {
     const v = voxels[i];
     const distXZ = Math.hypot(v.x, v.z) / maxDistXZ;
 
-    // Timeline tumbuh: Dasar/QR -> Batang & Dahan -> Kanopi Daun -> Orang
-    if (v.role === "stone" || v.role === "border" || v.role === "flower" || v.y < 1) {
-      growDelay[i] = distXZ * 0.15;
+    // Timeline tumbuh: Dasar/QR (segera aktif 0.0) -> Batang & Dahan -> Kanopi Daun -> Orang
+    if (v.role === "stone" || v.role === "border" || v.y < 1) {
+      growDelay[i] = 0.0;
+    } else if (v.role === "flower") {
+      growDelay[i] = 0.08;
     } else if (v.role === "trunk" || v.role === "branch") {
       const normY = Math.min(1, Math.max(0, (v.y - 1) / (maxY - 1)));
-      growDelay[i] = 0.15 + normY * 0.25;
+      growDelay[i] = 0.05 + normY * 0.20;
     } else if (v.role === "leaf" || v.role === "hedge") {
       const normY = Math.min(1, Math.max(0, (v.y - rootY) / (maxY - rootY)));
-      growDelay[i] = 0.35 + normY * 0.25 + distXZ * 0.08;
+      growDelay[i] = 0.18 + normY * 0.22 + distXZ * 0.06;
     } else if (v.role === "person") {
-      growDelay[i] = 0.68;
+      growDelay[i] = 0.40;
     } else {
-      growDelay[i] = 0.20;
+      growDelay[i] = 0.10;
     }
 
     // Tile gelap di lantai juga ber-role "leaf" tapi y < 1 → harus diam
@@ -212,7 +217,7 @@ export default function WebARModal({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [sceneReady, setSceneReady] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const [treeScale, setTreeScale] = useState(0.28);
+  const [treeScale, setTreeScale] = useState(0.38);
   const [isQrLocked, setIsQrLocked] = useState(false);
 
   const [remainingMs, setRemainingMs] = useState(REDIRECT_MS);
@@ -498,8 +503,8 @@ export default function WebARModal({
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.set(0, 16, 32);
-    camera.lookAt(0, 4, 0);
+    camera.position.set(0, 16, 28);
+    camera.lookAt(0, 5, 0);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
@@ -511,7 +516,7 @@ export default function WebARModal({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, mobile ? 1.5 : 2));
     renderer.toneMapping = THREE.NoToneMapping; // warna palet voxel tetap setia
     renderer.shadowMap.enabled = !mobile; // shadow real-time mahal di HP
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     container.replaceChildren(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -599,11 +604,14 @@ export default function WebARModal({
     };
 
     let frame = 0;
-    const clock = new THREE.Clock();
+    let lastTime = performance.now();
+    const startTime = performance.now();
     const animate = () => {
       frame = requestAnimationFrame(animate);
-      const dt = Math.min(clock.getDelta(), 0.05);
-      const t = clock.elapsedTime;
+      const now = performance.now();
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+      const t = (now - startTime) / 1000;
       if (windRef.current) {
         windRef.current.uTime.value = t;
         if (growthStartTimeRef.current > 0) {
@@ -676,7 +684,6 @@ export default function WebARModal({
       treeMeshRef.current.geometry.dispose();
       (treeMeshRef.current.material as THREE.Material).dispose();
       treeMeshRef.current.customDepthMaterial?.dispose();
-      treeMeshRef.current.dispose();
       treeMeshRef.current = null;
     }
     if (particlesRef.current) {
@@ -684,7 +691,6 @@ export default function WebARModal({
       group.remove(pm);
       pm.geometry.dispose();
       (pm.material as THREE.Material).dispose();
-      pm.dispose();
       particlesRef.current = null;
     }
 
@@ -1017,8 +1023,8 @@ export default function WebARModal({
             <span className="text-[10px] text-stone-300 font-medium">Ukuran:</span>
             <input
               type="range"
-              min="0.12"
-              max="0.55"
+              min="0.18"
+              max="0.75"
               step="0.02"
               value={treeScale}
               onChange={(e) => setTreeScale(parseFloat(e.target.value))}

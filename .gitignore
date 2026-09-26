@@ -24,6 +24,8 @@
 .DS_Store
 *.pem
 pixel/
+.data/
+supabase/.temp/
 
 # debug
 npm-debug.log*
