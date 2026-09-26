@@ -1,9 +1,9 @@
 import TreeICQRStudio from "@/components/qr/TreeICQRStudio";
 
 export const metadata = {
-  title: "official.id — 3D Voxel Magic Tree QR Code Generator",
+  title: "official.id — QR CODE ANIMATE, ANIMASI QR CODE, QR CODE GENERATOR INOVATIVE",
   description:
-    "Turn any link into a stunning 3D Voxel Magic Tree that doubles as a scannable QR Code with wind foliage animation. Inspired by tree.icqr.com.",
+    "Platform QR CODE GENERATOR INOVATIVE pertama: Buat QR CODE ANIMATE & ANIMASI QR CODE 3D Voxel interaktif yang memukau, siap cetak 100% scan kamera, dan WebAR real-time.",
 };
 
 export default function Home() {

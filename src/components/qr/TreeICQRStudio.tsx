@@ -75,10 +75,10 @@ import ThreeVoxelTreeScene from "@/components/qr/ThreeVoxelTreeScene";
 import WebARModal from "@/components/qr/WebARModal";
 
 export default function TreeICQRStudio() {
-  const [destinationUrl, setDestinationUrl] = useState("https://patrakomala.id");
-  const [slug, setSlug] = useState("patrakomala");
-  const [customSlugInput, setCustomSlugInput] = useState("patrakomala");
-  const [slugCheckStatus, setSlugCheckStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("available");
+  const [destinationUrl, setDestinationUrl] = useState("");
+  const [slug, setSlug] = useState("");
+  const [customSlugInput, setCustomSlugInput] = useState("");
+  const [slugCheckStatus, setSlugCheckStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
   const [slugError, setSlugError] = useState("");
   const [brandName, setBrandName] = useState("");
   const [brandLogoUrl, setBrandLogoUrl] = useState("");
@@ -104,11 +104,14 @@ export default function TreeICQRStudio() {
   }, []);
 
   // 1. Teks yang benar-benar dicetak di QR code fisik: shortlink menuju mode scan AR /[slug]/q
-  const qrText = `${shortlinkBase}/${slug}/q`;
+  // Sebelum diisi oleh pengguna, default QR Code mengarah ke official.id
+  const qrText = slug ? `${shortlinkBase}/${slug}/q` : "https://official.id";
   // 2. Link share untuk dibagikan di medsos / bio: /[slug]
-  const shareLink = `${shortlinkBase}/${slug}`;
+  const shareLink = slug ? `${shortlinkBase}/${slug}` : `${shortlinkBase || "https://official.id"}`;
   // 3. Snippet embed untuk website / iframe:
-  const embedSnippet = `<div class="official-id-tree" data-slug="${slug}"></div>\n<script src="${shortlinkBase}/embed.js" async></script>`;
+  const embedSnippet = slug
+    ? `<div class="official-id-tree" data-slug="${slug}"></div>\n<script src="${shortlinkBase}/embed.js" async></script>`
+    : `<div class="official-id-tree" data-url="${shortlinkBase || "https://official.id"}"></div>\n<script src="${shortlinkBase}/embed.js" async></script>`;
 
   // Real-time debounce check untuk ketersediaan custom slug
   React.useEffect(() => {
@@ -154,7 +157,18 @@ export default function TreeICQRStudio() {
   // Simpan / update link ke Supabase & fail-safe cache
   const handleSaveLink = React.useCallback(
     async (overrideSlug?: string, overrideSeason?: SeasonType) => {
-      if (!destinationUrl || !/^https?:\/\//i.test(destinationUrl)) return;
+      let dest = destinationUrl.trim();
+      if (!dest) {
+        setSaveStatus("error");
+        setTimeout(() => setSaveStatus("idle"), 2500);
+        return;
+      }
+      // Auto-prefix https:// jika pengguna belum menyertakan skema
+      if (!/^https?:\/\//i.test(dest)) {
+        dest = `https://${dest}`;
+        setDestinationUrl(dest);
+      }
+
       setSaveStatus("saving");
       const chosenSlug = (overrideSlug !== undefined ? overrideSlug : customSlugInput).trim().toLowerCase();
       const chosenSeason = overrideSeason || season;
@@ -164,11 +178,11 @@ export default function TreeICQRStudio() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            destination: destinationUrl,
+            destination: dest,
             season: chosenSeason,
             slug: chosenSlug || undefined,
             brand: brandName ? { name: brandName, logoUrl: brandLogoUrl || null } : undefined,
-            overwrite: chosenSlug === slug,
+            overwrite: chosenSlug && slug ? chosenSlug === slug : false,
             _hp_company: honeypotVal || undefined,
             _render_t: formRenderTimeRef.current,
           }),
@@ -189,13 +203,20 @@ export default function TreeICQRStudio() {
         setTimeout(() => setSaveStatus("idle"), 3000);
       }
     },
-    [destinationUrl, customSlugInput, season, slug, brandName, brandLogoUrl]
+    [destinationUrl, customSlugInput, season, slug, brandName, brandLogoUrl, honeypotVal]
   );
 
   // Buat kode acak 6 digit baru
   const handleGenerateRandomSlug = () => {
-    setCustomSlugInput("");
-    handleSaveLink("");
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let rand = "";
+    for (let i = 0; i < 6; i++) {
+      rand += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setCustomSlugInput(rand);
+    if (destinationUrl.trim()) {
+      handleSaveLink(rand);
+    }
   };
 
   // Trakteer Modal Opener (Interactive embed popup & fallback)
@@ -456,7 +477,7 @@ export default function TreeICQRStudio() {
                 type="url"
                 value={destinationUrl}
                 onChange={(e) => setDestinationUrl(e.target.value)}
-                placeholder="https://patrakomala.id atau https://kailoka.com..."
+                placeholder="https://contoh-website-anda.com..."
                 className="w-full bg-transparent text-stone-800 text-xs sm:text-sm font-medium outline-none placeholder:text-stone-400"
               />
             </div>
@@ -507,7 +528,7 @@ export default function TreeICQRStudio() {
                   type="text"
                   value={customSlugInput}
                   onChange={(e) => setCustomSlugInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-                  placeholder="kailoka / patrakomala"
+                  placeholder="contoh-slug-anda (opsional)"
                   className="flex-1 bg-transparent text-stone-800 text-xs sm:text-sm font-mono font-semibold outline-none placeholder:text-stone-300"
                 />
               </div>
@@ -531,6 +552,8 @@ export default function TreeICQRStudio() {
                     ? "bg-emerald-600 hover:bg-emerald-500"
                     : saveStatus === "saving"
                     ? "bg-stone-400 cursor-not-allowed"
+                    : saveStatus === "error"
+                    ? "bg-rose-600 hover:bg-rose-500"
                     : "bg-[#c5793e] hover:bg-[#b06730]"
                 }`}
               >
@@ -538,12 +561,14 @@ export default function TreeICQRStudio() {
                   <span>Menyimpan...</span>
                 ) : saveStatus === "saved" ? (
                   <>
-                    <Check className="w-4 h-4" />
-                    <span>Tersimpan</span>
+                    <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                    <span>Tersimpan ✓</span>
                   </>
+                ) : saveStatus === "error" ? (
+                  <span>Isi URL dulu!</span>
                 ) : (
                   <>
-                    <WandMagicSparkles className="w-4 h-4" />
+                    <WandMagicSparkles className="w-3.5 h-3.5" />
                     <span>Terapkan</span>
                   </>
                 )}
@@ -610,7 +635,7 @@ export default function TreeICQRStudio() {
 
             <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
               <a
-                href={`/${slug}/q`}
+                href={slug ? `/${slug}/q` : `/ar`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-2.5 py-1 rounded-xl bg-emerald-700 hover:bg-emerald-600 active:scale-95 text-white text-[11px] font-semibold flex items-center gap-1 transition shadow-sm"
@@ -650,7 +675,7 @@ export default function TreeICQRStudio() {
 
             <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
               <a
-                href={`/${slug}`}
+                href={slug ? `/${slug}` : `/`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-2.5 py-1 rounded-xl bg-sky-100 hover:bg-sky-200 text-sky-800 text-[11px] font-semibold flex items-center gap-1 transition"
@@ -684,7 +709,7 @@ export default function TreeICQRStudio() {
 
             <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
               <a
-                href={`/embed/${slug}`}
+                href={slug ? `/embed/${slug}` : `/embed/demo`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-2.5 py-1 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-800 text-[11px] font-semibold flex items-center gap-1 transition"
