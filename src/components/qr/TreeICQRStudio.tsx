@@ -26,17 +26,26 @@ import {
   Layers,
   CameraPhoto,
   Close,
+  Globe,
+  Tag,
+  Refresh,
 } from "flowbite-react-icons/outline";
 
 import ThreeVoxelTreeScene from "@/components/qr/ThreeVoxelTreeScene";
 import WebARModal from "@/components/qr/WebARModal";
 
 export default function TreeICQRStudio() {
-  const [destinationUrl, setDestinationUrl] = useState("https://official.id");
-  const [slug, setSlug] = useState("demo");
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [destinationUrl, setDestinationUrl] = useState("https://patrakomala.id");
+  const [slug, setSlug] = useState("patrakomala");
+  const [customSlugInput, setCustomSlugInput] = useState("patrakomala");
+  const [slugCheckStatus, setSlugCheckStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("available");
+  const [slugError, setSlugError] = useState("");
+  const [brandName, setBrandName] = useState("");
+  const [brandLogoUrl, setBrandLogoUrl] = useState("");
+  const [showBrandConfig, setShowBrandConfig] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [shortlinkBase, setShortlinkBase] = useState("https://official.id");
-  const [season, setSeason] = useState<SeasonType>("summer");
+  const [season, setSeason] = useState<SeasonType>("spring");
   const [viewMode, setViewMode] = useState<"3d" | "qr">("3d");
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -59,34 +68,91 @@ export default function TreeICQRStudio() {
   // 3. Snippet embed untuk website / iframe:
   const embedSnippet = `<div class="official-id-tree" data-slug="${slug}"></div>\n<script src="${shortlinkBase}/embed.js" async></script>`;
 
-  // Debounced auto-save ke Supabase saat user mengubah URL tujuan atau musim
+  // Real-time debounce check untuk ketersediaan custom slug
   React.useEffect(() => {
+    const raw = customSlugInput.trim().toLowerCase();
+    if (!raw) {
+      setSlugCheckStatus("idle");
+      setSlugError("");
+      return;
+    }
+
+    if (raw === slug) {
+      setSlugCheckStatus("available");
+      setSlugError("");
+      return;
+    }
+
+    if (raw.length < 3 || raw.length > 20 || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(raw)) {
+      setSlugCheckStatus("invalid");
+      setSlugError("3-20 karakter, huruf kecil & angka");
+      return;
+    }
+
+    setSlugCheckStatus("checking");
     const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/links/check?slug=${encodeURIComponent(raw)}`);
+        const data = await res.json();
+        if (data.available) {
+          setSlugCheckStatus("available");
+          setSlugError("");
+        } else {
+          setSlugCheckStatus("taken");
+          setSlugError(data.error || "Slug sudah dipakai");
+        }
+      } catch {
+        setSlugCheckStatus("idle");
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [customSlugInput, slug]);
+
+  // Simpan / update link ke Supabase & fail-safe cache
+  const handleSaveLink = React.useCallback(
+    async (overrideSlug?: string, overrideSeason?: SeasonType) => {
       if (!destinationUrl || !/^https?:\/\//i.test(destinationUrl)) return;
       setSaveStatus("saving");
+      const chosenSlug = (overrideSlug !== undefined ? overrideSlug : customSlugInput).trim().toLowerCase();
+      const chosenSeason = overrideSeason || season;
+
       try {
         const res = await fetch("/api/links", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             destination: destinationUrl,
-            season,
-            slug: slug !== "demo" ? slug : undefined,
+            season: chosenSeason,
+            slug: chosenSlug || undefined,
+            brand: brandName ? { name: brandName, logoUrl: brandLogoUrl || null } : undefined,
+            overwrite: chosenSlug === slug,
           }),
         });
         const data = await res.json();
         if (data.ok && data.slug) {
           setSlug(data.slug);
+          setCustomSlugInput(data.slug);
+          setSlugCheckStatus("available");
           setSaveStatus("saved");
           setTimeout(() => setSaveStatus("idle"), 2500);
+        } else {
+          setSaveStatus("error");
+          setTimeout(() => setSaveStatus("idle"), 3000);
         }
       } catch {
-        setSaveStatus("idle");
+        setSaveStatus("error");
+        setTimeout(() => setSaveStatus("idle"), 3000);
       }
-    }, 650);
+    },
+    [destinationUrl, customSlugInput, season, slug, brandName, brandLogoUrl]
+  );
 
-    return () => clearTimeout(timer);
-  }, [destinationUrl, season, slug]);
+  // Buat kode acak 6 digit baru
+  const handleGenerateRandomSlug = () => {
+    setCustomSlugInput("");
+    handleSaveLink("");
+  };
 
   // Trakteer Modal Opener (Interactive embed popup & fallback)
   const openTrakteerModal = () => {
@@ -324,56 +390,261 @@ export default function TreeICQRStudio() {
         </button>
       </div>
 
-      {/* Bottom Controls Bar (Exactly matching tree.icqr.com) */}
-      <footer className="w-full max-w-xl mx-auto px-4 pb-8 flex flex-col items-center gap-2.5 z-30">
-        {/* Dynamic 3-Channel URLs Capsule */}
-        <div className="w-full flex flex-col gap-1.5 p-3 rounded-2xl bg-white/90 backdrop-blur-md border border-stone-200/90 text-xs shadow-sm">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span className="text-stone-500 text-[11px] font-semibold shrink-0">QR Cetak:</span>
-              <span className="font-mono text-emerald-800 font-bold truncate text-[11px]">
-                {qrText}
+      {/* Bottom Controls Bar & Link Studio */}
+      <footer className="w-full max-w-xl mx-auto px-4 pb-8 flex flex-col items-center gap-3 z-30">
+        {/* Creation & Customization Card */}
+        <div className="w-full bg-white/95 rounded-2xl shadow-md border border-stone-200/90 p-3 sm:p-4 backdrop-blur-md flex flex-col gap-2.5">
+          {/* Baris 1: Input URL Tujuan */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-bold text-stone-600 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-stone-500" />
+                <span>URL Tujuan Pengguna</span>
               </span>
-              {saveStatus === "saving" && (
-                <span className="text-[10px] text-amber-600 font-medium shrink-0 animate-pulse">
-                  (Menyimpan...)
-                </span>
-              )}
-              {saveStatus === "saved" && (
-                <span className="text-[10px] text-emerald-600 font-medium shrink-0">
-                  ✓ Tersimpan
-                </span>
-              )}
+              <span className="text-[10px] text-stone-400 font-normal">
+                (Kemana QR/Link akan diarahkan)
+              </span>
+            </label>
+            <div className="flex items-center bg-stone-50/80 rounded-xl border border-stone-200 px-3 py-2 focus-within:ring-2 focus-within:ring-emerald-500/30 focus-within:border-emerald-500 transition-all">
+              <input
+                type="url"
+                value={destinationUrl}
+                onChange={(e) => setDestinationUrl(e.target.value)}
+                placeholder="https://patrakomala.id atau https://kailoka.com..."
+                className="w-full bg-transparent text-stone-800 text-xs sm:text-sm font-medium outline-none placeholder:text-stone-400"
+              />
             </div>
-            <a
-              href={`/${slug}/q`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-2.5 py-1 rounded-xl bg-emerald-700 hover:bg-emerald-600 active:scale-95 text-white text-[11px] font-semibold flex items-center gap-1 transition shrink-0 shadow-sm"
-              title="Buka simulasi WebAR hasil scan poster"
-            >
-              <span>Test AR</span>
-              <ArrowUpRightFromSquare className="w-3 h-3" />
-            </a>
           </div>
 
-          <div className="flex items-center justify-between gap-2 border-t border-stone-100 pt-1.5">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-stone-500 text-[11px] font-semibold shrink-0">Share:</span>
-              <span className="font-mono text-stone-700 truncate text-[11px]">
-                {shareLink}
-              </span>
+          {/* Baris 2: Input Custom Slug */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-bold text-stone-600 flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-stone-500" />
+                <span>Custom Slug / Link Pendek</span>
+              </label>
+              <div className="flex items-center gap-1">
+                {slugCheckStatus === "checking" && (
+                  <span className="text-[10px] text-stone-500 font-medium animate-pulse">
+                    Memeriksa...
+                  </span>
+                )}
+                {slugCheckStatus === "available" && (
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full font-semibold">
+                    ✓ Tersedia
+                  </span>
+                )}
+                {slugCheckStatus === "taken" && (
+                  <span className="text-[10px] bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded-full font-semibold">
+                    ✕ Sudah dipakai
+                  </span>
+                )}
+                {slugCheckStatus === "invalid" && (
+                  <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-full font-semibold" title={slugError}>
+                    {slugError}
+                  </span>
+                )}
+                {slugCheckStatus === "idle" && (
+                  <span className="text-[10px] text-stone-400 font-medium">
+                    (Kosong = acak 6 digit)
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
+
+            <div className="flex items-center gap-2">
+              <div className="flex-1 flex items-center bg-stone-50/80 rounded-xl border border-stone-200 px-3 py-1.5 focus-within:ring-2 focus-within:ring-emerald-500/30 focus-within:border-emerald-500 transition-all">
+                <span className="text-xs text-stone-400 font-mono font-medium select-none mr-1">
+                  official.id/
+                </span>
+                <input
+                  type="text"
+                  value={customSlugInput}
+                  onChange={(e) => setCustomSlugInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+                  placeholder="kailoka / patrakomala"
+                  className="flex-1 bg-transparent text-stone-800 text-xs sm:text-sm font-mono font-semibold outline-none placeholder:text-stone-300"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGenerateRandomSlug}
+                className="px-2.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 active:scale-95 text-stone-700 text-xs font-semibold flex items-center gap-1 transition shrink-0 border border-stone-200"
+                title="Buat kode unik 6 digit acak otomatis"
+              >
+                <Refresh className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Acak</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSaveLink()}
+                disabled={saveStatus === "saving" || slugCheckStatus === "taken" || slugCheckStatus === "invalid"}
+                className={`px-3.5 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition active:scale-95 shrink-0 ${
+                  saveStatus === "saved"
+                    ? "bg-emerald-600 hover:bg-emerald-500"
+                    : saveStatus === "saving"
+                    ? "bg-stone-400 cursor-not-allowed"
+                    : "bg-[#c5793e] hover:bg-[#b06730]"
+                }`}
+              >
+                {saveStatus === "saving" ? (
+                  <span>Menyimpan...</span>
+                ) : saveStatus === "saved" ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Tersimpan</span>
+                  </>
+                ) : (
+                  <>
+                    <WandMagicSparkles className="w-4 h-4" />
+                    <span>Terapkan</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Pengaturan Brand Whitelabel (Accordion) */}
+          <div className="border-t border-stone-100 pt-1.5">
+            <button
+              type="button"
+              onClick={() => setShowBrandConfig(!showBrandConfig)}
+              className="text-[11px] text-stone-500 hover:text-stone-800 flex items-center justify-between w-full font-medium py-0.5"
+            >
+              <span>⚙️ Pengaturan Brand Whitelabel (Opsional)</span>
+              <span>{showBrandConfig ? "▲ Sembunyikan" : "▼ Tampilkan"}</span>
+            </button>
+
+            {showBrandConfig && (
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 bg-stone-50 rounded-xl border border-stone-200/80 animate-in fade-in duration-200">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] text-stone-500 font-semibold">Nama Brand</span>
+                  <input
+                    type="text"
+                    value={brandName}
+                    onChange={(e) => setBrandName(e.target.value)}
+                    placeholder="Contoh: Kailoka Coffee"
+                    className="bg-white border border-stone-200 rounded-lg px-2.5 py-1 text-xs text-stone-800 outline-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] text-stone-500 font-semibold">Logo URL Brand (HTTPS)</span>
+                  <input
+                    type="url"
+                    value={brandLogoUrl}
+                    onChange={(e) => setBrandLogoUrl(e.target.value)}
+                    placeholder="https://.../logo.png"
+                    className="bg-white border border-stone-200 rounded-lg px-2.5 py-1 text-xs text-stone-800 outline-none"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Dynamic 3-Channel URLs Capsule (The 3 Faces of official.id) */}
+        <div className="w-full flex flex-col gap-2 p-3 sm:p-4 rounded-2xl bg-white/95 backdrop-blur-md border border-stone-200/90 text-xs shadow-md">
+          {/* Wajah 1: QR Cetak Fisik */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-2 border-b border-stone-100">
+            <div className="flex items-start gap-2 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 mt-1 shrink-0 animate-pulse" />
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-stone-800 font-bold text-[11px]">1. QR Cetak Fisik:</span>
+                  <span className="font-mono text-emerald-800 font-bold text-[11px] truncate">
+                    {qrText}
+                  </span>
+                </div>
+                <p className="text-[10px] text-stone-500">
+                  Ditanam di QR fisik. Kamera HP scan $\rightarrow$ WebAR 10s $\rightarrow$ auto-redirect ke tujuan.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+              <a
+                href={`/${slug}/q`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 py-1 rounded-xl bg-emerald-700 hover:bg-emerald-600 active:scale-95 text-white text-[11px] font-semibold flex items-center gap-1 transition shadow-sm"
+                title="Buka simulasi WebAR hasil scan poster"
+              >
+                <span>Test AR</span>
+                <ArrowUpRightFromSquare className="w-3 h-3" />
+              </a>
+              <button
+                type="button"
+                onClick={handleDownloadSnapshot}
+                className="px-2 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-[10px] font-semibold transition flex items-center gap-1 border border-stone-200"
+                title="Unduh QR Code siap cetak"
+              >
+                <Download className="w-3 h-3" />
+                <span>PNG</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Wajah 2: Link Share Whitelabel */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-2 border-b border-stone-100">
+            <div className="flex items-start gap-2 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-sky-500 mt-1 shrink-0" />
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-stone-800 font-bold text-[11px]">2. Link Share Medsos:</span>
+                  <span className="font-mono text-sky-800 font-bold text-[11px] truncate">
+                    {shareLink}
+                  </span>
+                </div>
+                <p className="text-[10px] text-stone-500">
+                  Untuk dibagikan di WA / IG Bio. Menampilkan pohon voxel 3D whitelabel interaktif.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
               <a
                 href={`/${slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-2 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-[10px] font-semibold flex items-center gap-1 transition"
+                className="px-2.5 py-1 rounded-xl bg-sky-100 hover:bg-sky-200 text-sky-800 text-[11px] font-semibold flex items-center gap-1 transition"
                 title="Buka halaman share whitelabel"
               >
                 <span>Lihat</span>
+                <ArrowUpRightFromSquare className="w-3 h-3" />
+              </a>
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="px-2 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-[10px] font-semibold transition border border-stone-200"
+                title="Salin URL Share"
+              >
+                {isCopied ? "Tersalin ✓" : "Copy"}
+              </button>
+            </div>
+          </div>
+
+          {/* Wajah 3: Embed Iframe */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+            <div className="flex items-start gap-2 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-purple-500 mt-1 shrink-0" />
+              <div className="min-w-0">
+                <span className="text-stone-800 font-bold text-[11px]">3. Embed di Website:</span>
+                <p className="text-[10px] text-stone-500">
+                  Pasang pohon 3D transparan di website Anda dengan 2 baris kode HTML.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+              <a
+                href={`/embed/${slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 py-1 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-800 text-[11px] font-semibold flex items-center gap-1 transition"
+                title="Preview tampilan embed"
+              >
+                <span>Preview</span>
                 <ArrowUpRightFromSquare className="w-3 h-3" />
               </a>
               <button
@@ -383,48 +654,22 @@ export default function TreeICQRStudio() {
                   setIsCopied(true);
                   setTimeout(() => setIsCopied(false), 2000);
                 }}
-                className="px-2 py-1 rounded-xl bg-stone-800 hover:bg-stone-900 active:scale-95 text-white text-[10px] font-semibold transition"
+                className="px-2 py-1 rounded-xl bg-stone-800 hover:bg-stone-900 active:scale-95 text-white text-[10px] font-semibold transition shadow-sm"
                 title="Salin kode HTML embed untuk dipasang di website"
               >
-                Copy Embed
+                Copy Embed HTML
               </button>
             </div>
           </div>
         </div>
 
-        {/* URL Input & Share Capsule Bar */}
-        <div className="w-full flex items-center bg-white/95 rounded-2xl shadow-sm border border-stone-200/80 p-1.5 pl-4 gap-2 backdrop-blur-md transition-all focus-within:ring-2 focus-within:ring-stone-400/40">
-          <input
-            type="text"
-            value={destinationUrl}
-            onChange={(e) => setDestinationUrl(e.target.value)}
-            placeholder="Ketik URL tujuan (misal: https://instagram.com/anda)..."
-            className="flex-1 bg-transparent text-stone-800 text-sm font-medium outline-none placeholder:text-stone-400 truncate"
-          />
-
-          <button
-            onClick={handleShare}
-            className="h-10 px-4 rounded-xl bg-[#c5793e] hover:bg-[#b06730] text-white flex items-center justify-center gap-1.5 text-xs font-semibold shadow-sm transition active:scale-95"
-            title="Bagikan atau Copy link"
-          >
-            {isCopied ? (
-              <>
-                <Check className="w-4 h-4" />
-                <span className="hidden sm:inline">Disalin!</span>
-              </>
-            ) : (
-              <>
-                <ShareNodes className="w-4 h-4" />
-                <span className="hidden sm:inline">Share</span>
-              </>
-            )}
-          </button>
-        </div>
-
         {/* Season Switcher Pills */}
         <div className="flex items-center gap-2 w-full justify-center text-xs font-medium">
           <button
-            onClick={() => setSeason("summer")}
+            onClick={() => {
+              setSeason("summer");
+              handleSaveLink(undefined, "summer");
+            }}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition ${
               season === "summer"
                 ? "bg-[#EFE8DA] text-stone-900 shadow-sm border border-stone-300 font-bold"
@@ -435,7 +680,10 @@ export default function TreeICQRStudio() {
           </button>
 
           <button
-            onClick={() => setSeason("spring")}
+            onClick={() => {
+              setSeason("spring");
+              handleSaveLink(undefined, "spring");
+            }}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition ${
               season === "spring"
                 ? "bg-white text-stone-900 shadow-sm border border-stone-200/80 font-bold"
@@ -446,7 +694,10 @@ export default function TreeICQRStudio() {
           </button>
 
           <button
-            onClick={() => setSeason("autumn")}
+            onClick={() => {
+              setSeason("autumn");
+              handleSaveLink(undefined, "autumn");
+            }}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition ${
               season === "autumn"
                 ? "bg-white text-stone-900 shadow-sm border border-stone-200/80 font-bold"
