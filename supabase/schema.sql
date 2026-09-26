@@ -80,33 +80,22 @@ CREATE INDEX idx_link_analytics_slug ON public.link_analytics(slug);
 CREATE INDEX idx_link_analytics_source ON public.link_analytics(source);
 CREATE INDEX idx_link_analytics_created_at ON public.link_analytics(created_at DESC);
 
--- 5. Aktifkan Row Level Security (RLS) & Kebijakan Akses
+-- 5. Aktifkan Row Level Security (RLS) & Kebijakan Akses Berstandar Tinggi
 ALTER TABLE public.magic_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.link_analytics ENABLE ROW LEVEL SECURITY;
 
--- Izinkan publik membaca data link berdasarkan slug (wajib untuk halaman /t/[slug])
+-- Proteksi RLS Ketat:
+-- Klien anonim/publik HANYA boleh membaca (SELECT) data link berdasarkan slug.
+-- Penulisan (INSERT/UPDATE/DELETE) TIDAK diizinkan lewat anon key untuk mencegah
+-- manipulasi data atau pembajakan slug. Semua penulisan harus melalui API backend
+-- resmi (Next.js server) menggunakan service_role yang telah lolos validasi keamanan & rate limit.
 CREATE POLICY "Allow public read magic_links"
     ON public.magic_links
     FOR SELECT
     TO anon, authenticated
     USING (true);
 
--- Izinkan pembuatan link baru dari studio
-CREATE POLICY "Allow public insert magic_links"
-    ON public.magic_links
-    FOR INSERT
-    TO anon, authenticated
-    WITH CHECK (true);
-
--- Izinkan update link jika slug cocok
-CREATE POLICY "Allow public update magic_links"
-    ON public.magic_links
-    FOR UPDATE
-    TO anon, authenticated
-    USING (true)
-    WITH CHECK (true);
-
--- Izinkan publik mengirim event tracking analitik
+-- Izinkan publik mengirim event tracking analitik (INSERT ONLY, tidak bisa dibaca publik)
 CREATE POLICY "Allow public insert link_analytics"
     ON public.link_analytics
     FOR INSERT
@@ -117,7 +106,6 @@ CREATE POLICY "Allow public insert link_analytics"
 INSERT INTO public.magic_links (slug, destination, season, title)
 VALUES
     ('demo', 'https://official.id', 'summer', 'Demo 3D Voxel Magic Tree'),
-    ('harizal', 'https://official.id', 'spring', 'Harizal 3D Sakura Tree'),
     ('patrakomala', 'https://patrakomala.id', 'spring', 'Patrakomala')
 ON CONFLICT (slug) DO UPDATE
 SET destination = EXCLUDED.destination,

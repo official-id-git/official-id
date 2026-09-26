@@ -93,6 +93,8 @@ export default function TreeICQRStudio() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showARModal, setShowARModal] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [honeypotVal, setHoneypotVal] = useState("");
+  const formRenderTimeRef = useRef<number>(Date.now());
 
   React.useEffect(() => {
     setIsMounted(true);
@@ -167,6 +169,8 @@ export default function TreeICQRStudio() {
             slug: chosenSlug || undefined,
             brand: brandName ? { name: brandName, logoUrl: brandLogoUrl || null } : undefined,
             overwrite: chosenSlug === slug,
+            _hp_company: honeypotVal || undefined,
+            _render_t: formRenderTimeRef.current,
           }),
         });
         const data = await res.json();
@@ -274,22 +278,28 @@ export default function TreeICQRStudio() {
   const handleDownloadPrintQr = async () => {
     try {
       const canvas = document.createElement("canvas");
-      canvas.width = 1024;
-      canvas.height = 1024;
+      const size = 1024;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = currentTheme.paperColor || "#ffffff";
+        ctx.fillRect(0, 0, size, size);
+      }
 
       await QRCode.toCanvas(canvas, qrText, {
         width: 1024,
         margin: 3,
         errorCorrectionLevel: "H",
         color: {
-          dark: currentTheme.qrDark[0] || "#1c1917",
+          dark: currentTheme.qrDark[0] || "#111827",
           light: currentTheme.paperColor || "#ffffff",
         },
       });
 
       canvas.toBlob((blob) => {
         if (!blob) return;
-        downloadBlob(blob, `official-id-${slug}-qr-print.png`);
+        downloadBlob(blob, `official-id-${slug}-qrcode.png`);
       }, "image/png");
     } catch (e) {
       console.error("Gagal membuat print QR PNG:", e);
@@ -373,7 +383,7 @@ export default function TreeICQRStudio() {
         </div>
       </main>
 
-      {/* Primary Interaction Pill Buttons (Matching tree.icqr.com + Mode AR) */}
+      {/* Primary Interaction Pill Buttons (Matching tree.icqr.com + Mode AR + Direct QR Download) */}
       <div className="flex flex-wrap items-center justify-center -mt-1 mb-2 z-30 gap-2.5">
         <button
           onClick={() => setViewMode(viewMode === "3d" ? "qr" : "3d")}
@@ -395,12 +405,41 @@ export default function TreeICQRStudio() {
           <CameraPhoto className="w-4 h-4" />
           <span>Mode AR</span>
         </button>
+
+        <button
+          onClick={handleDownloadPrintQr}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-stone-900 hover:bg-stone-800 text-white text-xs sm:text-sm font-semibold tracking-tight shadow-md hover:shadow-lg border border-stone-800 backdrop-blur-md transition-all active:scale-95"
+          title="Unduh QR Code Siap Scan (PNG 1024x1024)"
+        >
+          <Download className="w-4 h-4 text-emerald-400" />
+          <span>Unduh QR Code</span>
+        </button>
       </div>
 
       {/* Bottom Controls Bar & Link Studio */}
       <footer className="w-full max-w-xl mx-auto px-4 pb-8 flex flex-col items-center gap-3 z-30">
+        {/* Semantic Headings for Google SEO */}
+        <h1 className="sr-only">
+          official.id — QR CODE ANIMATE, ANIMASI QR CODE, QR CODE GENERATOR INOVATIVE
+        </h1>
+        <h2 className="sr-only">
+          Innovative 3D Animated QR Code Generator & WebAR Interactive Experience
+        </h2>
+
         {/* Creation & Customization Card */}
-        <div className="w-full bg-white/95 rounded-2xl shadow-md border border-stone-200/90 p-3 sm:p-4 backdrop-blur-md flex flex-col gap-2.5">
+        <div className="w-full bg-white/95 rounded-2xl shadow-md border border-stone-200/90 p-3 sm:p-4 backdrop-blur-md flex flex-col gap-2.5 relative">
+          {/* Honeypot field (hidden from human users, traps automated spam bots) */}
+          <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", opacity: 0, pointerEvents: "none" }}>
+            <input
+              type="text"
+              name="_hp_company"
+              value={honeypotVal}
+              onChange={(e) => setHoneypotVal(e.target.value)}
+              tabIndex={-1}
+              autoComplete="off"
+            />
+          </div>
+
           {/* Baris 1: Input URL Tujuan */}
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-bold text-stone-600 flex items-center justify-between">
@@ -807,6 +846,36 @@ export default function TreeICQRStudio() {
                   </a>
                 </div>
               </div>
+
+              {/* Partnerships & Feedback Card in English */}
+              <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/90 space-y-2.5">
+                <h4 className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
+                  <span>🤝 Partnerships & Feedback</span>
+                </h4>
+                <p className="text-stone-600 text-xs">
+                  For collaborations, business partnerships, ideas, or feedback, please contact <strong>Harizal</strong> directly:
+                </p>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                  <a
+                    href="https://wa.me/6281283835553"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-semibold text-xs shadow-xs transition active:scale-95"
+                  >
+                    <span>💬 WhatsApp (+62 812-8383-5553)</span>
+                    <ArrowUpRightFromSquare className="w-3 h-3" />
+                  </a>
+                  <a
+                    href="https://instagram.com/harizal.official"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-semibold text-xs shadow-xs transition active:scale-95"
+                  >
+                    <span>📸 Instagram (@harizal.official)</span>
+                    <ArrowUpRightFromSquare className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
             </div>
 
             <div className="pt-2 flex justify-end">
@@ -848,32 +917,33 @@ export default function TreeICQRStudio() {
             <div className="grid grid-cols-1 gap-2.5">
               <button
                 onClick={handleDownloadPrintQr}
-                className="w-full flex items-center justify-between p-3 rounded-2xl border border-stone-200 hover:border-emerald-500 bg-stone-50/50 hover:bg-emerald-50/30 text-left transition group"
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl border-2 border-emerald-500 bg-emerald-50/60 hover:bg-emerald-100/60 text-left transition group shadow-xs"
               >
                 <div>
-                  <p className="font-bold text-xs text-stone-800 group-hover:text-emerald-900">
-                    🖨️ Download Print-Ready QR Code (PNG)
+                  <p className="font-bold text-xs text-emerald-950 flex items-center gap-1.5">
+                    <span>🖨️ Download Scannable QR Code (PNG)</span>
+                    <span className="px-1.5 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] font-bold">100% SCAN READY</span>
                   </p>
-                  <p className="text-[11px] text-stone-500">
-                    File gambar QR 1024x1024 siap cetak di poster, banner & stiker
+                  <p className="text-[11px] text-stone-600 mt-0.5">
+                    QR Code 1024x1024 resolusi tinggi, 100% langsung discan oleh kamera smartphone untuk cetak fisik poster, menu, & stiker
                   </p>
                 </div>
-                <Download className="w-4 h-4 text-stone-400 group-hover:text-emerald-600" />
+                <Download className="w-5 h-5 text-emerald-700 shrink-0 ml-2" />
               </button>
 
               <button
                 onClick={handleDownloadSnapshot}
-                className="w-full flex items-center justify-between p-3 rounded-2xl border border-stone-200 hover:border-emerald-500 bg-stone-50/50 hover:bg-emerald-50/30 text-left transition group"
+                className="w-full flex items-center justify-between p-3 rounded-2xl border border-stone-200 hover:border-stone-400 bg-stone-50/50 hover:bg-stone-100/50 text-left transition group"
               >
                 <div>
-                  <p className="font-bold text-xs text-stone-800 group-hover:text-emerald-900">
-                    📸 Download High-Res 3D Snapshot (PNG)
+                  <p className="font-bold text-xs text-stone-800">
+                    🎨 Download Wallpaper Pohon 3D (Artwork)
                   </p>
                   <p className="text-[11px] text-stone-500">
-                    Foto resolusi tinggi sudut pandang saat ini ({viewMode.toUpperCase()})
+                    Ilustrasi seni sudut pandang 3D pohon voxel untuk wallpaper & medsos (bukan untuk discan)
                   </p>
                 </div>
-                <CameraPhoto className="w-4 h-4 text-stone-400 group-hover:text-emerald-600" />
+                <CameraPhoto className="w-4 h-4 text-stone-400 group-hover:text-stone-600 shrink-0 ml-2" />
               </button>
 
               <button

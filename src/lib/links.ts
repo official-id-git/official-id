@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import { createClient as createServerClient, createAdminClient } from "@/lib/supabase/server";
 import type { SeasonType } from "@/lib/voxel-tree-generator";
 
 export interface MagicLink {
@@ -24,12 +24,6 @@ const IN_MEMORY_LINKS: Record<string, MagicLink> = {
     destination: "https://official.id",
     season: "summer",
     title: "Demo 3D Voxel Magic Tree",
-  },
-  harizal: {
-    slug: "harizal",
-    destination: "https://official.id",
-    season: "spring",
-    title: "Harizal 3D Sakura Tree",
   },
 };
 
@@ -138,7 +132,7 @@ export async function saveMagicLink(
 ): Promise<MagicLink> {
   if (isSupabaseConfigured()) {
     try {
-      const supabase = await createServerClient();
+      const supabase = createAdminClient();
       const { data, error } = await supabase
         .from("magic_links")
         .upsert(
