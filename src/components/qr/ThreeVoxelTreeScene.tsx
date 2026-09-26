@@ -461,7 +461,7 @@ export default function ThreeVoxelTreeScene({
     const { matrix, size } = generateQrMatrix(url);
 
     // 2. Generate 3D Voxel Array for the Majestic Magic Tree & Sitting Person
-    const voxels: VoxelItem[] = generateVoxelTree(matrix, size, season);
+    const voxels: VoxelItem[] = generateVoxelTree(matrix, size, season, { scanSafeTop: true });
     setVoxelCount(voxels.length);
 
     // Separate tree/ground voxels and character voxels

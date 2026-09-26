@@ -252,7 +252,7 @@ export default function WebARModal({
     group.clear();
 
     const { matrix, size } = generateQrMatrix(url || "https://official.id");
-    const voxels = generateVoxelTree(matrix, size, season);
+    const voxels = generateVoxelTree(matrix, size, season, { scanSafeTop: true });
 
     const voxelGeo = new THREE.BoxGeometry(1.0, 1.0, 1.0);
     const voxelMat = new THREE.MeshStandardMaterial({
