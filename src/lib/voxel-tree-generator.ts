@@ -8,7 +8,7 @@ export interface VoxelItem {
   z: number;
   size?: number;
   color: string;
-  role: "trunk" | "branch" | "leaf" | "stone" | "border" | "hedge" | "flower" | "grass";
+  role: "trunk" | "branch" | "leaf" | "stone" | "border" | "hedge" | "flower" | "grass" | "person";
   isQrDark?: boolean;
 }
 
@@ -172,10 +172,10 @@ export function generateVoxelTree(
   const quietZone = 4; // Standard 4-module quiet margin
 
   const scale = size / 29;
-  const trunkHeight = Math.round(22 * scale); // Tall, majestic trunk (22 blocks high)
-  const canopyRadius = size * 0.40; // Proportional tree crown centered over courtyard
+  const trunkHeight = Math.round(14 * scale); // Majestic trunk height (14 blocks high, leaving open airy space)
+  const canopyRadius = size * 0.55; // Spreading, majestic wide canopy (diameter ~32 modules across courtyard)
   const canopyRadiusSq = canopyRadius * canopyRadius;
-  const maxCanopyLayers = Math.round(15 * scale);
+  const maxCanopyLayers = Math.round(11 * scale);
 
   // 1. GROUND COURTYARD TERRACE & PERIMETER
   for (let r = -quietZone; r < size + quietZone; r++) {
@@ -203,7 +203,7 @@ export function generateVoxelTree(
         isQrDark: false,
       });
 
-      // Curb border & decorative grass tufts along the courtyard perimeter
+      // Curb border along the courtyard perimeter
       if (isPerimeter) {
         voxels.push({
           x,
@@ -213,17 +213,6 @@ export function generateVoxelTree(
           color: theme.stoneBorder,
           role: "border",
         });
-
-        if (h > 0.4) {
-          voxels.push({
-            x,
-            y: 0.75,
-            z,
-            size: 0.45,
-            color: pickRandom(theme.grassColors, h),
-            role: "grass",
-          });
-        }
       }
 
       // Base dark tile on courtyard floor for QR modules (vital for 100% top-down QR scan)
@@ -235,10 +224,8 @@ export function generateVoxelTree(
         if (isFinder) {
           floorDarkColor = theme.leafShadow[0];
         } else if (distSq >= canopyRadiusSq) {
-          // Outside canopy: decorative mossy paving stone / clipped hedge tile
           floorDarkColor = theme.hedgeColor[0] || theme.leafPrimary[0];
         } else {
-          // Inside canopy: fallen leaf shadows on stone
           floorDarkColor = theme.leafShadow[0];
         }
 
@@ -252,10 +239,90 @@ export function generateVoxelTree(
           isQrDark: true,
         });
       }
+
+      // 2. SWAYING PIXEL GRASS TUFTS AROUND THE 3 CORNER BOXES ("rumput pixel yang bergoyang kena angin")
+      // In the quiet zones and surrounding outer borders of Top-Left, Top-Right, and Bottom-Left finder patterns
+      const isNearTL = (r >= -quietZone && r <= 8 && c >= -quietZone && c <= 8) && (r < 0 || c < 0 || r === 7 || c === 7 || r === 8 || c === 8);
+      const isNearTR = (r >= -quietZone && r <= 8 && c >= size - 9 && c < size + quietZone) && (r < 0 || c >= size || r === 7 || c === size - 8 || r === 8 || c === size - 9);
+      const isNearBL = (r >= size - 9 && r < size + quietZone && c >= -quietZone && c <= 8) && (r >= size || c < 0 || r === size - 8 || c === 7 || r === size - 9 || c === 8);
+
+      if (isNearTL || isNearTR || isNearBL) {
+        const grassHash = coordHash(x, z, 77);
+        if (grassHash > 0.22) {
+          const grassColor = pickRandom(theme.grassColors, grassHash);
+          // Blade Base
+          voxels.push({
+            x,
+            y: 0.35,
+            z,
+            size: 0.62,
+            color: grassColor,
+            role: "grass",
+            isQrDark: false,
+          });
+
+          // Blade Mid (taller, swaying)
+          if (grassHash > 0.40) {
+            voxels.push({
+              x: x + (grassHash > 0.6 ? 0.06 : -0.06),
+              y: 0.95,
+              z: z + (grassHash > 0.5 ? -0.06 : 0.06),
+              size: 0.52,
+              color: pickRandom(theme.grassColors, grassHash * 1.7),
+              role: "grass",
+              isQrDark: false,
+            });
+          }
+
+          // Blade Tip (plume that flutters in the wind)
+          if (grassHash > 0.65) {
+            voxels.push({
+              x: x + (grassHash > 0.8 ? 0.10 : -0.10),
+              y: 1.55,
+              z: z + (grassHash > 0.7 ? 0.08 : -0.08),
+              size: 0.44,
+              color: pickRandom(theme.grassColors, grassHash * 2.5),
+              role: "grass",
+              isQrDark: false,
+            });
+          }
+
+          // Extra tall grass blade on prominent corner clusters
+          if (grassHash > 0.84) {
+            voxels.push({
+              x,
+              y: 2.15,
+              z,
+              size: 0.36,
+              color: pickRandom(theme.grassColors, grassHash * 3.8),
+              role: "grass",
+              isQrDark: false,
+            });
+          }
+
+          // Wildflower blossoms accenting the grass tufts
+          if (grassHash > 0.80) {
+            let flowerColor = "#FFFFFF"; // Pure white star flower
+            if (season === "spring") flowerColor = "#F472B6"; // Sakura pink
+            else if (season === "autumn") flowerColor = "#F59E0B"; // Marigold orange
+            else if (grassHash > 0.90) flowerColor = "#FACC15"; // Sunny dandelion
+
+            voxels.push({
+              x: x + (grassHash > 0.85 ? 0.08 : -0.08),
+              y: 1.65,
+              z: z + (grassHash > 0.85 ? 0.08 : -0.08),
+              size: 0.32,
+              color: flowerColor,
+              role: "grass",
+              isQrDark: false,
+            });
+          }
+        }
+      }
     }
   }
 
-  // 2. CORNER FINDER PATTERNS (Low Elegant Courtyard Garden Monuments)
+  // 3. CORNER FINDER PATTERNS (Low Elegant Courtyard Garden Monuments with Swaying Grass Sprouts)
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       if (matrix[r][c] === 1 && isFinderPattern(r, c, size)) {
@@ -275,6 +342,30 @@ export function generateVoxelTree(
             role: "hedge",
             isQrDark: true,
           });
+
+          // Swaying grass sprouts on top of the outer hedge
+          if (coordHash(x, z, 99) > 0.42) {
+            voxels.push({
+              x,
+              y: 0.95,
+              z,
+              size: 0.50,
+              color: pickRandom(theme.grassColors, coordHash(x, z, 123)),
+              role: "grass",
+              isQrDark: true,
+            });
+            if (coordHash(x, z, 99) > 0.74) {
+              voxels.push({
+                x,
+                y: 1.50,
+                z,
+                size: 0.40,
+                color: pickRandom(theme.grassColors, coordHash(x, z, 456)),
+                role: "grass",
+                isQrDark: true,
+              });
+            }
+          }
         } else if (finderRole === "flower") {
           // 3x3 inner square: decorative stone pedestal & garden monument
           voxels.push({
@@ -300,8 +391,8 @@ export function generateVoxelTree(
     }
   }
 
-  // 3. TALL MAJESTIC TRUNK WITH ROOT FLARE & CONNECTING BRANCHES
-  // Visible through the wide-open air (Y=1 to Y=26) under the elevated canopy!
+  // 4. SLENDER, MAJESTIC TRUNK WITH ROOT FLARE & SPREADING BRANCH ARMS
+  // Visible through the wide-open air (Y=1 to Y=14) under the expansive canopy!
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       if (matrix[r][c] === 1) {
@@ -312,9 +403,10 @@ export function generateVoxelTree(
         const isFinder = isFinderPattern(r, c, size);
         if (isFinder) continue;
 
-        // Flared root base at ground level (Y = 1..3, radius up to 3.2 modules)
-        if (distSq <= 10.5) {
-          for (let ty = 1; ty <= 3; ty++) {
+        // Gentle buttress root flare at ground base (Y = 1..2, radius up to 1.8 modules)
+        // Kept clear at front (z > 0.8) so the sitting person has clean bark to lean against!
+        if (distSq <= 3.6 && !(z > 0.8 && Math.abs(x) < 1.2)) {
+          for (let ty = 1; ty <= 2; ty++) {
             const h = coordHash(x, z, ty * 19);
             const rootColor = pickRandom(theme.trunkPrimary, h);
             voxels.push({
@@ -329,9 +421,10 @@ export function generateVoxelTree(
           }
         }
 
-        // Tall main trunk column rising through open air (Y = 4 up to trunkHeight)
-        if (distSq <= 6.5) {
-          for (let ty = 4; ty < trunkHeight; ty++) {
+        // Slender, sturdy main trunk column rising through open air (Y = 1 up to trunkHeight)
+        // Radius ~1.4 modules (distSq <= 2.2) gives an authentic, proportional bonsai trunk
+        if (distSq <= 2.2) {
+          for (let ty = 1; ty < trunkHeight; ty++) {
             const h = coordHash(x, z, ty * 17);
             const trunkColor = pickRandom(theme.trunkPrimary, h);
             voxels.push({
@@ -346,13 +439,14 @@ export function generateVoxelTree(
           }
         }
 
-        // Spreading diagonal branch arms at the very top of trunk (Y = trunkHeight - 3 to trunkHeight)
-        // connecting the trunk seamlessly into the canopy without cluttering the air below
-        if (dist >= 1.5 && dist <= 5.5 && distSq <= 30.5) {
-          const branchStart = trunkHeight - 3;
+        // Spreading diagonal branch arms reaching outward under the wide canopy (Y = trunkHeight - 4 to trunkHeight)
+        // Reaching out to radius up to 10.5 modules to support the expansive foliage
+        if (dist >= 1.4 && dist <= 10.5) {
+          const branchStart = trunkHeight - 4;
           for (let by = branchStart; by < trunkHeight; by++) {
             const h = coordHash(x, z, by * 23);
-            if (h > 0.25) {
+            const armReach = (by - branchStart + 1) * 2.8;
+            if (dist <= armReach && h > 0.28) {
               voxels.push({
                 x,
                 y: by,
@@ -369,31 +463,35 @@ export function generateVoxelTree(
     }
   }
 
-  // 4. ELEVATED CANOPY LEAF CUBES (Lush Bonsai Cloud Crown)
-  // Cleanly elevated in the sky (Y = 27 to Y = 46), sightline to trunk is completely open!
+  // 5. WIDE SPREADING EXPANSIVE CANOPY (Majestic Ancient Elm / Sprawling Bonsai Crown)
+  // Diameter is widened to reach across the entire courtyard (~32 modules), leaving the 3 corner boxes visible!
+  const isFinderBoxArea = (r: number, c: number) =>
+    (r <= 7 && c <= 7) ||
+    (r <= 7 && c >= size - 8) ||
+    (r >= size - 8 && c <= 7);
+
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
-      if (matrix[r][c] === 1 && !isFinderPattern(r, c, size)) {
+      if (matrix[r][c] === 1 && !isFinderBoxArea(r, c)) {
         const x = c - center;
         const z = r - center;
         const distSq = x * x + z * z;
         const dist = Math.sqrt(distSq);
 
-        // ONLY modules inside canopy radius become elevated tree canopy!
-        // This keeps the tree majestic and prevents it from overgrowing the courtyard ("tidak terlalu rimbun")
+        // Modules inside the wide canopy radius become the lush, expansive tree canopy!
         if (distSq < canopyRadiusSq) {
           const normDist = dist / canopyRadius; // 0 at center, 1 at edge
-          const dome = Math.sqrt(Math.max(0, 1 - normDist * normDist)); // Hemispherical rounded dome
+          const dome = Math.sqrt(Math.max(0, 1 - normDist * normDist)); // Smooth curved dome
 
-          // Underbelly is elevated flat at center and curves gently upward towards perimeter
-          // leaving the view to the trunk and courtyard completely open
-          const baseCanopyY = trunkHeight + Math.round(2.0 * Math.pow(normDist, 1.4));
+          // Wide umbrella base: starts at trunkHeight - 2 at center and curves gently upward towards perimeter
+          // leaving the view to the trunk, sitting person, and courtyard completely open and airy
+          const baseCanopyY = trunkHeight - 2 + Math.round(3.0 * Math.pow(normDist, 1.2));
 
-          // Hemispherical crown thickness: center has 14-15 layers, edge has 3-4 layers
-          const numLayers = Math.max(3, Math.round(maxCanopyLayers * (0.24 + 0.76 * dome)));
+          // Wide, plateau-style umbrella canopy thickness
+          const numLayers = Math.max(3, Math.round(maxCanopyLayers * (0.42 + 0.58 * dome)));
 
-          // Subtle organic crown variation
-          const extraCrown = Math.floor(2.0 * coordHash(x, z, 333) * dome);
+          // Organic cloud lobe variation
+          const extraCrown = Math.floor(2.2 * coordHash(x, z, 333) * dome);
           const totalLayers = numLayers + extraCrown;
 
           // Stack discrete cubic voxel blocks ("kotak-kotak QR code yang menjadi basic")
@@ -403,7 +501,7 @@ export function generateVoxelTree(
             const h = coordHash(x, z, l * 31);
 
             let leafColor: string;
-            if (relH > 0.72) {
+            if (relH > 0.70) {
               // Top sunlit crown highlight
               leafColor = pickRandom(theme.leafHighlight, h);
             } else if (relH > 0.22) {
@@ -424,12 +522,154 @@ export function generateVoxelTree(
               isQrDark: true,
             });
           }
+
+          // Underside hanging leaf accents on the canopy edge for lush organic silhouette
+          if (normDist > 0.45 && normDist < 0.92 && coordHash(x, z, 888) > 0.55) {
+            voxels.push({
+              x,
+              y: baseCanopyY - 1,
+              z,
+              size: 0.88,
+              color: pickRandom(theme.leafShadow, coordHash(x, z, 889)),
+              role: "leaf",
+              isQrDark: true,
+            });
+          }
         }
       }
     }
   }
 
+  // 6. DRAMATIC PIXEL PERSON SITTING UNDER THE TREE LEANING AGAINST TRUNK ("nyender")
+  const personVoxels = generateSittingPersonVoxels();
+  voxels.push(...personVoxels);
+
   return voxels;
+}
+
+/**
+ * Generate High-Definition Voxel Model of a Person Sitting Under the Tree Leaning Against the Trunk ("nyender")
+ * Matches Reference Image 3: Sky blue shirt, dark navy trousers, relaxed pose with one knee bent up.
+ */
+export function generateSittingPersonVoxels(): VoxelItem[] {
+  const person: VoxelItem[] = [];
+
+  // Color Palette matching Reference Image 3
+  const skin = "#F5CBA7";
+  const skinShadow = "#E0B28C";
+  const hair = "#3E2723";
+  const hairDark = "#271810";
+  const hairHighlight = "#4E342E";
+  const shirt = "#0284C7";
+  const shirtLight = "#38BDF8";
+  const shirtShadow = "#0369A1";
+  const pants = "#1E3A8A";
+  const pantsLight = "#2563EB";
+  const pantsDark = "#172554";
+  const shoe = "#0F172A";
+  const shoeSole = "#FFFFFF";
+
+  // Base subtle shadow on stone pavers under person
+  person.push(
+    { x: 0.9, y: 0.02, z: 2.2, size: 1.3, color: "#D8CDBA", role: "person" },
+    { x: 1.3, y: 0.02, z: 3.2, size: 1.2, color: "#D8CDBA", role: "person" },
+    { x: 0.65, y: 0.02, z: 3.2, size: 1.0, color: "#D8CDBA", role: "person" }
+  );
+
+  // 1. PELVIS & HIPS (Sitting firmly on ground, back resting against trunk bark)
+  person.push(
+    { x: 0.65, y: 0.35, z: 1.55, size: 0.52, color: pantsDark, role: "person" },
+    { x: 1.15, y: 0.35, z: 1.55, size: 0.52, color: pants, role: "person" }
+  );
+
+  // 2. LEGS
+  // Left Leg: Extended forward along the ground towards the camera
+  person.push(
+    // Thigh
+    { x: 0.65, y: 0.34, z: 2.05, size: 0.50, color: pants, role: "person" },
+    { x: 0.65, y: 0.32, z: 2.55, size: 0.48, color: pants, role: "person" },
+    // Knee & Shin
+    { x: 0.65, y: 0.30, z: 3.05, size: 0.46, color: pantsDark, role: "person" },
+    { x: 0.65, y: 0.28, z: 3.55, size: 0.44, color: pants, role: "person" },
+    // Ankle & Sneaker
+    { x: 0.65, y: 0.24, z: 4.05, size: 0.42, color: shoe, role: "person" },
+    { x: 0.65, y: 0.08, z: 4.05, size: 0.42, color: shoeSole, role: "person" }
+  );
+
+  // Right Leg: Bent at knee, knee raised up high in relaxed triangle pose (iconic silhouette!)
+  person.push(
+    // Thigh angling up towards knee
+    { x: 1.25, y: 0.55, z: 2.05, size: 0.50, color: pants, role: "person" },
+    { x: 1.28, y: 0.95, z: 2.50, size: 0.50, color: pantsLight, role: "person" },
+    // Knee Apex (raised high in air)
+    { x: 1.28, y: 1.45, z: 2.90, size: 0.52, color: pants, role: "person" },
+    { x: 1.28, y: 1.85, z: 3.10, size: 0.50, color: pantsLight, role: "person" },
+    // Shin angling down from knee to foot
+    { x: 1.28, y: 1.35, z: 3.40, size: 0.48, color: pantsDark, role: "person" },
+    { x: 1.28, y: 0.85, z: 3.70, size: 0.46, color: pants, role: "person" },
+    { x: 1.28, y: 0.35, z: 3.95, size: 0.44, color: pantsDark, role: "person" },
+    // Right Sneaker resting flat on pavers
+    { x: 1.28, y: 0.24, z: 4.25, size: 0.42, color: shoe, role: "person" },
+    { x: 1.28, y: 0.08, z: 4.25, size: 0.42, color: shoeSole, role: "person" }
+  );
+
+  // 3. TORSO (Sky blue shirt, leaning back against the trunk at ~15 degrees)
+  // Lower torso
+  person.push(
+    { x: 0.65, y: 0.85, z: 1.55, size: 0.52, color: shirtShadow, role: "person" },
+    { x: 1.15, y: 0.85, z: 1.55, size: 0.52, color: shirt, role: "person" }
+  );
+  // Mid torso & chest
+  person.push(
+    { x: 0.65, y: 1.35, z: 1.45, size: 0.52, color: shirtShadow, role: "person" },
+    { x: 1.15, y: 1.35, z: 1.45, size: 0.52, color: shirt, role: "person" },
+    { x: 0.90, y: 1.35, z: 1.68, size: 0.48, color: shirtLight, role: "person" } // Chest highlight
+  );
+  // Upper torso & broad shoulders
+  person.push(
+    { x: 0.48, y: 1.85, z: 1.35, size: 0.50, color: shirtShadow, role: "person" },
+    { x: 0.90, y: 1.85, z: 1.35, size: 0.52, color: shirtLight, role: "person" },
+    { x: 1.32, y: 1.85, z: 1.35, size: 0.50, color: shirt, role: "person" }
+  );
+
+  // 4. ARMS
+  // Left Arm: Resting back beside body on pavers to support leaning posture
+  person.push(
+    { x: 0.22, y: 1.65, z: 1.35, size: 0.44, color: shirtShadow, role: "person" }, // Short sleeve
+    { x: 0.18, y: 1.15, z: 1.45, size: 0.40, color: skin, role: "person" },        // Arm
+    { x: 0.14, y: 0.65, z: 1.55, size: 0.38, color: skinShadow, role: "person" },  // Forearm
+    { x: 0.10, y: 0.25, z: 1.65, size: 0.38, color: skin, role: "person" }         // Hand on ground
+  );
+  // Right Arm: Reaching casually forward, resting hand on top of the raised right knee
+  person.push(
+    { x: 1.55, y: 1.65, z: 1.45, size: 0.44, color: shirt, role: "person" },      // Short sleeve
+    { x: 1.50, y: 1.45, z: 1.95, size: 0.40, color: skin, role: "person" },       // Arm
+    { x: 1.42, y: 1.65, z: 2.45, size: 0.38, color: skin, role: "person" },       // Forearm reaching to knee
+    { x: 1.35, y: 1.95, z: 2.95, size: 0.38, color: skin, role: "person" }        // Hand resting on knee
+  );
+
+  // 5. NECK & HEAD
+  // Neck
+  person.push(
+    { x: 0.90, y: 2.30, z: 1.25, size: 0.40, color: skinShadow, role: "person" }
+  );
+  // Head & Face (tilted back slightly resting against the tree bark)
+  person.push(
+    { x: 0.70, y: 2.75, z: 1.20, size: 0.48, color: skin, role: "person" },
+    { x: 1.10, y: 2.75, z: 1.20, size: 0.48, color: skin, role: "person" },
+    { x: 0.90, y: 2.75, z: 1.45, size: 0.44, color: skin, role: "person" } // Face front
+  );
+  // Hair (dark brown messy casual hair, resting back against the trunk)
+  person.push(
+    { x: 0.70, y: 3.20, z: 1.18, size: 0.50, color: hair, role: "person" },
+    { x: 1.10, y: 3.20, z: 1.18, size: 0.50, color: hair, role: "person" },
+    { x: 0.90, y: 3.25, z: 1.38, size: 0.46, color: hairHighlight, role: "person" }, // Fringe
+    { x: 0.65, y: 2.75, z: 0.95, size: 0.42, color: hairDark, role: "person" },      // Back of hair on bark
+    { x: 1.15, y: 2.75, z: 0.95, size: 0.42, color: hairDark, role: "person" },      // Back of hair on bark
+    { x: 0.90, y: 3.55, z: 1.15, size: 0.44, color: hair, role: "person" }           // Top hair crown
+  );
+
+  return person;
 }
 
 /**

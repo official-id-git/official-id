@@ -22,6 +22,22 @@ interface ThreeVoxelTreeSceneProps {
   }) => void;
 }
 
+// Camera constants (static references for zero garbage collection & stable hooks)
+const POS_3D = new THREE.Vector3(50, 42, 50);
+const TARGET_3D = new THREE.Vector3(0, 8, 0);
+const UP_3D = new THREE.Vector3(0, 1, 0);
+
+// Top-Down QR Code Scan View: looking straight down at (0, 0, 0)
+const POS_QR = new THREE.Vector3(0, 95, 0.0001);
+const TARGET_QR = new THREE.Vector3(0, 0, 0);
+const UP_QR = new THREE.Vector3(0, 0, -1);
+
+// Base Frustum size: 52 ensures generous, majestic framing of the wide tree and sitting person without clipping
+const BASE_FRUSTUM = 52;
+
+const easeInOutCubic = (t: number) =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
 export default function ThreeVoxelTreeScene({
   url,
   season,
@@ -36,6 +52,7 @@ export default function ThreeVoxelTreeScene({
   const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const instancedMeshRef = useRef<THREE.InstancedMesh | null>(null);
+  const grassMeshRef = useRef<THREE.InstancedMesh | null>(null);
   const dirLightRef = useRef<THREE.DirectionalLight | null>(null);
   const particlesMeshRef = useRef<THREE.InstancedMesh | null>(null);
   const particlesDataRef = useRef<
@@ -51,6 +68,11 @@ export default function ThreeVoxelTreeScene({
     }>
   >([]);
 
+  const viewModeRef = useRef<"3d" | "qr">(viewMode);
+  useEffect(() => {
+    viewModeRef.current = viewMode;
+  }, [viewMode]);
+
   // Wind animation shader uniforms ref
   const windUniformsRef = useRef<{
     uTime: { value: number };
@@ -62,6 +84,9 @@ export default function ThreeVoxelTreeScene({
 
   const animFrameRef = useRef<number | null>(null);
   const [voxelCount, setVoxelCount] = useState<number>(0);
+
+  // Sitting person model group ref (animates breathing and sinks in QR mode)
+  const sittingPersonRef = useRef<THREE.Group | null>(null);
 
   // Transition state
   const isTransitioningRef = useRef<boolean>(false);
@@ -75,24 +100,6 @@ export default function ThreeVoxelTreeScene({
   const targetCamPosRef = useRef<THREE.Vector3>(new THREE.Vector3());
   const targetTargetRef = useRef<THREE.Vector3>(new THREE.Vector3());
   const targetUpRef = useRef<THREE.Vector3>(new THREE.Vector3());
-
-  // Base camera coordinates
-  // 3D Isometric View: Elegant ~25° elevation angle targeting tree core (Y=18)
-  const POS_3D = new THREE.Vector3(52, 46, 52);
-  const TARGET_3D = new THREE.Vector3(0, 18, 0);
-  const UP_3D = new THREE.Vector3(0, 1, 0);
-
-  // Top-Down QR Code Scan View: looking straight down at (0, 0, 0)
-  // UP vector must be (0, 0, -1) so QR code is perfectly upright on screen
-  const POS_QR = new THREE.Vector3(0, 95, 0);
-  const TARGET_QR = new THREE.Vector3(0, 0, 0);
-  const UP_QR = new THREE.Vector3(0, 0, -1);
-
-  // Base Frustum size: generous to ensure NO CLIPPING of the tall tree in 3D mode
-  const BASE_FRUSTUM = 72;
-
-  const easeInOutCubic = (t: number) =>
-    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
   // Initialize Three.js Scene
   useEffect(() => {
@@ -124,7 +131,7 @@ export default function ThreeVoxelTreeScene({
     camera.position.copy(viewMode === "3d" ? POS_3D : POS_QR);
     camera.up.copy(viewMode === "3d" ? UP_3D : UP_QR);
     camera.lookAt(viewMode === "3d" ? TARGET_3D : TARGET_QR);
-    camera.zoom = viewMode === "qr" ? 1.65 : 0.92;
+    camera.zoom = viewMode === "qr" ? 1.18 : 1.12;
     camera.updateProjectionMatrix();
     cameraRef.current = camera;
 
@@ -267,15 +274,17 @@ export default function ThreeVoxelTreeScene({
       const now = performance.now();
       const timeInSec = now * 0.001;
 
+      const currentMode = viewModeRef.current;
+
       // Update Wind Shader Uniforms
       if (windUniformsRef.current) {
         windUniformsRef.current.uTime.value = timeInSec;
-        // In 3D: wind = 1.0 (leaves sway in breeze). In QR: smoothly lerp to 0.0 for instant camera scan!
-        const targetWind = viewMode === "3d" ? 1.0 : 0.0;
+        // In 3D: wind = 1.0 (leaves & grass sway in breeze). In QR: smoothly lerp to 0.0 for instant camera scan!
+        const targetWind = currentMode === "3d" ? 1.0 : 0.0;
         windUniformsRef.current.uWind.value = THREE.MathUtils.lerp(
           windUniformsRef.current.uWind.value,
           targetWind,
-          0.06
+          0.08
         );
       }
 
@@ -300,15 +309,60 @@ export default function ThreeVoxelTreeScene({
           targetUpRef.current,
           ease
         ).normalize();
-
         cameraRef.current.lookAt(controlsRef.current.target);
+        cameraRef.current.updateProjectionMatrix();
 
         if (progress >= 1) {
           isTransitioningRef.current = false;
-          controlsRef.current.enabled = viewMode === "3d";
+          cameraRef.current.position.copy(targetCamPosRef.current);
+          cameraRef.current.up.copy(targetUpRef.current);
+          controlsRef.current.target.copy(targetTargetRef.current);
+          cameraRef.current.lookAt(controlsRef.current.target);
+          cameraRef.current.updateProjectionMatrix();
+          controlsRef.current.enabled = currentMode === "3d";
+          if (currentMode === "3d") {
+            controlsRef.current.update();
+          }
         }
-      } else if (controlsRef.current && viewMode === "3d") {
+      } else if (controlsRef.current && currentMode === "3d") {
         controlsRef.current.update();
+      }
+
+      // Animate Sitting Person (Gentle breathing in 3D, smoothly sink/hide in QR)
+      if (sittingPersonRef.current) {
+        const targetY = currentMode === "3d" ? 0.0 : -10.0;
+        const targetScale = currentMode === "3d" ? 1.30 : 0.001;
+        const breathe = currentMode === "3d" ? Math.sin(timeInSec * 2.0) * 0.03 : 0.0;
+
+        sittingPersonRef.current.position.y = THREE.MathUtils.lerp(
+          sittingPersonRef.current.position.y,
+          targetY + breathe,
+          0.08
+        );
+        sittingPersonRef.current.scale.setScalar(
+          THREE.MathUtils.lerp(sittingPersonRef.current.scale.x, targetScale, 0.08)
+        );
+
+        if (currentMode === "qr" && sittingPersonRef.current.position.y < -5.0) {
+          sittingPersonRef.current.visible = false;
+        } else if (currentMode === "3d") {
+          sittingPersonRef.current.visible = true;
+        }
+      }
+
+      // Animate Swaying Grass (Sinks smoothly in QR mode so quiet zone is 100% white)
+      if (grassMeshRef.current) {
+        const targetGrassY = currentMode === "3d" ? 0.0 : -6.0;
+        grassMeshRef.current.position.y = THREE.MathUtils.lerp(
+          grassMeshRef.current.position.y,
+          targetGrassY,
+          0.08
+        );
+        if (currentMode === "qr" && grassMeshRef.current.position.y < -4.0) {
+          grassMeshRef.current.visible = false;
+        } else if (currentMode === "3d") {
+          grassMeshRef.current.visible = true;
+        }
       }
 
       // Update Floating Particles
@@ -353,6 +407,17 @@ export default function ThreeVoxelTreeScene({
       if (animFrameRef.current) {
         cancelAnimationFrame(animFrameRef.current);
       }
+      if (sittingPersonRef.current && sceneRef.current) {
+        sceneRef.current.remove(sittingPersonRef.current);
+        sittingPersonRef.current.clear();
+        sittingPersonRef.current = null;
+      }
+      if (grassMeshRef.current && sceneRef.current) {
+        sceneRef.current.remove(grassMeshRef.current);
+        grassMeshRef.current.geometry.dispose();
+        (grassMeshRef.current.material as THREE.Material).dispose();
+        grassMeshRef.current = null;
+      }
       controls.dispose();
       renderer.dispose();
       canvasMountRef.current?.replaceChildren();
@@ -391,26 +456,64 @@ export default function ThreeVoxelTreeScene({
       instancedMeshRef.current = null;
     }
 
+    // Remove old grass mesh
+    if (grassMeshRef.current) {
+      scene.remove(grassMeshRef.current);
+      grassMeshRef.current.geometry.dispose();
+      (grassMeshRef.current.material as THREE.Material).dispose();
+      grassMeshRef.current = null;
+    }
+
+    // Remove old sitting person group
+    if (sittingPersonRef.current) {
+      scene.remove(sittingPersonRef.current);
+      sittingPersonRef.current.clear();
+      sittingPersonRef.current = null;
+    }
+
     // 1. Generate QR matrix
     const { matrix, size } = generateQrMatrix(url);
 
-    // 2. Generate 3D Voxel Array for the Majestic Magic Tree
+    // 2. Generate 3D Voxel Array for the Majestic Magic Tree & Sitting Person
     const voxels: VoxelItem[] = generateVoxelTree(matrix, size, season);
     setVoxelCount(voxels.length);
 
-    // 3. Create InstancedMesh with Wind Sway Shader
+    // Separate environmental voxels, grass tufts, and character voxels
+    const treeVoxels = voxels.filter((v) => v.role !== "person" && v.role !== "grass");
+    const grassVoxels = voxels.filter((v) => v.role === "grass");
+    const personVoxels = voxels.filter((v) => v.role === "person");
+
+    // 3. Create InstancedMesh with Wind Sway Shader for Foliage & Tree
     const voxelGeo = new THREE.BoxGeometry(1.0, 1.0, 1.0);
+
+    // Pass per-instance wind weight attribute
+    const windWeights = new Float32Array(treeVoxels.length);
+    for (let i = 0; i < treeVoxels.length; i++) {
+      const r = treeVoxels[i].role;
+      if (r === "leaf") {
+        windWeights[i] = 1.0;
+      } else if (r === "hedge") {
+        windWeights[i] = 0.40;
+      } else if (r === "branch") {
+        windWeights[i] = 0.35;
+      } else {
+        windWeights[i] = 0.0;
+      }
+    }
+    voxelGeo.setAttribute("aWindWeight", new THREE.InstancedBufferAttribute(windWeights, 1));
+
     const voxelMat = new THREE.MeshStandardMaterial({
       roughness: 0.82,
       metalness: 0.08,
     });
 
-    // Injected GPU Wind Sway Shader ("daunnya nampak bergerak-gerak kena angin")
+    // Injected GPU Wind Sway Shader: handles both grass fluttering & canopy swaying
     voxelMat.onBeforeCompile = (shader) => {
       shader.uniforms.uTime = windUniformsRef.current.uTime;
       shader.uniforms.uWind = windUniformsRef.current.uWind;
 
       shader.vertexShader = `
+        attribute float aWindWeight;
         uniform float uTime;
         uniform float uWind;
       ` + shader.vertexShader;
@@ -424,16 +527,24 @@ export default function ThreeVoxelTreeScene({
         #endif
         #ifdef USE_INSTANCING
           mvPosition = instanceMatrix * mvPosition;
-          if (mvPosition.y > 12.0 && uWind > 0.001) {
-            float hFactor = clamp((mvPosition.y - 12.0) / 32.0, 0.0, 1.4);
-            // Harmonic wind sway: gentle macro branch sway + micro foliage flutter
-            float sway1 = sin(uTime * 2.2 + mvPosition.x * 0.32 + mvPosition.z * 0.32) * 0.42;
-            float sway2 = cos(uTime * 2.9 + mvPosition.z * 0.35 + mvPosition.y * 0.15) * 0.28;
-            float flutter = sin(uTime * 5.4 + mvPosition.x * 1.5 + mvPosition.z * 1.5) * 0.14;
-            
-            mvPosition.x += (sway1 + flutter) * hFactor * uWind;
-            mvPosition.z += (sway2 + flutter * 0.8) * hFactor * uWind;
-            mvPosition.y += sin(uTime * 3.8 + mvPosition.x * 0.5 + mvPosition.z * 0.5) * 0.06 * hFactor * uWind;
+          if (aWindWeight > 0.01 && uWind > 0.001) {
+            if (mvPosition.y < 3.2) {
+              // Grass & low hedge blade flutter in the breeze!
+              float grassSwayX = sin(uTime * 5.2 + mvPosition.x * 2.8 + mvPosition.z * 1.8) * 0.28;
+              float grassSwayZ = cos(uTime * 4.6 + mvPosition.z * 2.8 + mvPosition.x * 1.5) * 0.22;
+              float h = clamp(mvPosition.y / 2.2, 0.0, 1.4);
+              mvPosition.x += grassSwayX * h * aWindWeight * uWind;
+              mvPosition.z += grassSwayZ * h * aWindWeight * uWind;
+            } else {
+              // Upper tree canopy & branch sway (starting from Y = 10 up to canopy apex)
+              float hFactor = clamp((mvPosition.y - 10.0) / 16.0, 0.0, 1.3);
+              float sway1 = sin(uTime * 2.2 + mvPosition.x * 0.28 + mvPosition.z * 0.28) * 0.46;
+              float sway2 = cos(uTime * 2.8 + mvPosition.z * 0.30 + mvPosition.y * 0.12) * 0.32;
+              float flutter = sin(uTime * 5.4 + mvPosition.x * 1.2 + mvPosition.z * 1.2) * 0.16;
+              mvPosition.x += (sway1 + flutter) * hFactor * aWindWeight * uWind;
+              mvPosition.z += (sway2 + flutter * 0.8) * hFactor * aWindWeight * uWind;
+              mvPosition.y += sin(uTime * 3.6 + mvPosition.x * 0.4 + mvPosition.z * 0.4) * 0.05 * hFactor * aWindWeight * uWind;
+            }
           }
         #endif
         mvPosition = modelViewMatrix * mvPosition;
@@ -442,13 +553,13 @@ export default function ThreeVoxelTreeScene({
       );
     };
 
-    const instMesh = new THREE.InstancedMesh(voxelGeo, voxelMat, voxels.length);
+    const instMesh = new THREE.InstancedMesh(voxelGeo, voxelMat, treeVoxels.length);
     instMesh.castShadow = true;
     instMesh.receiveShadow = true;
 
     const dummy = new THREE.Object3D();
-    for (let i = 0; i < voxels.length; i++) {
-      const v = voxels[i];
+    for (let i = 0; i < treeVoxels.length; i++) {
+      const v = treeVoxels[i];
       const s = v.size ?? 0.45;
 
       dummy.position.set(v.x, v.y + s / 2, v.z);
@@ -467,6 +578,65 @@ export default function ThreeVoxelTreeScene({
 
     scene.add(instMesh);
     instancedMeshRef.current = instMesh;
+
+    // 4. Build Swaying Grass Mesh (sinks in QR mode for 100% white quiet zone)
+    if (grassVoxels.length > 0) {
+      const grassGeo = new THREE.BoxGeometry(1.0, 1.0, 1.0);
+      const grassWeights = new Float32Array(grassVoxels.length).fill(1.0);
+      grassGeo.setAttribute("aWindWeight", new THREE.InstancedBufferAttribute(grassWeights, 1));
+
+      const grassMesh = new THREE.InstancedMesh(grassGeo, voxelMat, grassVoxels.length);
+      grassMesh.castShadow = true;
+      grassMesh.receiveShadow = true;
+
+      for (let i = 0; i < grassVoxels.length; i++) {
+        const v = grassVoxels[i];
+        const s = v.size ?? 0.45;
+
+        dummy.position.set(v.x, v.y + s / 2, v.z);
+        dummy.scale.set(s, s, s);
+        dummy.rotation.set(0, 0, 0);
+        dummy.updateMatrix();
+
+        grassMesh.setMatrixAt(i, dummy.matrix);
+        grassMesh.setColorAt(i, new THREE.Color(v.color));
+      }
+
+      grassMesh.instanceMatrix.needsUpdate = true;
+      if (grassMesh.instanceColor) {
+        grassMesh.instanceColor.needsUpdate = true;
+      }
+
+      grassMesh.position.y = viewMode === "qr" ? -6.0 : 0.0;
+      grassMesh.visible = viewMode === "3d";
+      scene.add(grassMesh);
+      grassMeshRef.current = grassMesh;
+    }
+
+    // 5. Build Dramatic Sitting Person Group (leans against trunk)
+    if (personVoxels.length > 0) {
+      const pGroup = new THREE.Group();
+      const pGeo = new THREE.BoxGeometry(1.0, 1.0, 1.0);
+      for (const p of personVoxels) {
+        const s = p.size ?? 0.45;
+        const pMat = new THREE.MeshStandardMaterial({
+          color: p.color,
+          roughness: 0.72,
+          metalness: 0.08,
+        });
+        const m = new THREE.Mesh(pGeo, pMat);
+        m.position.set(p.x, p.y + s / 2, p.z);
+        m.scale.set(s, s, s);
+        m.castShadow = true;
+        m.receiveShadow = true;
+        pGroup.add(m);
+      }
+      pGroup.position.y = viewMode === "qr" ? -10.0 : 0.0;
+      pGroup.scale.setScalar(viewMode === "qr" ? 0.001 : 1.30);
+      pGroup.visible = viewMode === "3d";
+      scene.add(pGroup);
+      sittingPersonRef.current = pGroup;
+    }
   }, [url, season]);
 
   // Trigger Smooth Camera Transition ("3d" <-> "qr")
@@ -508,25 +678,40 @@ export default function ThreeVoxelTreeScene({
 
       // Zoom adjustment: in QR mode ensure the entire QR code + quiet zone is cleanly framed
       if (cameraRef.current) {
-        cameraRef.current.zoom = mode === "qr" ? 1.65 : 0.92;
+        cameraRef.current.zoom = mode === "qr" ? 1.18 : 1.12;
         cameraRef.current.updateProjectionMatrix();
       }
     },
-    [POS_3D, TARGET_3D, UP_3D, POS_QR, TARGET_QR, UP_QR]
+    []
   );
 
   useEffect(() => {
     triggerCameraTransition(viewMode);
   }, [viewMode, triggerCameraTransition]);
 
+  const pointerDownPosRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    pointerDownPosRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!pointerDownPosRef.current) return;
+    const dx = e.clientX - pointerDownPosRef.current.x;
+    const dy = e.clientY - pointerDownPosRef.current.y;
+    pointerDownPosRef.current = null;
+    // Only toggle if click/tap had less than 6px movement (not a 3D orbit drag)
+    if (Math.hypot(dx, dy) < 6) {
+      onViewModeToggle();
+    }
+  };
+
   return (
     <div
       ref={containerRef}
       className="relative w-full h-full cursor-grab active:cursor-grabbing select-none"
-      onClick={() => {
-        // Clicking on the canvas can trigger mode toggle
-        onViewModeToggle();
-      }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
     >
       {/* Three.js Canvas Mount */}
       <div ref={canvasMountRef} className="absolute inset-0 w-full h-full pointer-events-auto" />
