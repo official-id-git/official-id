@@ -191,8 +191,8 @@ export default function TreeICQRStudio() {
       </header>
 
       {/* Main 3D Voxel Canvas Container */}
-      <main className="w-full max-w-4xl mx-auto flex-1 flex flex-col items-center justify-center px-4 py-2 my-auto">
-        <div className="relative w-full aspect-square max-w-[500px] max-h-[500px] flex items-center justify-center">
+      <main className="w-full max-w-4xl mx-auto flex-1 flex flex-col items-center justify-center px-2 sm:px-4 py-1 my-auto">
+        <div className="relative w-full max-w-[560px] aspect-square max-h-[62vh] flex items-center justify-center">
           {isMounted ? (
             <ThreeVoxelTreeScene
               url={url}
@@ -216,6 +216,23 @@ export default function TreeICQRStudio() {
         </div>
       </main>
 
+      {/* Tap the tree to see QR code / Tap to see 3D model Button (Positioned cleanly under the canvas) */}
+      <div className="flex justify-center -mt-1 mb-2 z-30">
+        <button
+          onClick={() => setViewMode(viewMode === "3d" ? "qr" : "3d")}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/95 hover:bg-white text-stone-800 text-xs sm:text-sm font-semibold tracking-tight shadow-md hover:shadow-lg border border-stone-200/90 backdrop-blur-md transition-all active:scale-95"
+        >
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+          <span>
+            {viewMode === "3d"
+              ? modelStyle === "satria"
+                ? "Tap Satria to see QR code"
+                : "Tap the tree to see QR code"
+              : "Tap to see 3D model"}
+          </span>
+        </button>
+      </div>
+
       {/* Bottom Controls Bar (Exactly matching tree.icqr.com) */}
       <footer className="w-full max-w-xl mx-auto px-4 pb-8 flex flex-col items-center gap-3 z-30">
         {/* Model Style Selector Pills (Magic Tree vs Gatotkaca Satria Pixel Art) */}
@@ -224,6 +241,7 @@ export default function TreeICQRStudio() {
             onClick={() => {
               setModelStyle("tree");
               if (season === "satria") setSeason("summer");
+              setViewMode("3d");
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium transition ${
               modelStyle === "tree"
@@ -238,6 +256,7 @@ export default function TreeICQRStudio() {
             onClick={() => {
               setModelStyle("satria");
               setSeason("satria");
+              setViewMode("3d");
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium transition ${
               modelStyle === "satria"

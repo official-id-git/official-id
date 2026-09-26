@@ -36,9 +36,10 @@ export default function ThreeVoxelTreeScene({
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const instancedMeshRef = useRef<THREE.InstancedMesh | null>(null);
+  const dirLightRef = useRef<THREE.DirectionalLight | null>(null);
   const particlesMeshRef = useRef<THREE.InstancedMesh | null>(null);
   const particlesDataRef = useRef<
     Array<{
@@ -56,25 +57,34 @@ export default function ThreeVoxelTreeScene({
   const animFrameRef = useRef<number | null>(null);
   const [voxelCount, setVoxelCount] = useState<number>(0);
 
-  // Animation state for smooth camera transitions between 3D & 2D Top-Down
+  // Transition state
   const isTransitioningRef = useRef<boolean>(false);
   const animStartTimeRef = useRef<number>(0);
-  const animDuration = 1100; // ms
+  const animDuration = 1000; // ms
+
   const startCamPosRef = useRef<THREE.Vector3>(new THREE.Vector3());
   const startTargetRef = useRef<THREE.Vector3>(new THREE.Vector3());
+  const startUpRef = useRef<THREE.Vector3>(new THREE.Vector3());
+
   const targetCamPosRef = useRef<THREE.Vector3>(new THREE.Vector3());
   const targetTargetRef = useRef<THREE.Vector3>(new THREE.Vector3());
+  const targetUpRef = useRef<THREE.Vector3>(new THREE.Vector3());
 
-  // Target positions:
-  // 3D Isometric View: camera at (30, 36, 30) looking at (0, 6, 0)
-  const POS_3D = new THREE.Vector3(30, 36, 30);
-  const TARGET_3D = new THREE.Vector3(0, 6, 0);
+  // Base camera coordinates
+  // 3D Isometric View: looking at (0, 7, 0) from an elevated 45° angle with ample breathing room
+  const POS_3D = new THREE.Vector3(50, 58, 50);
+  const TARGET_3D = new THREE.Vector3(0, 7, 0);
+  const UP_3D = new THREE.Vector3(0, 1, 0);
 
-  // Top-Down QR Code Scan View: camera at (0, 66, 0.0001) looking at (0, 0, 0)
-  const POS_QR = new THREE.Vector3(0, 66, 0.0001);
+  // Top-Down QR Code Scan View: looking straight down at (0, 0, 0)
+  // UP vector must be (0, 0, -1) so QR code is perfectly upright on screen
+  const POS_QR = new THREE.Vector3(0, 80, 0);
   const TARGET_QR = new THREE.Vector3(0, 0, 0);
+  const UP_QR = new THREE.Vector3(0, 0, -1);
 
-  // Cubic easing function
+  // Base Frustum size: generous to ensure NO CLIPPING by the frame in 3D mode
+  const BASE_FRUSTUM = 58;
+
   const easeInOutCubic = (t: number) =>
     t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
@@ -82,8 +92,9 @@ export default function ThreeVoxelTreeScene({
   useEffect(() => {
     if (!containerRef.current) return;
     const container = containerRef.current;
-    const width = container.clientWidth || 500;
-    const height = container.clientHeight || 500;
+    const width = container.clientWidth || 600;
+    const height = container.clientHeight || 600;
+    const aspect = width / height;
 
     // 1. Scene
     const scene = new THREE.Scene();
@@ -91,10 +102,22 @@ export default function ThreeVoxelTreeScene({
     scene.background = new THREE.Color(theme.bgColor);
     sceneRef.current = scene;
 
-    // 2. Camera
-    const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 1000);
+    // 2. Orthographic Camera (Zero perspective parallax distortion -> 100% QR scannability!)
+    const frustumH = aspect < 1 ? BASE_FRUSTUM / aspect : BASE_FRUSTUM;
+    const frustumW = frustumH * aspect;
+
+    const camera = new THREE.OrthographicCamera(
+      -frustumW / 2,
+      frustumW / 2,
+      frustumH / 2,
+      -frustumH / 2,
+      0.1,
+      500
+    );
+
     camera.position.copy(viewMode === "3d" ? POS_3D : POS_QR);
-    camera.up.set(0, 1, 0);
+    camera.up.copy(viewMode === "3d" ? UP_3D : UP_QR);
+    camera.lookAt(viewMode === "3d" ? TARGET_3D : TARGET_QR);
     cameraRef.current = camera;
 
     // 3. WebGL Renderer
@@ -110,7 +133,6 @@ export default function ThreeVoxelTreeScene({
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
 
-    // Clear old canvases
     while (container.firstChild) {
       container.removeChild(container.firstChild);
     }
@@ -121,39 +143,45 @@ export default function ThreeVoxelTreeScene({
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
-    controls.maxPolarAngle = Math.PI / 2.02; // Don't clip under ground plinth
-    controls.minDistance = 14;
-    controls.maxDistance = 100;
+    controls.maxPolarAngle = Math.PI / 2.05; // Keep above ground plinth
+    controls.minZoom = 0.4;
+    controls.maxZoom = 3.5;
     controls.target.copy(viewMode === "3d" ? TARGET_3D : TARGET_QR);
     controls.enabled = viewMode === "3d";
     controlsRef.current = controls;
 
     // 5. Lighting
-    const ambientLight = new THREE.AmbientLight(0xfffaed, 1.25);
+    const ambientLight = new THREE.AmbientLight(0xfffaed, 1.3);
     scene.add(ambientLight);
 
     const dirLight = new THREE.DirectionalLight(0xfff7e6, 2.2);
-    dirLight.position.set(35, 65, 30);
-    dirLight.castShadow = true;
+    if (viewMode === "qr") {
+      dirLight.position.set(0, 100, 0);
+      dirLight.castShadow = false;
+    } else {
+      dirLight.position.set(40, 75, 35);
+      dirLight.castShadow = true;
+    }
     dirLight.shadow.mapSize.width = 2048;
     dirLight.shadow.mapSize.height = 2048;
     dirLight.shadow.camera.near = 0.5;
-    dirLight.shadow.camera.far = 160;
-    const d = 30;
+    dirLight.shadow.camera.far = 200;
+    const d = 36;
     dirLight.shadow.camera.left = -d;
     dirLight.shadow.camera.right = d;
     dirLight.shadow.camera.top = d;
     dirLight.shadow.camera.bottom = -d;
     dirLight.shadow.bias = -0.0004;
     scene.add(dirLight);
+    dirLightRef.current = dirLight;
 
-    const fillLight = new THREE.DirectionalLight(0xdbeafe, 0.65);
-    fillLight.position.set(-25, 30, -25);
+    const fillLight = new THREE.DirectionalLight(0xdbeafe, 0.7);
+    fillLight.position.set(-30, 35, -30);
     scene.add(fillLight);
 
-    // 6. Falling Petal Particles (InstancedMesh)
+    // 6. Falling Petal / Sparkle Particles
     const particleCount = 65;
-    const particleGeo = new THREE.BoxGeometry(0.35, 0.35, 0.35);
+    const particleGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
     const particleMat = new THREE.MeshLambertMaterial();
     const particleMesh = new THREE.InstancedMesh(particleGeo, particleMat, particleCount);
     particleMesh.castShadow = true;
@@ -167,11 +195,11 @@ export default function ThreeVoxelTreeScene({
       );
       particleMesh.setColorAt(i, color);
       pData.push({
-        x: (Math.random() - 0.5) * 26,
-        y: 2 + Math.random() * 18,
-        z: (Math.random() - 0.5) * 26,
-        speed: 0.025 + Math.random() * 0.04,
-        swaySpeed: 1 + Math.random() * 1.6,
+        x: (Math.random() - 0.5) * 32,
+        y: 2 + Math.random() * 20,
+        z: (Math.random() - 0.5) * 32,
+        speed: 0.02 + Math.random() * 0.04,
+        swaySpeed: 1 + Math.random() * 1.5,
         phase: Math.random() * Math.PI * 2,
         rx: Math.random() * Math.PI,
         ry: Math.random() * Math.PI,
@@ -182,13 +210,22 @@ export default function ThreeVoxelTreeScene({
     }
     particlesDataRef.current = pData;
 
-    // Handle Window Resize
+    // Handle Window Resize & Anti-Clipping Frustum update
     const handleResize = () => {
       if (!containerRef.current || !rendererRef.current || !cameraRef.current) return;
       const w = containerRef.current.clientWidth;
       const h = containerRef.current.clientHeight;
-      cameraRef.current.aspect = w / h;
+      const asp = w / h;
+
+      const fH = asp < 1 ? BASE_FRUSTUM / asp : BASE_FRUSTUM;
+      const fW = fH * asp;
+
+      cameraRef.current.left = -fW / 2;
+      cameraRef.current.right = fW / 2;
+      cameraRef.current.top = fH / 2;
+      cameraRef.current.bottom = -fH / 2;
       cameraRef.current.updateProjectionMatrix();
+
       rendererRef.current.setSize(w, h);
     };
     window.addEventListener("resize", handleResize);
@@ -211,10 +248,9 @@ export default function ThreeVoxelTreeScene({
     const animate = () => {
       animFrameRef.current = requestAnimationFrame(animate);
       const now = performance.now();
-      const delta = (now - lastTime) / 1000;
       lastTime = now;
 
-      // Handle Smooth Camera Transition
+      // Smooth Camera Transition between 3D and Top-Down QR
       if (isTransitioningRef.current && cameraRef.current && controlsRef.current) {
         const elapsed = now - animStartTimeRef.current;
         const progress = Math.min(1, elapsed / animDuration);
@@ -230,6 +266,12 @@ export default function ThreeVoxelTreeScene({
           targetTargetRef.current,
           ease
         );
+        cameraRef.current.up.lerpVectors(
+          startUpRef.current,
+          targetUpRef.current,
+          ease
+        ).normalize();
+
         cameraRef.current.lookAt(controlsRef.current.target);
 
         if (progress >= 1) {
@@ -249,9 +291,9 @@ export default function ThreeVoxelTreeScene({
           const p = data[i];
           p.y -= p.speed;
           if (p.y < 0.2) {
-            p.y = 16 + Math.random() * 4;
-            p.x = (Math.random() - 0.5) * 26;
-            p.z = (Math.random() - 0.5) * 26;
+            p.y = 18 + Math.random() * 4;
+            p.x = (Math.random() - 0.5) * 32;
+            p.z = (Math.random() - 0.5) * 32;
           }
 
           const currentX = p.x + Math.sin(now * 0.0015 * p.swaySpeed + p.phase) * 0.8;
@@ -263,6 +305,7 @@ export default function ThreeVoxelTreeScene({
             p.ry + now * 0.001,
             p.phase
           );
+          dummy.scale.set(1, 1, 1);
           dummy.updateMatrix();
           pMesh.setMatrixAt(i, dummy.matrix);
         }
@@ -292,7 +335,6 @@ export default function ThreeVoxelTreeScene({
     const theme = SEASONS[season];
     sceneRef.current.background = new THREE.Color(theme.bgColor);
 
-    // Update particle colors
     if (particlesMeshRef.current) {
       for (let i = 0; i < 65; i++) {
         particlesMeshRef.current.setColorAt(
@@ -332,11 +374,11 @@ export default function ThreeVoxelTreeScene({
 
     setVoxelCount(voxels.length);
 
-    // 3. Create InstancedMesh (Crisp 0.94 cube with bevel margin like Goxel/MagicaVoxel)
-    const voxelGeo = new THREE.BoxGeometry(0.94, 0.94, 0.94);
+    // 3. Create InstancedMesh (Base unit cube geometry with instance scaling)
+    const voxelGeo = new THREE.BoxGeometry(1.0, 1.0, 1.0);
     const voxelMat = new THREE.MeshStandardMaterial({
-      roughness: 0.85,
-      metalness: 0.1,
+      roughness: 0.82,
+      metalness: modelStyle === "satria" ? 0.35 : 0.08,
     });
 
     const instMesh = new THREE.InstancedMesh(voxelGeo, voxelMat, voxels.length);
@@ -346,8 +388,10 @@ export default function ThreeVoxelTreeScene({
     const dummy = new THREE.Object3D();
     for (let i = 0; i < voxels.length; i++) {
       const v = voxels[i];
-      dummy.position.set(v.x, v.y + 0.47, v.z);
-      dummy.scale.set(1, 1, 1);
+      const s = v.size ?? 0.45;
+
+      dummy.position.set(v.x, v.y + s / 2, v.z);
+      dummy.scale.set(s, s, s);
       dummy.rotation.set(0, 0, 0);
       dummy.updateMatrix();
 
@@ -364,27 +408,50 @@ export default function ThreeVoxelTreeScene({
     instancedMeshRef.current = instMesh;
   }, [url, season, modelStyle]);
 
-  // Trigger Smooth Transition when viewMode toggles ("3d" <-> "qr")
+  // Trigger Smooth Camera Transition ("3d" <-> "qr")
   const triggerCameraTransition = useCallback(
     (mode: "3d" | "qr") => {
       if (!cameraRef.current || !controlsRef.current) return;
 
       const targetPos = mode === "3d" ? POS_3D : POS_QR;
       const targetLook = mode === "3d" ? TARGET_3D : TARGET_QR;
+      const targetUp = mode === "3d" ? UP_3D : UP_QR;
 
       startCamPosRef.current.copy(cameraRef.current.position);
       startTargetRef.current.copy(controlsRef.current.target);
+      startUpRef.current.copy(cameraRef.current.up);
 
       targetCamPosRef.current.copy(targetPos);
       targetTargetRef.current.copy(targetLook);
+      targetUpRef.current.copy(targetUp);
 
       animStartTimeRef.current = performance.now();
       isTransitioningRef.current = true;
-
-      // Lock controls while swooping
       controlsRef.current.enabled = false;
+
+      // Adjust directional light: straight down with zero lateral shadows for 100% QR scannability
+      if (dirLightRef.current) {
+        if (mode === "qr") {
+          dirLightRef.current.position.set(0, 100, 0);
+          dirLightRef.current.castShadow = false;
+        } else {
+          dirLightRef.current.position.set(40, 75, 35);
+          dirLightRef.current.castShadow = true;
+        }
+      }
+
+      // Hide drifting leaf particles in QR mode to prevent blocking white modules
+      if (particlesMeshRef.current) {
+        particlesMeshRef.current.visible = mode === "3d";
+      }
+
+      // Zoom adjustment: in QR mode ensure the entire QR code + quiet zone is cleanly framed
+      if (cameraRef.current) {
+        cameraRef.current.zoom = mode === "qr" ? 0.82 : 0.95;
+        cameraRef.current.updateProjectionMatrix();
+      }
     },
-    [POS_3D, POS_QR, TARGET_3D, TARGET_QR]
+    [POS_3D, POS_QR, TARGET_3D, TARGET_QR, UP_3D, UP_QR]
   );
 
   useEffect(() => {
@@ -397,30 +464,21 @@ export default function ThreeVoxelTreeScene({
       <div
         ref={containerRef}
         onClick={() => {
-          // If not currently transitioning, toggle view mode on tree click
           if (!isTransitioningRef.current) {
             onViewModeToggle();
           }
         }}
         className="w-full h-full cursor-pointer touch-none"
-        title={viewMode === "3d" ? "Klik pohon untuk melihat QR code scannable" : "Klik untuk melihat pohon 3D"}
+        title={
+          viewMode === "3d"
+            ? "Klik untuk melihat QR code scannable lurus dari atas"
+            : "Klik untuk kembali ke tampilan pohon/patung 3D"
+        }
       />
 
-      {/* Floating Center Pill Button (Exactly matching tree.icqr.com) */}
-      <div className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 z-20">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onViewModeToggle();
-          }}
-          className="pointer-events-auto flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#fbf9f4]/90 hover:bg-white text-stone-800 text-xs sm:text-sm font-medium tracking-tight shadow-md hover:shadow-lg border border-stone-200/80 backdrop-blur-md transition-all active:scale-95"
-        >
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-          <span>{viewMode === "3d" ? "Tap the tree to see QR code" : "Tap to see the tree"}</span>
-        </button>
-      </div>
 
-      {/* Orbit Controls Tip Badge (Only visible in 3D mode) */}
+
+      {/* 3D Drag Tip Badge */}
       {viewMode === "3d" && (
         <div className="pointer-events-none absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-900/10 text-stone-600 text-[11px] font-mono backdrop-blur-sm border border-stone-900/5">
           <span>🖱️ Drag to rotate 3D</span>
