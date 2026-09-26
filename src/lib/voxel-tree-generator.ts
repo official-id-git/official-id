@@ -1,16 +1,14 @@
 import QRCode from "qrcode";
-import { GATOTKACA_PIXELS } from "@/lib/satria-pixel-data";
 
-export type SeasonType = "summer" | "spring" | "autumn" | "satria";
-export type ModelStyleType = "tree" | "satria";
+export type SeasonType = "summer" | "spring" | "autumn";
 
 export interface VoxelItem {
   x: number;
   y: number; // Y is UP in Three.js
   z: number;
-  size?: number; // Voxel cube size (default 0.44 for leaves, 0.94 for large tiles, or custom)
+  size?: number;
   color: string;
-  role: "trunk" | "branch" | "leaf" | "stone" | "border" | "hedge" | "flower" | "satria";
+  role: "trunk" | "branch" | "leaf" | "stone" | "border" | "hedge" | "flower" | "grass";
   isQrDark?: boolean;
 }
 
@@ -26,75 +24,60 @@ export interface SeasonTheme {
   hedgeColor: string[];
   stonePaver: string[];
   stoneBorder: string;
+  grassColors: string[];
   particleColors: string[];
   accentColor: string;
 }
 
 export const SEASONS: Record<SeasonType, SeasonTheme> = {
   summer: {
-    name: "Summer",
-    badge: "☀️ Summer",
+    name: "Summer Green",
+    badge: "🌳 Summer Green",
     bgColor: "#F6F1E7",
     paperColor: "#EFE8DA",
-    // Deep rich forest greens for 100% instant smartphone camera detection
-    leafPrimary: ["#124417", "#0D3812", "#19541F", "#14481A"],
-    leafHighlight: ["#246E2A", "#2E7D32", "#388E3C"],
-    leafShadow: ["#08240B", "#051A07", "#0A2D0E"],
-    trunkPrimary: ["#3E2723", "#2E1B17", "#4A2F28", "#241411"],
-    hedgeColor: ["#0D3812", "#124417", "#08240B"],
-    // Clean bright off-white stone pavers for high luminance contrast
-    stonePaver: ["#FFFDF8", "#FAF6EE", "#F5F0E4", "#F8F3E8"],
+    // Rich, high-contrast forest greens (scannable + lush 3D shading)
+    leafPrimary: ["#1B5E20", "#236B29", "#1E6024", "#2E7D32"],
+    leafHighlight: ["#2E7D32", "#388E3C", "#257A2D", "#1F6E27"],
+    leafShadow: ["#124417", "#0D3812", "#08240B", "#0F3214"],
+    trunkPrimary: ["#4E342E", "#3E2723", "#5D4037", "#2E1B17"],
+    hedgeColor: ["#1B5E20", "#124417", "#0D3812"],
+    stonePaver: ["#FAF6EE", "#F5EFE4", "#FFFDF8", "#EFE8DA"],
     stoneBorder: "#D8CDBA",
+    grassColors: ["#33691E", "#3E7B24", "#2E6619"],
     particleColors: ["#4CAF50", "#66BB6A", "#81C784", "#A5D6A7"],
-    accentColor: "#0D3812",
+    accentColor: "#1B5E20",
   },
   spring: {
-    name: "Spring",
-    badge: "🌸 Spring",
+    name: "Sakura Spring",
+    badge: "🌸 Sakura Blossom",
     bgColor: "#FAF5F4",
     paperColor: "#F4ECE9",
-    // Deep cherry rose tones with strong luminance contrast
-    leafPrimary: ["#880E4F", "#780B44", "#9C114E", "#830E4A"],
-    leafHighlight: ["#AD1457", "#C2185B", "#D81B60"],
-    leafShadow: ["#4A052A", "#3B0321", "#30021A"],
-    trunkPrimary: ["#3E2723", "#2E1B17", "#4A2F28", "#241411"],
-    hedgeColor: ["#124417", "#0D3812", "#19541F"],
+    leafPrimary: ["#880E4F", "#7B0B46", "#991158", "#820948"],
+    leafHighlight: ["#AD1457", "#C2185B", "#9F1150", "#8D0F47"],
+    leafShadow: ["#4A052A", "#3B0321", "#30021A", "#260214"],
+    trunkPrimary: ["#4E342E", "#3E2723", "#5D4037", "#2E1B17"],
+    hedgeColor: ["#1B5E20", "#124417"],
     stonePaver: ["#FFFCFB", "#FDF7F5", "#F8EFEA", "#F5E9E4"],
     stoneBorder: "#D8C5BE",
+    grassColors: ["#33691E", "#3E7B24"],
     particleColors: ["#FFB7C5", "#FFCCD5", "#FCE7F3", "#F8BBD0"],
     accentColor: "#880E4F",
   },
   autumn: {
-    name: "Autumn",
-    badge: "🍂 Autumn",
+    name: "Golden Autumn",
+    badge: "🍂 Golden Autumn",
     bgColor: "#F8F3EA",
     paperColor: "#EFE5D5",
-    // Deep maple rust and dark chestnut
-    leafPrimary: ["#7C2D12", "#64220A", "#853112", "#6F260C"],
-    leafHighlight: ["#9A3412", "#B45309", "#C2410C"],
-    leafShadow: ["#431405", "#350F03", "#290A01"],
-    trunkPrimary: ["#3E2723", "#2E1B17", "#4A2F28", "#241411"],
-    hedgeColor: ["#365314", "#2A410E", "#1F3108"],
+    leafPrimary: ["#7C2D12", "#873012", "#9A3412", "#70250E"],
+    leafHighlight: ["#C2410C", "#B45309", "#A6390B", "#933108"],
+    leafShadow: ["#431405", "#350F03", "#290A01", "#210701"],
+    trunkPrimary: ["#4E342E", "#3E2723", "#5D4037", "#2E1B17"],
+    hedgeColor: ["#2A410E", "#1F3108"],
     stonePaver: ["#FFFDF8", "#FAF5EB", "#F4ECDC", "#EFE5D3"],
     stoneBorder: "#C7B89E",
+    grassColors: ["#3E7B24", "#33691E"],
     particleColors: ["#F97316", "#FB923C", "#FBBF24", "#FED7AA"],
     accentColor: "#7C2D12",
-  },
-  satria: {
-    name: "Satria Gold",
-    badge: "🛡️ Satria Gold",
-    bgColor: "#0E1017",
-    paperColor: "#171A24",
-    // Deep obsidian & rich gold for high contrast
-    leafPrimary: ["#78350F", "#652C0A", "#853E0F", "#582507"],
-    leafHighlight: ["#A16207", "#B45309", "#CA8A04"],
-    leafShadow: ["#3B1402", "#2B0F01", "#1E0900"],
-    trunkPrimary: ["#0C0A09", "#060504", "#1C1917", "#000000"],
-    hedgeColor: ["#78350F", "#652C0A", "#853E0F"],
-    stonePaver: ["#141822", "#181D29", "#1D2332", "#10141C"],
-    stoneBorder: "#3F4860",
-    particleColors: ["#FDE047", "#FACC15", "#EAB308", "#60A5FA"],
-    accentColor: "#FACC15",
   },
 };
 
@@ -110,10 +93,10 @@ function pickRandom<T>(arr: T[], hashVal: number): T {
   return arr[idx];
 }
 
-// Generate QR Code 2D Matrix
+// Generate QR Code 2D Matrix with Error Correction M (matching tree.icqr.com for ideal 29x29 modular grid)
 export function generateQrMatrix(text: string): { matrix: number[][]; size: number } {
   try {
-    const qr = QRCode.create(text, { errorCorrectionLevel: "H" });
+    const qr = QRCode.create(text, { errorCorrectionLevel: "M" });
     const size = qr.modules.size;
     const matrix: number[][] = [];
     for (let r = 0; r < size; r++) {
@@ -160,17 +143,22 @@ export function getFinderRole(r: number, c: number, size: number): "hedge" | "wa
 }
 
 /**
- * Generate 3D Voxels for the Magic Tree (ICQR reference replica)
- * GUARANTEES:
- * 1. 100% Smartphone Camera Scannability:
- *    - 4-module clean light quiet zone on all 4 sides with ZERO random dots or tufts.
- *    - Every dark QR module has a base solid tile at Y=0.04 to guarantee 100% opacity from above.
- *    - Finder patterns follow the exact 1:1:3:1:1 standard.
- * 2. Fine, delicate foliage:
- *    - Leaves use sub-voxel clusters of size 0.44 with organic highlights and shadows.
- *    - Dense cloud canopy, NOT chunky giant Minecraft blocks!
- * 3. Anti-clipping:
- *    - Compact, balanced bounds centered at origin.
+ * Generate 3D Voxels for the Tall Majestic Magic Tree (tree.icqr.com replica)
+ *
+ * ARCHITECTURAL PRINCIPLES:
+ * 1. Modular QR Voxel Cubes ("Kotak-kotak QR code yang menjadi basic"):
+ *    - Distinct, crisp cube blocks (size 0.96) aligned on the QR grid.
+ *    - Each column of leaf cubes corresponds directly to an active dark module of the QR code!
+ * 2. Tall, Soaring Tree Architecture ("Pohon Dibuat Lebih Tinggi"):
+ *    - Central trunk rises tall and proud from Y=1 to Y=16 through open air.
+ *    - Canopy starts high at Y=16 and arches up to Y=38..42.
+ *    - Underneath the canopy, the space is wide open, revealing the stone courtyard terrace and trunk.
+ * 3. Proportional Canopy ("Tidak Terlalu Rimbun"):
+ *    - Elevated leaf canopy is strictly confined to radius = size * 0.44 around the tree center.
+ *    - Modules outside this radius (including the 3 corner finder patterns) sit cleanly on the ground courtyard.
+ * 4. 100% Smartphone Camera Scannability:
+ *    - Every single voxel has integer (x, z) coordinates matching its QR cell. Zero bleed into white cells.
+ *    - In Top-Down view, the orthographic projection produces a mathematically pristine, high-contrast QR code.
  */
 export function generateVoxelTree(
   matrix: number[][],
@@ -181,10 +169,15 @@ export function generateVoxelTree(
   const voxels: VoxelItem[] = [];
 
   const center = (size - 1) / 2;
-  const quietZone = 4; // ISO/IEC standard 4-module quiet margin
-  const subSize = 0.45; // Sub-voxel size (half of 1 QR module)
+  const quietZone = 4; // Standard 4-module quiet margin
 
-  // 1. GROUND COURTYARD TERRACE (Clean light stone pavers & quiet margin)
+  const scale = size / 29;
+  const trunkHeight = Math.round(22 * scale); // Tall, majestic trunk (22 blocks high)
+  const canopyRadius = size * 0.40; // Proportional tree crown centered over courtyard
+  const canopyRadiusSq = canopyRadius * canopyRadius;
+  const maxCanopyLayers = Math.round(15 * scale);
+
+  // 1. GROUND COURTYARD TERRACE & PERIMETER
   for (let r = -quietZone; r < size + quietZone; r++) {
     for (let c = -quietZone; c < size + quietZone; c++) {
       const x = c - center;
@@ -198,264 +191,175 @@ export function generateVoxelTree(
         c === -quietZone ||
         c === size + quietZone - 1;
 
-      // Base floor stone paver at Y = 0
+      // Base stone paver at Y = 0
       const paverColor = pickRandom(theme.stonePaver, h);
       voxels.push({
         x,
         y: 0,
         z,
-        size: 0.96,
+        size: 0.98,
         color: isPerimeter ? theme.stoneBorder : paverColor,
         role: isPerimeter ? "border" : "stone",
         isQrDark: false,
       });
 
-      // Curb stone border around courtyard perimeter (smooth and clean, NO random black dots)
+      // Curb border & decorative grass tufts along the courtyard perimeter
       if (isPerimeter) {
         voxels.push({
           x,
           y: 0.35,
           z,
-          size: 0.96,
+          size: 0.98,
           color: theme.stoneBorder,
           role: "border",
         });
-      }
 
-      // If inside QR grid
-      if (isInsideQr) {
-        const isDark = matrix[r][c] === 1;
-        const finder = getFinderRole(r, c, size);
-
-        // For every dark module, place a solid dark base tile at Y=0.04 to guarantee 100% QR scannability from above
-        if (isDark) {
+        if (h > 0.4) {
           voxels.push({
             x,
-            y: 0.04,
+            y: 0.75,
             z,
-            size: 1.02,
-            color: theme.leafPrimary[0],
-            role: "leaf",
+            size: 0.45,
+            color: pickRandom(theme.grassColors, h),
+            role: "grass",
+          });
+        }
+      }
+
+      // Base dark tile on courtyard floor for QR modules (vital for 100% top-down QR scan)
+      if (isInsideQr && matrix[r][c] === 1) {
+        const distSq = x * x + z * z;
+        const isFinder = isFinderPattern(r, c, size);
+
+        let floorDarkColor = theme.leafShadow[0];
+        if (isFinder) {
+          floorDarkColor = theme.leafShadow[0];
+        } else if (distSq >= canopyRadiusSq) {
+          // Outside canopy: decorative mossy paving stone / clipped hedge tile
+          floorDarkColor = theme.hedgeColor[0] || theme.leafPrimary[0];
+        } else {
+          // Inside canopy: fallen leaf shadows on stone
+          floorDarkColor = theme.leafShadow[0];
+        }
+
+        voxels.push({
+          x,
+          y: 0.04,
+          z,
+          size: 0.98,
+          color: floorDarkColor,
+          role: "leaf",
+          isQrDark: true,
+        });
+      }
+    }
+  }
+
+  // 2. CORNER FINDER PATTERNS (Low Elegant Courtyard Garden Monuments)
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (matrix[r][c] === 1 && isFinderPattern(r, c, size)) {
+        const x = c - center;
+        const z = r - center;
+        const finderRole = getFinderRole(r, c, size);
+        const h = coordHash(x, z, 55);
+
+        if (finderRole === "hedge") {
+          // 7x7 outer square: neat low garden hedge planter
+          voxels.push({
+            x,
+            y: 0.45,
+            z,
+            size: 0.96,
+            color: pickRandom(theme.hedgeColor, h),
+            role: "hedge",
+            isQrDark: true,
+          });
+        } else if (finderRole === "flower") {
+          // 3x3 inner square: decorative stone pedestal & garden monument
+          voxels.push({
+            x,
+            y: 0.5,
+            z,
+            size: 0.96,
+            color: theme.leafShadow[0],
+            role: "flower",
+            isQrDark: true,
+          });
+          voxels.push({
+            x,
+            y: 0.9,
+            z,
+            size: 0.96,
+            color: pickRandom(theme.leafHighlight, h),
+            role: "flower",
             isQrDark: true,
           });
         }
+      }
+    }
+  }
 
-        // 2. FINDER PATTERNS (Manicured garden hedge frames)
-        if (finder === "hedge" || finder === "flower") {
-          // 2x2 sub-voxels for refined, crisp hedge geometry
-          const offsets = [-0.25, 0.25];
-          for (const ox of offsets) {
-            for (const oz of offsets) {
-              const subH = coordHash(x + ox, z + oz, 31);
-              const hedgeColor =
-                finder === "flower"
-                  ? theme.accentColor
-                  : pickRandom(theme.hedgeColor, subH);
+  // 3. TALL MAJESTIC TRUNK WITH ROOT FLARE & CONNECTING BRANCHES
+  // Visible through the wide-open air (Y=1 to Y=26) under the elevated canopy!
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (matrix[r][c] === 1) {
+        const x = c - center;
+        const z = r - center;
+        const distSq = x * x + z * z;
+        const dist = Math.sqrt(distSq);
+        const isFinder = isFinderPattern(r, c, size);
+        if (isFinder) continue;
 
-              voxels.push({
-                x: x + ox,
-                y: 0.5,
-                z: z + oz,
-                size: subSize,
-                color: hedgeColor,
-                role: finder === "flower" ? "flower" : "hedge",
-                isQrDark: true,
-              });
-              voxels.push({
-                x: x + ox,
-                y: 1.0,
-                z: z + oz,
-                size: subSize,
-                color:
-                  finder === "flower"
-                    ? theme.accentColor
-                    : pickRandom(theme.leafHighlight, subH),
-                role: finder === "flower" ? "flower" : "hedge",
-                isQrDark: true,
-              });
-            }
-          }
-        } else if (isDark && !isFinderPattern(r, c, size)) {
-          // 3. TREE CANOPY & TRUNK (The data modules)
-          const dist = Math.hypot(x, z);
-          const maxDist = center * 1.35;
-          const normDist = Math.min(1, dist / maxDist);
-
-          // Natural dome canopy height profile: Center height ~14..18, slopes gracefully to ~4..6
-          const domeHeight = Math.max(
-            3.5,
-            14 * Math.cos(normDist * (Math.PI / 2.2)) + (h - 0.5) * 2.8
-          );
-
-          // Center trunk area (dist <= 3.0): Wood voxels going up from floor
-          const isTrunkColumn = dist <= 3.0;
-          if (isTrunkColumn) {
-            const trunkH = Math.min(domeHeight - 1, 9);
-            for (let ty = 0.5; ty <= trunkH; ty += 0.5) {
-              const trunkOffsets = [-0.25, 0.25];
-              for (const ox of trunkOffsets) {
-                for (const oz of trunkOffsets) {
-                  voxels.push({
-                    x: x + ox,
-                    y: ty,
-                    z: z + oz,
-                    size: subSize,
-                    color: pickRandom(theme.trunkPrimary, coordHash(x + ox + ty, z + oz, 202)),
-                    role: "trunk",
-                    isQrDark: true,
-                  });
-                }
-              }
-            }
-          }
-
-          // Branch scaffolds for mid-distance (3.0 < dist <= 7.0)
-          if (!isTrunkColumn && dist <= 7.0 && h > 0.45) {
-            const branchY = Math.round(domeHeight * 0.45);
+        // Flared root base at ground level (Y = 1..3, radius up to 3.2 modules)
+        if (distSq <= 10.5) {
+          for (let ty = 1; ty <= 3; ty++) {
+            const h = coordHash(x, z, ty * 19);
+            const rootColor = pickRandom(theme.trunkPrimary, h);
             voxels.push({
               x,
-              y: branchY,
+              y: ty,
               z,
-              size: subSize * 1.4,
-              color: pickRandom(theme.trunkPrimary, h),
-              role: "branch",
+              size: 0.96,
+              color: rootColor,
+              role: "trunk",
               isQrDark: true,
             });
           }
+        }
 
-          // Canopy Foliage: 2x2 fine sub-voxels for delicate, dense leaves!
-          const subOffsets = [-0.25, 0.25];
-          for (const ox of subOffsets) {
-            for (const oz of subOffsets) {
-              const subH = coordHash(x + ox, z + oz, 404);
-              const leafThickness = isTrunkColumn ? 3.5 : subH > 0.5 ? 2.5 : 1.5;
-              const topY = domeHeight + (subH - 0.5) * 1.2;
-              const bottomY = Math.max(1.0, topY - leafThickness);
-
-              for (let ly = bottomY; ly <= topY; ly += 0.5) {
-                let leafColor: string;
-                if (ly >= topY - 0.5) {
-                  leafColor = pickRandom(theme.leafHighlight, coordHash(x + ox, z + oz + ly, 303));
-                } else if (ly <= bottomY + 0.5) {
-                  leafColor = pickRandom(theme.leafShadow, coordHash(x + ox + ly, z + oz, 404));
-                } else {
-                  leafColor = pickRandom(theme.leafPrimary, coordHash(x + ox, z + oz, 505));
-                }
-
-                voxels.push({
-                  x: x + ox,
-                  y: ly,
-                  z: z + oz,
-                  size: subSize,
-                  color: leafColor,
-                  role: "leaf",
-                  isQrDark: true,
-                });
-              }
-            }
+        // Tall main trunk column rising through open air (Y = 4 up to trunkHeight)
+        if (distSq <= 6.5) {
+          for (let ty = 4; ty < trunkHeight; ty++) {
+            const h = coordHash(x, z, ty * 17);
+            const trunkColor = pickRandom(theme.trunkPrimary, h);
+            voxels.push({
+              x,
+              y: ty,
+              z,
+              size: 0.96,
+              color: trunkColor,
+              role: "trunk",
+              isQrDark: true,
+            });
           }
         }
-      }
-    }
-  }
 
-  return voxels;
-}
-
-/**
- * Generate 3D Voxels for the Satria / Gatotkaca Warrior Statue Mode
- * Uses the authentic 4,801 pixels extracted from pixel/README.md.png (Gatotkaca sprite)
- * Renders the hero standing majestically on an ancient Nusantara temple plinth (Candi batu hitam & emas).
- * In 3D: full 3D statue with armor extrusion, winged crown, star emblem, and flowing ponytail!
- * In QR: high-contrast royal gold and obsidian scannable QR code!
- */
-export function generateVoxelSatria(
-  matrix: number[][],
-  size: number,
-  season: SeasonType = "satria"
-): VoxelItem[] {
-  const theme = SEASONS[season];
-  const voxels: VoxelItem[] = [];
-
-  const center = (size - 1) / 2;
-  const quietZone = 4;
-
-  // 1. ANCIENT TEMPLE STONE PLINTH (Candi Base)
-  for (let r = -quietZone; r < size + quietZone; r++) {
-    for (let c = -quietZone; c < size + quietZone; c++) {
-      const x = c - center;
-      const z = r - center;
-      const h = coordHash(x, z, 77);
-
-      const isInsideQr = r >= 0 && r < size && c >= 0 && c < size;
-      const isPerimeter =
-        r === -quietZone ||
-        r === size + quietZone - 1 ||
-        c === -quietZone ||
-        c === size + quietZone - 1;
-
-      // Base temple stone floor at Y = 0
-      voxels.push({
-        x,
-        y: 0,
-        z,
-        size: 0.96,
-        color: isPerimeter ? theme.stoneBorder : pickRandom(theme.stonePaver, h),
-        role: "stone",
-        isQrDark: false,
-      });
-
-      if (isPerimeter) {
-        // Gold-embossed perimeter curb
-        voxels.push({
-          x,
-          y: 0.35,
-          z,
-          size: 0.96,
-          color: theme.accentColor,
-          role: "border",
-        });
-      }
-
-      // If inside QR grid
-      if (isInsideQr) {
-        const isDark = matrix[r][c] === 1;
-        const finder = getFinderRole(r, c, size);
-
-        // Solid base tile for 100% QR scannability from above
-        if (isDark) {
-          voxels.push({
-            x,
-            y: 0.04,
-            z,
-            size: 1.02,
-            color: finder === "flower" ? "#FACC15" : "#CA8A04",
-            role: "satria",
-            isQrDark: true,
-          });
-        }
-
-        if (finder === "hedge" || finder === "flower") {
-          // Gold & Obsidian Finder shrines
-          const offsets = [-0.25, 0.25];
-          for (const ox of offsets) {
-            for (const oz of offsets) {
+        // Spreading diagonal branch arms at the very top of trunk (Y = trunkHeight - 3 to trunkHeight)
+        // connecting the trunk seamlessly into the canopy without cluttering the air below
+        if (dist >= 1.5 && dist <= 5.5 && distSq <= 30.5) {
+          const branchStart = trunkHeight - 3;
+          for (let by = branchStart; by < trunkHeight; by++) {
+            const h = coordHash(x, z, by * 23);
+            if (h > 0.25) {
               voxels.push({
-                x: x + ox,
-                y: 0.5,
-                z: z + oz,
-                size: 0.45,
-                color: finder === "flower" ? "#FEF08A" : "#CA8A04",
-                role: "satria",
-                isQrDark: true,
-              });
-              voxels.push({
-                x: x + ox,
-                y: 1.0,
-                z: z + oz,
-                size: 0.45,
-                color: finder === "flower" ? "#FACC15" : "#EAB308",
-                role: "satria",
+                x,
+                y: by,
+                z,
+                size: 0.92,
+                color: pickRandom(theme.trunkPrimary, h),
+                role: "branch",
                 isQrDark: true,
               });
             }
@@ -465,206 +369,63 @@ export function generateVoxelSatria(
     }
   }
 
-  // 2. THE MAJESTIC 3D VOXEL GATOTKACA HERO STATUE (Goxel / MagicaVoxel 3D Sculpture)
-  // Transforms the authentic 2D pixel sprite into a full 3D volumetric character:
-  // - 3D Muscular Torso & Embossed Bintang Antakusuma chest star
-  // - 3D Rounded Arms, Shoulders (Kelat Bahu), Gauntlets (Brajamusti)
-  // - 3D Head, Face, Crown (Makuta Kasatriyan) & Rear Garuda Mungkur Crest
-  // - 3D Golden Flying Wings (Sayap Praba / Sayap Antakusuma) arching backward
-  // - 3D Royal Belt (Timang), Floating Red Sash (Sampur), and Blue Dodot folds
-  // - 3D Leg Stance (Kuda-kuda) firmly planted with Sandals & Gold Ankle Rings (Binggel)
-  const scale = 0.22; // Scale factor for 64x124 sprite into ~27 unit tall statue
-  const statueBaseY = 1.0; // Sits on top of the temple plinth
+  // 4. ELEVATED CANOPY LEAF CUBES (Lush Bonsai Cloud Crown)
+  // Cleanly elevated in the sky (Y = 27 to Y = 46), sightline to trunk is completely open!
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (matrix[r][c] === 1 && !isFinderPattern(r, c, size)) {
+        const x = c - center;
+        const z = r - center;
+        const distSq = x * x + z * z;
+        const dist = Math.sqrt(distSq);
 
-  const shadeColor = (hex: string, factor: number): string => {
-    let c = hex.replace("#", "");
-    if (c.length === 3) c = c.split("").map((x) => x + x).join("");
-    const num = parseInt(c, 16);
-    if (isNaN(num)) return hex;
-    const r = Math.min(255, Math.max(0, Math.floor(((num >> 16) & 255) * factor)));
-    const g = Math.min(255, Math.max(0, Math.floor(((num >> 8) & 255) * factor)));
-    const b = Math.min(255, Math.max(0, Math.floor((num & 255) * factor)));
-    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-  };
+        // ONLY modules inside canopy radius become elevated tree canopy!
+        // This keeps the tree majestic and prevents it from overgrowing the courtyard ("tidak terlalu rimbun")
+        if (distSq < canopyRadiusSq) {
+          const normDist = dist / canopyRadius; // 0 at center, 1 at edge
+          const dome = Math.sqrt(Math.max(0, 1 - normDist * normDist)); // Hemispherical rounded dome
 
-  for (const p of GATOTKACA_PIXELS) {
-    const x = p.x;
-    const y = p.y;
-    const color = p.color;
-    const colorLower = color.toLowerCase();
+          // Underbelly is elevated flat at center and curves gently upward towards perimeter
+          // leaving the view to the trunk and courtyard completely open
+          const baseCanopyY = trunkHeight + Math.round(2.0 * Math.pow(normDist, 1.4));
 
-    // Determine anatomical depth bounds [zMin, zMax] in integer voxel steps
-    let zMin = 0;
-    let zMax = 0;
+          // Hemispherical crown thickness: center has 14-15 layers, edge has 3-4 layers
+          const numLayers = Math.max(3, Math.round(maxCanopyLayers * (0.24 + 0.76 * dome)));
 
-    if (y >= 88) {
-      // Head, Face & Crown
-      const dx = x - 2;
-      if (Math.abs(dx) <= 8) {
-        const r = Math.sqrt(Math.max(0, 64 - dx * dx)) / 8;
-        zMin = -Math.round(r * 4.5);
-        zMax = Math.round(r * 3.5);
-        // Nose bridge protrusion
-        if (y >= 98 && y <= 103 && x >= 0 && x <= 4) {
-          zMax += 2;
+          // Subtle organic crown variation
+          const extraCrown = Math.floor(2.0 * coordHash(x, z, 333) * dome);
+          const totalLayers = numLayers + extraCrown;
+
+          // Stack discrete cubic voxel blocks ("kotak-kotak QR code yang menjadi basic")
+          for (let l = 0; l < totalLayers; l++) {
+            const y = baseCanopyY + l;
+            const relH = l / totalLayers;
+            const h = coordHash(x, z, l * 31);
+
+            let leafColor: string;
+            if (relH > 0.72) {
+              // Top sunlit crown highlight
+              leafColor = pickRandom(theme.leafHighlight, h);
+            } else if (relH > 0.22) {
+              // Mid-canopy vibrant primary foliage
+              leafColor = pickRandom(theme.leafPrimary, h);
+            } else {
+              // Deep canopy underside shadow
+              leafColor = pickRandom(theme.leafShadow, h);
+            }
+
+            voxels.push({
+              x,
+              y,
+              z,
+              size: 0.96,
+              color: leafColor,
+              role: "leaf",
+              isQrDark: true,
+            });
+          }
         }
-      } else {
-        // Ear sumping flaring slightly
-        zMin = -1;
-        zMax = 1;
       }
-    } else if (y >= 58) {
-      // Torso, Chest, Shoulders & Arms
-      if (Math.abs(x) <= 15) {
-        // Muscular chest volume
-        const r = Math.sqrt(Math.max(0, 225 - x * x)) / 15;
-        zMin = -Math.round(r * 4.5);
-        zMax = Math.round(r * 4.0);
-
-        // Gold Star emblem (Kotang Antakusuma) bold 3D relief
-        if (
-          y >= 68 &&
-          y <= 84 &&
-          Math.abs(x) <= 9 &&
-          (colorLower.includes("ea") ||
-            colorLower.includes("bc") ||
-            colorLower.includes("fe") ||
-            colorLower.includes("fa") ||
-            colorLower.includes("f0") ||
-            colorLower.includes("c8"))
-        ) {
-          zMax += 2;
-        }
-      } else {
-        // Shoulders & Arms (cylindrical cross-section)
-        const armCenter = x < 0 ? -23 : 23;
-        const dx = x - armCenter;
-        const r = Math.sqrt(Math.max(0, 20 - dx * dx));
-        zMin = -Math.round(r * 0.9);
-        zMax = Math.round(r * 0.9);
-      }
-    } else if (y >= 35) {
-      // Waist, Belt, Dodot & Hands
-      if (Math.abs(x) <= 14) {
-        const r = Math.sqrt(Math.max(0, 196 - x * x)) / 14;
-        zMin = -Math.round(r * 3.8);
-        zMax = Math.round(r * 3.8);
-
-        // Red sash (Sampur) floats forward in front
-        if (
-          Math.abs(x) <= 6 &&
-          (colorLower.includes("b1302c") ||
-            colorLower.includes("7e1b1b") ||
-            colorLower.includes("d94541"))
-        ) {
-          zMax += 2;
-        }
-      } else {
-        // Hands & Gauntlets (Brajamusti)
-        const handCenter = x < 0 ? -25 : 25;
-        const dx = x - handCenter;
-        const r = Math.sqrt(Math.max(0, 14 - dx * dx));
-        zMin = -Math.round(r);
-        zMax = Math.round(r);
-      }
-    } else {
-      // Legs & Feet (Stance / Kuda-kuda)
-      const legCenter = x < 0 ? -17 : 17;
-      const dx = x - legCenter;
-      const r = Math.sqrt(Math.max(0, 25 - dx * dx));
-      zMin = -Math.round(r * 0.9);
-      zMax = Math.round(r * 0.9);
-
-      // Feet on ground extend forward for solid grounding
-      if (y <= 4) {
-        zMax = Math.max(zMax, 3);
-        zMin = Math.min(zMin, -2);
-      }
-    }
-
-    // Populate 3D voxels across [zMin, zMax]
-    for (let z = zMin; z <= zMax; z += 1) {
-      let vColor = color;
-
-      if (z === zMax) {
-        // Front shell: pristine sprite color
-        vColor = color;
-      } else if (z === zMin && zMin < zMax) {
-        // Back shell: realistic back armor, hair, and clothing
-        if (y >= 90) {
-          vColor = "#151415"; // Back of head hair
-        } else if (y >= 58 && Math.abs(x) <= 14) {
-          vColor = Math.abs(x) <= 2 ? "#C89F39" : "#1B1A1B"; // Spinal gold strap or black plate
-        } else if (y < 35) {
-          vColor = "#1B1A1B"; // Dark pants
-        } else {
-          vColor = shadeColor(color, 0.72);
-        }
-      } else {
-        // Core & side flanks: rich ambient occlusion shading
-        vColor = shadeColor(color, 0.85);
-      }
-
-      voxels.push({
-        x: x * scale,
-        y: statueBaseY + y * scale,
-        z: z * scale,
-        size: scale * 1.04,
-        color: vColor,
-        role: "satria",
-        isQrDark: true,
-      });
-    }
-  }
-
-  // 3. 3D WAYANG WINGS (Sayap Praba / Sayap Antakusuma)
-  // Gatotkaca has golden wings on his back that arch backward and outward!
-  for (let wy = 65; wy <= 104; wy += 2) {
-    const progress = (wy - 65) / 39;
-    const wingSpan = 14 + Math.sin(progress * Math.PI) * 16;
-    const wingZ = -2.5 - progress * 3;
-
-    for (let wx = 14; wx <= wingSpan; wx += 2) {
-      const isTip = wx >= wingSpan - 3;
-      const wColor = isTip ? "#F0C857" : wx % 4 === 0 ? "#C89F39" : "#BC891F";
-
-      // Right Wing
-      voxels.push({
-        x: wx * scale,
-        y: statueBaseY + wy * scale,
-        z: wingZ * scale,
-        size: scale * 1.8,
-        color: wColor,
-        role: "satria",
-        isQrDark: true,
-      });
-
-      // Left Wing (Mirror)
-      voxels.push({
-        x: -wx * scale,
-        y: statueBaseY + wy * scale,
-        z: wingZ * scale,
-        size: scale * 1.8,
-        color: wColor,
-        role: "satria",
-        isQrDark: true,
-      });
-    }
-  }
-
-  // 4. GARUDA MUNGKUR CREST (Back of the royal crown)
-  for (let gy = 100; gy <= 112; gy += 2) {
-    const gz = -4 - (gy - 100) * 0.3;
-    for (let gx = -1; gx <= 5; gx += 2) {
-      voxels.push({
-        x: gx * scale,
-        y: statueBaseY + gy * scale,
-        z: gz * scale,
-        size: scale * 1.6,
-        color: "#FACC15",
-        role: "satria",
-        isQrDark: true,
-      });
     }
   }
 
@@ -681,9 +442,9 @@ export function generateParticles(count = 65, season: SeasonType = "summer") {
     particles.push({
       id: i,
       x: (Math.random() - 0.5) * 32,
-      y: 4 + Math.random() * 18,
+      y: 8 + Math.random() * 26,
       z: (Math.random() - 0.5) * 32,
-      speed: 0.02 + Math.random() * 0.04,
+      speed: 0.015 + Math.random() * 0.035,
       swaySpeed: 1 + Math.random() * 1.5,
       swayPhase: Math.random() * Math.PI * 2,
       color: theme.particleColors[i % theme.particleColors.length],
@@ -701,7 +462,7 @@ export function exportVoxelsToJson(voxels: VoxelItem[], metadata: { title: strin
     {
       format: "goxel-compatible-voxels",
       version: "1.0.0",
-      generator: "official.id 3D Voxel Engine",
+      generator: "official.id 3D Voxel Magic Tree Engine",
       created: new Date().toISOString(),
       metadata,
       voxelCount: voxels.length,

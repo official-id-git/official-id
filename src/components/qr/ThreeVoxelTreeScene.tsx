@@ -8,15 +8,12 @@ import {
   SeasonType,
   SEASONS,
   generateVoxelTree,
-  generateVoxelSatria,
   generateQrMatrix,
-  ModelStyleType,
 } from "@/lib/voxel-tree-generator";
 
 interface ThreeVoxelTreeSceneProps {
   url: string;
   season: SeasonType;
-  modelStyle: ModelStyleType;
   viewMode: "3d" | "qr";
   onViewModeToggle: () => void;
   onSceneReady?: (exporter: {
@@ -28,12 +25,12 @@ interface ThreeVoxelTreeSceneProps {
 export default function ThreeVoxelTreeScene({
   url,
   season,
-  modelStyle,
   viewMode,
   onViewModeToggle,
   onSceneReady,
 }: ThreeVoxelTreeSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasMountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
@@ -54,6 +51,15 @@ export default function ThreeVoxelTreeScene({
     }>
   >([]);
 
+  // Wind animation shader uniforms ref
+  const windUniformsRef = useRef<{
+    uTime: { value: number };
+    uWind: { value: number };
+  }>({
+    uTime: { value: 0 },
+    uWind: { value: 1.0 },
+  });
+
   const animFrameRef = useRef<number | null>(null);
   const [voxelCount, setVoxelCount] = useState<number>(0);
 
@@ -71,19 +77,19 @@ export default function ThreeVoxelTreeScene({
   const targetUpRef = useRef<THREE.Vector3>(new THREE.Vector3());
 
   // Base camera coordinates
-  // 3D Isometric View: looking at (0, 7, 0) from an elevated 45° angle with ample breathing room
-  const POS_3D = new THREE.Vector3(50, 58, 50);
-  const TARGET_3D = new THREE.Vector3(0, 7, 0);
+  // 3D Isometric View: Elegant ~25° elevation angle targeting tree core (Y=18)
+  const POS_3D = new THREE.Vector3(52, 46, 52);
+  const TARGET_3D = new THREE.Vector3(0, 18, 0);
   const UP_3D = new THREE.Vector3(0, 1, 0);
 
   // Top-Down QR Code Scan View: looking straight down at (0, 0, 0)
   // UP vector must be (0, 0, -1) so QR code is perfectly upright on screen
-  const POS_QR = new THREE.Vector3(0, 80, 0);
+  const POS_QR = new THREE.Vector3(0, 95, 0);
   const TARGET_QR = new THREE.Vector3(0, 0, 0);
   const UP_QR = new THREE.Vector3(0, 0, -1);
 
-  // Base Frustum size: generous to ensure NO CLIPPING by the frame in 3D mode
-  const BASE_FRUSTUM = 58;
+  // Base Frustum size: generous to ensure NO CLIPPING of the tall tree in 3D mode
+  const BASE_FRUSTUM = 72;
 
   const easeInOutCubic = (t: number) =>
     t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -118,6 +124,8 @@ export default function ThreeVoxelTreeScene({
     camera.position.copy(viewMode === "3d" ? POS_3D : POS_QR);
     camera.up.copy(viewMode === "3d" ? UP_3D : UP_QR);
     camera.lookAt(viewMode === "3d" ? TARGET_3D : TARGET_QR);
+    camera.zoom = viewMode === "qr" ? 1.65 : 0.92;
+    camera.updateProjectionMatrix();
     cameraRef.current = camera;
 
     // 3. WebGL Renderer
@@ -133,17 +141,17 @@ export default function ThreeVoxelTreeScene({
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
 
-    while (container.firstChild) {
-      container.removeChild(container.firstChild);
+    const mount = canvasMountRef.current;
+    if (mount) {
+      mount.replaceChildren(renderer.domElement);
     }
-    container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
     // 4. OrbitControls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
-    controls.maxPolarAngle = Math.PI / 2.05; // Keep above ground plinth
+    controls.maxPolarAngle = Math.PI / 2.05; // Keep above ground terrace
     controls.minZoom = 0.4;
     controls.maxZoom = 3.5;
     controls.target.copy(viewMode === "3d" ? TARGET_3D : TARGET_QR);
@@ -151,7 +159,7 @@ export default function ThreeVoxelTreeScene({
     controlsRef.current = controls;
 
     // 5. Lighting
-    const ambientLight = new THREE.AmbientLight(0xfffaed, 1.3);
+    const ambientLight = new THREE.AmbientLight(0xfffaed, 1.4);
     scene.add(ambientLight);
 
     const dirLight = new THREE.DirectionalLight(0xfff7e6, 2.2);
@@ -159,46 +167,56 @@ export default function ThreeVoxelTreeScene({
       dirLight.position.set(0, 100, 0);
       dirLight.castShadow = false;
     } else {
-      dirLight.position.set(40, 75, 35);
+      dirLight.position.set(45, 90, 40);
       dirLight.castShadow = true;
     }
     dirLight.shadow.mapSize.width = 2048;
     dirLight.shadow.mapSize.height = 2048;
-    dirLight.shadow.camera.near = 0.5;
-    dirLight.shadow.camera.far = 200;
-    const d = 36;
-    dirLight.shadow.camera.left = -d;
-    dirLight.shadow.camera.right = d;
-    dirLight.shadow.camera.top = d;
-    dirLight.shadow.camera.bottom = -d;
-    dirLight.shadow.bias = -0.0004;
+    dirLight.shadow.camera.near = 10;
+    dirLight.shadow.camera.far = 240;
+    const shadowD = 52;
+    dirLight.shadow.camera.left = -shadowD;
+    dirLight.shadow.camera.right = shadowD;
+    dirLight.shadow.camera.top = shadowD;
+    dirLight.shadow.camera.bottom = -shadowD;
+    dirLight.shadow.bias = -0.0005;
     scene.add(dirLight);
     dirLightRef.current = dirLight;
 
-    const fillLight = new THREE.DirectionalLight(0xdbeafe, 0.7);
-    fillLight.position.set(-30, 35, -30);
-    scene.add(fillLight);
-
-    // 6. Falling Petal / Sparkle Particles
-    const particleCount = 65;
-    const particleGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
-    const particleMat = new THREE.MeshLambertMaterial();
-    const particleMesh = new THREE.InstancedMesh(particleGeo, particleMat, particleCount);
-    particleMesh.castShadow = true;
+    // 6. Floating Particles (Falling leaves / Sakura petals)
+    const particleGeo = new THREE.BoxGeometry(0.3, 0.08, 0.3);
+    const particleMat = new THREE.MeshStandardMaterial({
+      roughness: 0.8,
+      metalness: 0.05,
+    });
+    const particleMesh = new THREE.InstancedMesh(particleGeo, particleMat, 65);
+    particleMesh.castShadow = false;
+    particleMesh.receiveShadow = false;
+    particleMesh.visible = viewMode === "3d";
     scene.add(particleMesh);
     particlesMeshRef.current = particleMesh;
 
-    const pData = [];
-    for (let i = 0; i < particleCount; i++) {
-      const color = new THREE.Color(
-        theme.particleColors[i % theme.particleColors.length]
+    const pData: Array<{
+      x: number;
+      y: number;
+      z: number;
+      speed: number;
+      swaySpeed: number;
+      phase: number;
+      rx: number;
+      ry: number;
+    }> = [];
+
+    for (let i = 0; i < 65; i++) {
+      particleMesh.setColorAt(
+        i,
+        new THREE.Color(theme.particleColors[i % theme.particleColors.length])
       );
-      particleMesh.setColorAt(i, color);
       pData.push({
         x: (Math.random() - 0.5) * 32,
-        y: 2 + Math.random() * 20,
+        y: 4 + Math.random() * 22,
         z: (Math.random() - 0.5) * 32,
-        speed: 0.02 + Math.random() * 0.04,
+        speed: 0.015 + Math.random() * 0.035,
         swaySpeed: 1 + Math.random() * 1.5,
         phase: Math.random() * Math.PI * 2,
         rx: Math.random() * Math.PI,
@@ -242,13 +260,24 @@ export default function ThreeVoxelTreeScene({
     }
 
     // Animation Loop
-    let lastTime = performance.now();
     const dummy = new THREE.Object3D();
 
     const animate = () => {
       animFrameRef.current = requestAnimationFrame(animate);
       const now = performance.now();
-      lastTime = now;
+      const timeInSec = now * 0.001;
+
+      // Update Wind Shader Uniforms
+      if (windUniformsRef.current) {
+        windUniformsRef.current.uTime.value = timeInSec;
+        // In 3D: wind = 1.0 (leaves sway in breeze). In QR: smoothly lerp to 0.0 for instant camera scan!
+        const targetWind = viewMode === "3d" ? 1.0 : 0.0;
+        windUniformsRef.current.uWind.value = THREE.MathUtils.lerp(
+          windUniformsRef.current.uWind.value,
+          targetWind,
+          0.06
+        );
+      }
 
       // Smooth Camera Transition between 3D and Top-Down QR
       if (isTransitioningRef.current && cameraRef.current && controlsRef.current) {
@@ -291,7 +320,7 @@ export default function ThreeVoxelTreeScene({
           const p = data[i];
           p.y -= p.speed;
           if (p.y < 0.2) {
-            p.y = 18 + Math.random() * 4;
+            p.y = 20 + Math.random() * 4;
             p.x = (Math.random() - 0.5) * 32;
             p.z = (Math.random() - 0.5) * 32;
           }
@@ -326,6 +355,7 @@ export default function ThreeVoxelTreeScene({
       }
       controls.dispose();
       renderer.dispose();
+      canvasMountRef.current?.replaceChildren();
     };
   }, []);
 
@@ -348,7 +378,7 @@ export default function ThreeVoxelTreeScene({
     }
   }, [season]);
 
-  // Re-generate Voxels when URL, Season, or ModelStyle changes
+  // Re-generate Tree Voxels when URL or Season changes
   useEffect(() => {
     if (!sceneRef.current) return;
     const scene = sceneRef.current;
@@ -364,22 +394,53 @@ export default function ThreeVoxelTreeScene({
     // 1. Generate QR matrix
     const { matrix, size } = generateQrMatrix(url);
 
-    // 2. Generate 3D Voxel Array
-    let voxels: VoxelItem[];
-    if (modelStyle === "satria") {
-      voxels = generateVoxelSatria(matrix, size, season);
-    } else {
-      voxels = generateVoxelTree(matrix, size, season);
-    }
-
+    // 2. Generate 3D Voxel Array for the Majestic Magic Tree
+    const voxels: VoxelItem[] = generateVoxelTree(matrix, size, season);
     setVoxelCount(voxels.length);
 
-    // 3. Create InstancedMesh (Base unit cube geometry with instance scaling)
+    // 3. Create InstancedMesh with Wind Sway Shader
     const voxelGeo = new THREE.BoxGeometry(1.0, 1.0, 1.0);
     const voxelMat = new THREE.MeshStandardMaterial({
       roughness: 0.82,
-      metalness: modelStyle === "satria" ? 0.35 : 0.08,
+      metalness: 0.08,
     });
+
+    // Injected GPU Wind Sway Shader ("daunnya nampak bergerak-gerak kena angin")
+    voxelMat.onBeforeCompile = (shader) => {
+      shader.uniforms.uTime = windUniformsRef.current.uTime;
+      shader.uniforms.uWind = windUniformsRef.current.uWind;
+
+      shader.vertexShader = `
+        uniform float uTime;
+        uniform float uWind;
+      ` + shader.vertexShader;
+
+      shader.vertexShader = shader.vertexShader.replace(
+        "#include <project_vertex>",
+        `
+        vec4 mvPosition = vec4( transformed, 1.0 );
+        #ifdef USE_BATCHING
+          mvPosition = batchingMatrix * mvPosition;
+        #endif
+        #ifdef USE_INSTANCING
+          mvPosition = instanceMatrix * mvPosition;
+          if (mvPosition.y > 12.0 && uWind > 0.001) {
+            float hFactor = clamp((mvPosition.y - 12.0) / 32.0, 0.0, 1.4);
+            // Harmonic wind sway: gentle macro branch sway + micro foliage flutter
+            float sway1 = sin(uTime * 2.2 + mvPosition.x * 0.32 + mvPosition.z * 0.32) * 0.42;
+            float sway2 = cos(uTime * 2.9 + mvPosition.z * 0.35 + mvPosition.y * 0.15) * 0.28;
+            float flutter = sin(uTime * 5.4 + mvPosition.x * 1.5 + mvPosition.z * 1.5) * 0.14;
+            
+            mvPosition.x += (sway1 + flutter) * hFactor * uWind;
+            mvPosition.z += (sway2 + flutter * 0.8) * hFactor * uWind;
+            mvPosition.y += sin(uTime * 3.8 + mvPosition.x * 0.5 + mvPosition.z * 0.5) * 0.06 * hFactor * uWind;
+          }
+        #endif
+        mvPosition = modelViewMatrix * mvPosition;
+        gl_Position = projectionMatrix * mvPosition;
+        `
+      );
+    };
 
     const instMesh = new THREE.InstancedMesh(voxelGeo, voxelMat, voxels.length);
     instMesh.castShadow = true;
@@ -406,7 +467,7 @@ export default function ThreeVoxelTreeScene({
 
     scene.add(instMesh);
     instancedMeshRef.current = instMesh;
-  }, [url, season, modelStyle]);
+  }, [url, season]);
 
   // Trigger Smooth Camera Transition ("3d" <-> "qr")
   const triggerCameraTransition = useCallback(
@@ -435,7 +496,7 @@ export default function ThreeVoxelTreeScene({
           dirLightRef.current.position.set(0, 100, 0);
           dirLightRef.current.castShadow = false;
         } else {
-          dirLightRef.current.position.set(40, 75, 35);
+          dirLightRef.current.position.set(45, 90, 40);
           dirLightRef.current.castShadow = true;
         }
       }
@@ -447,11 +508,11 @@ export default function ThreeVoxelTreeScene({
 
       // Zoom adjustment: in QR mode ensure the entire QR code + quiet zone is cleanly framed
       if (cameraRef.current) {
-        cameraRef.current.zoom = mode === "qr" ? 0.82 : 0.95;
+        cameraRef.current.zoom = mode === "qr" ? 1.65 : 0.92;
         cameraRef.current.updateProjectionMatrix();
       }
     },
-    [POS_3D, POS_QR, TARGET_3D, TARGET_QR, UP_3D, UP_QR]
+    [POS_3D, TARGET_3D, UP_3D, POS_QR, TARGET_QR, UP_QR]
   );
 
   useEffect(() => {
@@ -459,29 +520,22 @@ export default function ThreeVoxelTreeScene({
   }, [viewMode, triggerCameraTransition]);
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center select-none overflow-hidden rounded-3xl">
-      {/* Three.js Canvas Container */}
-      <div
-        ref={containerRef}
-        onClick={() => {
-          if (!isTransitioningRef.current) {
-            onViewModeToggle();
-          }
-        }}
-        className="w-full h-full cursor-pointer touch-none"
-        title={
-          viewMode === "3d"
-            ? "Klik untuk melihat QR code scannable lurus dari atas"
-            : "Klik untuk kembali ke tampilan pohon/patung 3D"
-        }
-      />
+    <div
+      ref={containerRef}
+      className="relative w-full h-full cursor-grab active:cursor-grabbing select-none"
+      onClick={() => {
+        // Clicking on the canvas can trigger mode toggle
+        onViewModeToggle();
+      }}
+    >
+      {/* Three.js Canvas Mount */}
+      <div ref={canvasMountRef} className="absolute inset-0 w-full h-full pointer-events-auto" />
 
-
-
-      {/* 3D Drag Tip Badge */}
+      {/* Subtle indicator in 3D mode */}
       {viewMode === "3d" && (
-        <div className="pointer-events-none absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-900/10 text-stone-600 text-[11px] font-mono backdrop-blur-sm border border-stone-900/5">
-          <span>🖱️ Drag to rotate 3D</span>
+        <div className="absolute top-4 right-4 z-10 pointer-events-none flex items-center gap-1.5 text-[11px] font-mono tracking-wider text-black/40 bg-white/70 backdrop-blur-md px-2.5 py-1 rounded-full shadow-sm">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          Drag to rotate 3D
         </div>
       )}
     </div>
