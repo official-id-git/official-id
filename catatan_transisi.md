@@ -118,6 +118,18 @@ Dokumen ini merangkum seluruh riwayat percakapan, instruksi pengguna, evolusi fi
     - Commit `1724506`: Default input kosong, default QR `official.id`, dan penyempurnaan SEO.
   - Vercel memproses commit `main` dan mendistribusikan aplikasi secara langsung ke jaringan CDN global di `https://official.id`.
 
+### Tahap 11: Tombol Utama "Simpan & Buat QR Code" yang Jelas & Terdedikasi
+- **Kebutuhan**: Memperbaiki kebingungan pengguna di mana setelah mengisi URL tujuan dan custom slug, tidak ada tombol simpan yang jelas untuk menyimpan tautan ke database dan menghasilkan (*generate*) QR Code-nya (sebelumnya hanya berupa tombol kecil "Terapkan" yang menyatu di baris slug).
+- **Tindakan**:
+  - Formulir input dibungkus dalam elemen `<form onSubmit={...}>` yang mendukung penyimpanan instan via tombol keyboard **Enter** pada semua input.
+  - Baris input slug dirapikan sehingga hanya berisi kolom input slug dan tombol **Acak** `[ 🎲 Acak ]` berukuran proporsional.
+  - Ditambahkan tombol aksi utama (*Primary CTA Button*) berukuran penuh (*full-width*) di bawah form dengan label tegas: **`[ 🏁 Simpan & Buat QR Code ]`** berwarna hijau emerald.
+  - Ditambahkan feedback visual interaktif:
+    - Status loading: `Menyimpan & Menghasilkan QR Code...` dengan spinner putar.
+    - Status sukses: `Tersimpan! QR Code Berhasil Dibuat ✓`, ledakan efek **Confetti** 🎉, dan otomatis beralih ke mode tampilan QR Code pada kanvas agar pengguna langsung melihat QR-nya.
+    - Pesan error spesifik jika URL kosong atau slug sudah terpakai.
+  - Tombol switcher musim disesuaikan agar tidak memicu pesan error simpan saat pengguna hanya ingin melihat pratinjau (*preview*) musim sebelum membuat tautan.
+
 ---
 
 ## 3. Struktur Berkas & Komponen Inti
@@ -128,7 +140,7 @@ Dokumen ini merangkum seluruh riwayat percakapan, instruksi pengguna, evolusi fi
 | [`src/app/layout.tsx`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/src/app/layout.tsx) | Root layout, font Geist, OpenGraph, Twitter cards, dan JSON-LD Schema.org. |
 | [`src/app/robots.ts`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/src/app/robots.ts) | Konfigurasi aturan perayap mesin pencari Googlebot dan sitemap URL. |
 | [`src/app/sitemap.ts`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/src/app/sitemap.ts) | Generator XML Sitemap otomatis untuk Google Search Console. |
-| [`src/components/qr/TreeICQRStudio.tsx`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/src/components/qr/TreeICQRStudio.tsx) | Komponen studio interaktif utama: pembuat pohon voxel, form input, download PNG scannable, dan modal info kontak. |
+| [`src/components/qr/TreeICQRStudio.tsx`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/src/components/qr/TreeICQRStudio.tsx) | Komponen studio interaktif utama: pembuat pohon voxel, form input, tombol "Simpan & Buat QR Code", download PNG scannable, dan modal info kontak. |
 | [`src/components/TreeViewer.tsx`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/src/components/TreeViewer.tsx) | Tampilan whitelabel `/[slug]` dengan auto-switch cycle 10 detik (QR Code $\leftrightarrow$ Animate Tree). |
 | [`src/components/qr/WebARModal.tsx`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/src/components/qr/WebARModal.tsx) | Modal WebAR kamera interaktif dengan auto-redirect 10 detik setelah scan. |
 | [`src/lib/security.ts`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/src/lib/security.ts) | Suite keamanan: Rate limiting per IP, bot user-agent filter, honeypot check, human timing, & SSRF guard. |
@@ -141,14 +153,15 @@ Dokumen ini merangkum seluruh riwayat percakapan, instruksi pengguna, evolusi fi
 
 ## 4. Panduan & Referensi Tindak Lanjut
 
-1. **Membuat Tautan Baru**:
+1. **Membuat Tautan & Menghasilkan QR Code**:
    - Buka `https://official.id`.
-   - Ketik URL tujuan pada formulir (misal: `https://kailoka.com` atau domain Anda).
-   - Masukkan slug pilihan Anda (atau klik tombol **Acak** untuk kode 6 digit otomatis).
-   - Klik tombol **Terapkan**.
-   - Tautan langsung tersimpan ke Supabase dan instan aktif di seluruh dunia.
+   - Ketik URL tujuan pada formulir (misal: `https://kailoka.com` atau website Anda).
+   - Masukkan custom slug pilihan Anda (atau klik tombol **Acak** untuk kode otomatis).
+   - Klik tombol hijau utama **`[ 🏁 Simpan & Buat QR Code ]`** (atau tekan **Enter** pada keyboard).
+   - Tautan langsung tersimpan ke Supabase, confetti muncul, dan kanvas otomatis beralih menampilkan QR Code yang siap digunakan.
 2. **Mengunduh QR Code Siap Cetak**:
    - Klik tombol pill hitam **`[ 📥 Unduh QR Code ]`** pada studio atau melalui tombol **PNG** di baris ringkasan tautan.
    - File PNG beresolusi 1024x1024 piksel siap cetak di media fisik apa pun.
 3. **Mendaftarkan Situs ke Google Search Console**:
    - Daftarkan sitemap di Google Search Console dengan memasukkan URL: `https://official.id/sitemap.xml`.
+
