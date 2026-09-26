@@ -104,13 +104,17 @@ export default function TreeViewer({
   const stageRef = useRef<HTMLDivElement | null>(null);
   const flyToRef = useRef<(toQr: boolean) => void>(() => {});
   const pointerRef = useRef<{ x: number; y: number; t: number } | null>(null);
-  // Ref (bukan updater setState) agar efek samping tidak terpanggil dua kali di StrictMode
-  const showQrRef = useRef(false);
+  // Default mode adalah QR (true) sesuai permintaan
+  const showQrRef = useRef(true);
 
-  const [showQr, setShowQr] = useState(false);
-  const [qrOverlay, setQrOverlay] = useState(false);
+  const [showQr, setShowQr] = useState(true);
+  const [qrOverlay, setQrOverlay] = useState(true);
   const [ready, setReady] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [countdown, setCountdown] = useState(10);
+
+  const lastActionTimeRef = useRef<number>(Date.now());
+  const isPointerDownRef = useRef<boolean>(false);
 
   // ---------------------------------------------------------------------------
   // Scene three.js
@@ -135,21 +139,26 @@ export default function TreeViewer({
 
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 500);
-    camera.position.copy(ISO_POS);
+    // Mulai dari posisi QR (TOP_POS)
+    camera.position.copy(TOP_POS);
 
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.copy(ISO_TARGET);
+    controls.target.copy(TOP_TARGET);
     controls.enableZoom = false;
     controls.enablePan = false;
     controls.enableDamping = true;
     controls.minPolarAngle = 0.35;
     controls.maxPolarAngle = 1.2;
-    controls.autoRotate = !reduceMotion;
+    controls.autoRotate = false;
     controls.autoRotateSpeed = 0.5;
-    // Di embed pada HP, jangan tangkap gesture sentuh → halaman host tetap bisa di-scroll
     const allowOrbit = !(isEmbed && mobile);
-    controls.enabled = allowOrbit;
+    controls.enabled = false;
     controls.update();
+
+    controls.addEventListener("start", () => {
+      lastActionTimeRef.current = Date.now();
+      setCountdown(10);
+    });
 
     scene.add(new THREE.AmbientLight(0xffffff, 1.5));
     const sun = new THREE.DirectionalLight(0xfff7ea, 1.8);
@@ -168,8 +177,9 @@ export default function TreeViewer({
     }
     scene.add(sun);
 
-    const wind = createWindUniforms(reduceMotion ? 0.3 : WIND_ON);
-    const windOn = wind.uStrength.value;
+    const windOn = reduceMotion ? 0.3 : WIND_ON;
+    // Mulai dengan angin 0 karena default adalah QR
+    const wind = createWindUniforms(0);
     const mesh = buildTreeMesh(generateVoxelTree(matrix, size, season), wind, {
       shadows: renderer.shadowMap.enabled,
     });
@@ -201,7 +211,7 @@ export default function TreeViewer({
       toTarget: THREE.Vector3;
     };
     let flight: Flight | null = null;
-    let windTarget = windOn;
+    let windTarget = 0; // default awal angin 0 untuk mode QR
 
     flyToRef.current = (toQr: boolean) => {
       flight = {
@@ -247,8 +257,9 @@ export default function TreeViewer({
         if (flight.t >= 1) {
           const toQr = flight.toQr;
           flight = null;
-          if (toQr) setQrOverlay(true);
-          else {
+          if (toQr) {
+            setQrOverlay(true);
+          } else {
             controls.enabled = allowOrbit;
             controls.autoRotate = !reduceMotion;
           }
@@ -271,9 +282,9 @@ export default function TreeViewer({
       renderer.forceContextLoss();
       stage.replaceChildren();
       flyToRef.current = () => {};
-      showQrRef.current = false;
-      setShowQr(false);
-      setQrOverlay(false);
+      showQrRef.current = true;
+      setShowQr(true);
+      setQrOverlay(true);
     };
   }, [matrix, size, season, isEmbed]);
 
@@ -309,17 +320,91 @@ export default function TreeViewer({
   }, [isEmbed, slug]);
 
   // ---------------------------------------------------------------------------
-  // Aksi
+  // Aksi & Auto-switch Timer (10 detik hening berganti bolak-balik)
   // ---------------------------------------------------------------------------
+  const recordAction = useCallback(() => {
+    lastActionTimeRef.current = Date.now();
+    setCountdown(10);
+  }, []);
+
+  const switchToMode = useCallback(
+    (toQr: boolean) => {
+      recordAction();
+      if (showQrRef.current === toQr) return;
+      showQrRef.current = toQr;
+      setShowQr(toQr);
+      flyToRef.current(toQr);
+      track(slug, toQr ? "qr_toggle_qr" : "qr_toggle_3d", source);
+    },
+    [recordAction, slug, source]
+  );
+
   const toggleQr = useCallback(() => {
-    const next = !showQrRef.current;
-    showQrRef.current = next;
-    setShowQr(next);
-    flyToRef.current(next);
-    if (next) track(slug, "qr_toggle", source);
-  }, [slug, source]);
+    switchToMode(!showQrRef.current);
+  }, [switchToMode]);
+
+  useEffect(() => {
+    lastActionTimeRef.current = Date.now();
+    setCountdown(10);
+
+    const interval = setInterval(() => {
+      if (isPointerDownRef.current) {
+        lastActionTimeRef.current = Date.now();
+        setCountdown(10);
+        return;
+      }
+
+      const elapsed = Date.now() - lastActionTimeRef.current;
+      const remaining = Math.max(0, Math.ceil((10000 - elapsed) / 1000));
+      setCountdown(remaining);
+
+      if (elapsed >= 10000) {
+        const nextMode = !showQrRef.current;
+        showQrRef.current = nextMode;
+        setShowQr(nextMode);
+        flyToRef.current(nextMode);
+        lastActionTimeRef.current = Date.now();
+        setCountdown(10);
+      }
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const handlePointerDown = () => {
+      isPointerDownRef.current = true;
+      recordAction();
+    };
+    const handlePointerUp = () => {
+      isPointerDownRef.current = false;
+      recordAction();
+    };
+    const handleActivity = () => {
+      recordAction();
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown, { passive: true });
+    window.addEventListener("pointerup", handlePointerUp, { passive: true });
+    window.addEventListener("pointercancel", handlePointerUp, { passive: true });
+    window.addEventListener("touchstart", handlePointerDown, { passive: true });
+    window.addEventListener("touchend", handlePointerUp, { passive: true });
+    window.addEventListener("wheel", handleActivity, { passive: true });
+    window.addEventListener("keydown", handleActivity, { passive: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
+      window.removeEventListener("touchstart", handlePointerDown);
+      window.removeEventListener("touchend", handlePointerUp);
+      window.removeEventListener("wheel", handleActivity);
+      window.removeEventListener("keydown", handleActivity);
+    };
+  }, [recordAction]);
 
   const handleShare = async () => {
+    recordAction();
     track(slug, "share_click", source);
     try {
       if (navigator.share) {
@@ -371,10 +456,14 @@ export default function TreeViewer({
         <div
           ref={stageRef}
           className="absolute inset-0 cursor-grab active:cursor-grabbing"
-          onPointerDown={(e) =>
-            (pointerRef.current = { x: e.clientX, y: e.clientY, t: performance.now() })
-          }
+          onPointerDown={(e) => {
+            isPointerDownRef.current = true;
+            recordAction();
+            pointerRef.current = { x: e.clientX, y: e.clientY, t: performance.now() };
+          }}
           onPointerUp={(e) => {
+            isPointerDownRef.current = false;
+            recordAction();
             const p = pointerRef.current;
             pointerRef.current = null;
             if (!p) return;
@@ -405,9 +494,50 @@ export default function TreeViewer({
         </button>
       </div>
 
-      <p className="rounded-full border border-stone-200 bg-white/70 px-4 py-1.5 text-xs text-stone-500">
-        {showQr ? "Ketuk QR untuk kembali ke pohon" : "Ketuk pohon untuk melihat QR"}
-      </p>
+      {/* Tombol Switch Mode: QR Code dan Animate Tree */}
+      <div className="mt-3 flex flex-col items-center gap-2 z-20">
+        <div className="inline-flex p-1 rounded-2xl bg-white/85 backdrop-blur-md border border-stone-200/90 shadow-sm">
+          <button
+            type="button"
+            onClick={() => switchToMode(true)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${
+              showQr
+                ? "bg-stone-900 text-white shadow-md scale-[1.02]"
+                : "text-stone-600 hover:text-stone-900 hover:bg-stone-100/60"
+            }`}
+            title="Tampilkan Mode QR Code"
+          >
+            <span className="text-sm">📱</span>
+            <span>QR Code</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => switchToMode(false)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${
+              !showQr
+                ? "bg-stone-900 text-white shadow-md scale-[1.02]"
+                : "text-stone-600 hover:text-stone-900 hover:bg-stone-100/60"
+            }`}
+            title="Lihat Mode Pohon Animasi 3D"
+          >
+            <span className="text-sm">🌳</span>
+            <span>Animate Tree</span>
+          </button>
+        </div>
+
+        {/* Status / Auto-cycle countdown indicator */}
+        <div className="flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/70 backdrop-blur-xs border border-stone-200/80 text-[11px] text-stone-600 font-medium shadow-2xs">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span>
+            {showQr
+              ? `Mode QR • Animasi 3D dalam ${countdown}s`
+              : `Animasi 3D • Mode QR dalam ${countdown}s`}
+          </span>
+        </div>
+      </div>
 
       <div className="mt-4 flex w-full max-w-md gap-3 px-5">
         <a

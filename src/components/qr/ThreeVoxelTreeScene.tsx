@@ -265,6 +265,9 @@ export default function ThreeVoxelTreeScene({
       onSceneReady({
         captureImage: () => {
           if (!rendererRef.current) return null;
+          if (sceneRef.current && cameraRef.current) {
+            rendererRef.current.render(sceneRef.current, cameraRef.current);
+          }
           return rendererRef.current.domElement.toDataURL("image/png");
         },
         getVoxelCount: () => instancedMeshRef.current?.count || 0,

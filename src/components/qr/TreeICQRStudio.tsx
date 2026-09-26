@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import dynamic from "next/dynamic";
+import QRCode from "qrcode";
 import {
   SeasonType,
   SEASONS,
@@ -11,6 +12,45 @@ import {
   exportVoxelsToCsv,
 } from "@/lib/voxel-tree-generator";
 import { ambientAudio } from "@/lib/ambient-audio";
+
+function downloadBlob(blob: Blob, filename: string) {
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.style.display = "none";
+  a.href = blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  }, 2000);
+}
+
+function downloadDataUrl(dataUrl: string, filename: string) {
+  try {
+    const parts = dataUrl.split(",");
+    const mime = parts[0].match(/:(.*?);/)?.[1] || "image/png";
+    const bstr = atob(parts[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    const blob = new Blob([u8arr], { type: mime });
+    downloadBlob(blob, filename);
+  } catch {
+    const a = document.createElement("a");
+    a.style.display = "none";
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+    }, 2000);
+  }
+}
 import {
   ShareNodes,
   VolumeUp,
@@ -231,14 +271,36 @@ export default function TreeICQRStudio() {
     }
   };
 
+  const handleDownloadPrintQr = async () => {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1024;
+      canvas.height = 1024;
+
+      await QRCode.toCanvas(canvas, qrText, {
+        width: 1024,
+        margin: 3,
+        errorCorrectionLevel: "H",
+        color: {
+          dark: currentTheme.qrDark[0] || "#1c1917",
+          light: currentTheme.paperColor || "#ffffff",
+        },
+      });
+
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        downloadBlob(blob, `official-id-${slug}-qr-print.png`);
+      }, "image/png");
+    } catch (e) {
+      console.error("Gagal membuat print QR PNG:", e);
+    }
+  };
+
   const handleDownloadSnapshot = () => {
     if (captureFuncRef.current) {
       const dataUrl = captureFuncRef.current();
       if (dataUrl) {
-        const a = document.createElement("a");
-        a.href = dataUrl;
-        a.download = `official-id-magic-tree-${slug}-${season}-${viewMode}.png`;
-        a.click();
+        downloadDataUrl(dataUrl, `official-id-magic-tree-${slug}-${season}-${viewMode}.png`);
       }
     }
   };
@@ -253,10 +315,7 @@ export default function TreeICQRStudio() {
     });
 
     const blob = new Blob([json], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `official-id-voxel-tree-${slug}.json`;
-    a.click();
+    downloadBlob(blob, `official-id-voxel-tree-${slug}.json`);
   };
 
   const handleExportGoxelCsv = () => {
@@ -265,10 +324,7 @@ export default function TreeICQRStudio() {
 
     const csv = exportVoxelsToCsv(voxels);
     const blob = new Blob([csv], { type: "text/csv" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `official-id-voxel-tree-${slug}.csv`;
-    a.click();
+    downloadBlob(blob, `official-id-voxel-tree-${slug}.csv`);
   };
 
   return (
@@ -276,69 +332,20 @@ export default function TreeICQRStudio() {
       className="min-h-screen w-full flex flex-col items-center justify-between transition-colors duration-700 font-sans selection:bg-stone-300 selection:text-stone-900"
       style={{ backgroundColor: currentTheme.bgColor }}
     >
-      {/* Top Navbar Header (Matching tree.icqr.com style) */}
+      {/* Top Navbar Header (Matching tree.icqr.com clean style) */}
       <header className="w-full max-w-5xl mx-auto px-6 pt-6 flex items-center justify-between z-30">
         {/* Dot Matrix Style Brand Logo */}
-        <div className="flex flex-col items-start gap-1">
-          <div className="flex items-center gap-1.5 text-stone-800 font-mono text-xl sm:text-2xl font-black tracking-widest uppercase">
-            <span className="text-stone-400 font-normal">[</span>
-            <span>official.id</span>
-            <span className="text-stone-400 font-normal">]</span>
-          </div>
-
-          {/* Quick "I see QR" / View Mode Toggle Pill Button */}
-          <button
-            onClick={() => setViewMode(viewMode === "3d" ? "qr" : "3d")}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/90 hover:bg-amber-400 text-stone-900 text-[11px] font-bold tracking-tight shadow-sm transition active:scale-95"
-            title="Klik untuk mengubah sudut pandang seketika"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>{viewMode === "3d" ? "👁 I see QR >" : "🌳 See 3D Tree >"}</span>
-          </button>
+        <div className="flex items-center gap-1.5 text-stone-800 font-mono text-xl sm:text-2xl font-black tracking-widest uppercase">
+          <span className="text-stone-400 font-normal">[</span>
+          <span>official.id</span>
+          <span className="text-stone-400 font-normal">]</span>
         </div>
 
-        {/* Action Controls (Audio, Mode AR, Snapshot/Export, Info) */}
+        {/* Top Right Action: Info Modal */}
         <div className="flex items-center gap-2">
-          {/* Ambient Audio Toggle */}
-          <button
-            onClick={handleAudioToggle}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition shadow-sm ${
-              isPlayingAudio
-                ? "bg-emerald-600 text-white shadow-emerald-500/20"
-                : "bg-white/80 hover:bg-white text-stone-700"
-            }`}
-            title={isPlayingAudio ? "Matikan Suara Alam" : "Nyalakan Suara Alam (Breeze & Birds)"}
-          >
-            {isPlayingAudio ? (
-              <VolumeUp className="w-4 h-4 animate-pulse" />
-            ) : (
-              <VolumeMute className="w-4 h-4" />
-            )}
-          </button>
-
-          {/* Mode AR Button */}
-          <button
-            onClick={() => setShowARModal(true)}
-            className="h-10 px-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white flex items-center justify-center gap-1.5 shadow-sm transition font-medium text-xs"
-            title="Buka Mode AR (Augmented Reality) Kamera"
-          >
-            <CameraPhoto className="w-4 h-4" />
-            <span className="hidden sm:inline font-bold">Mode AR</span>
-          </button>
-
-          {/* Export & 3D Voxel Tools */}
-          <button
-            onClick={() => setShowExportModal(true)}
-            className="w-10 h-10 rounded-full bg-white/80 hover:bg-white text-stone-700 flex items-center justify-center shadow-sm transition active:scale-95"
-            title="Export Gambar & Model Voxel (Goxel / MagicaVoxel)"
-          >
-            <Download className="w-4 h-4" />
-          </button>
-
-          {/* Info Modal Trigger */}
           <button
             onClick={() => setShowInfoModal(true)}
-            className="w-10 h-10 rounded-full bg-white/80 hover:bg-white text-stone-700 flex items-center justify-center shadow-sm transition active:scale-95"
+            className="w-10 h-10 rounded-full bg-white/80 hover:bg-white text-stone-700 flex items-center justify-center shadow-sm transition active:scale-95 border border-stone-200/80"
             title="Tentang official.id 3D Voxel Tree"
           >
             <InfoCircle className="w-4 h-4" />
@@ -575,9 +582,9 @@ export default function TreeICQRStudio() {
               </a>
               <button
                 type="button"
-                onClick={handleDownloadSnapshot}
+                onClick={handleDownloadPrintQr}
                 className="px-2 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-[10px] font-semibold transition flex items-center gap-1 border border-stone-200"
-                title="Unduh QR Code siap cetak"
+                title="Unduh QR Code siap cetak (PNG resolusi tinggi)"
               >
                 <Download className="w-3 h-3" />
                 <span>PNG</span>
@@ -840,12 +847,27 @@ export default function TreeICQRStudio() {
 
             <div className="grid grid-cols-1 gap-2.5">
               <button
+                onClick={handleDownloadPrintQr}
+                className="w-full flex items-center justify-between p-3 rounded-2xl border border-stone-200 hover:border-emerald-500 bg-stone-50/50 hover:bg-emerald-50/30 text-left transition group"
+              >
+                <div>
+                  <p className="font-bold text-xs text-stone-800 group-hover:text-emerald-900">
+                    🖨️ Download Print-Ready QR Code (PNG)
+                  </p>
+                  <p className="text-[11px] text-stone-500">
+                    File gambar QR 1024x1024 siap cetak di poster, banner & stiker
+                  </p>
+                </div>
+                <Download className="w-4 h-4 text-stone-400 group-hover:text-emerald-600" />
+              </button>
+
+              <button
                 onClick={handleDownloadSnapshot}
                 className="w-full flex items-center justify-between p-3 rounded-2xl border border-stone-200 hover:border-emerald-500 bg-stone-50/50 hover:bg-emerald-50/30 text-left transition group"
               >
                 <div>
                   <p className="font-bold text-xs text-stone-800 group-hover:text-emerald-900">
-                    📸 Download High-Res PNG Image
+                    📸 Download High-Res 3D Snapshot (PNG)
                   </p>
                   <p className="text-[11px] text-stone-500">
                     Foto resolusi tinggi sudut pandang saat ini ({viewMode.toUpperCase()})
