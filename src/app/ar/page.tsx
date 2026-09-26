@@ -23,8 +23,10 @@ function ARContent() {
     <main className="fixed inset-0 w-full h-full bg-black">
       <WebARModal
         url={toUrl}
+        qrText={searchParams.get("qrText") || toUrl}
         season={initialSeason}
         isOpen={true}
+        mode="scan"
         onClose={handleClose}
       />
     </main>

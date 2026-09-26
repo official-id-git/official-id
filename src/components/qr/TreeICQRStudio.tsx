@@ -245,6 +245,7 @@ export default function TreeICQRStudio() {
           {isMounted && (
             <ThreeVoxelTreeScene
               url={url}
+              qrText={url}
               season={season}
               viewMode={viewMode}
               onViewModeToggle={() => setViewMode(viewMode === "3d" ? "qr" : "3d")}
@@ -540,8 +541,10 @@ export default function TreeICQRStudio() {
       {/* WebAR Augmented Reality Modal */}
       <WebARModal
         url={url}
+        qrText={url}
         season={season}
         isOpen={showARModal}
+        mode="preview"
         onClose={() => setShowARModal(false)}
         onSeasonChange={(s) => setSeason(s)}
       />

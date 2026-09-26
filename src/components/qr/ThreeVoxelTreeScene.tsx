@@ -13,6 +13,7 @@ import {
 
 interface ThreeVoxelTreeSceneProps {
   url: string;
+  qrText?: string;
   season: SeasonType;
   viewMode: "3d" | "qr";
   onViewModeToggle: () => void;
@@ -40,6 +41,7 @@ const easeInOutCubic = (t: number) =>
 
 export default function ThreeVoxelTreeScene({
   url,
+  qrText,
   season,
   viewMode,
   onViewModeToggle,
@@ -457,8 +459,9 @@ export default function ThreeVoxelTreeScene({
       sittingPersonRef.current = null;
     }
 
-    // 1. Generate QR matrix
-    const { matrix, size } = generateQrMatrix(url);
+    // 1. Generate QR matrix (using qrText if provided so physical printed QR matches)
+    const textToEncode = qrText || url;
+    const { matrix, size } = generateQrMatrix(textToEncode);
 
     // 2. Generate 3D Voxel Array for the Majestic Magic Tree & Sitting Person
     const voxels: VoxelItem[] = generateVoxelTree(matrix, size, season, { scanSafeTop: true });
@@ -613,7 +616,7 @@ export default function ThreeVoxelTreeScene({
       scene.add(pGroup);
       sittingPersonRef.current = pGroup;
     }
-  }, [url, season]);
+  }, [url, qrText, season]);
 
   // Trigger Smooth Camera Transition ("3d" <-> "qr")
   const triggerCameraTransition = useCallback(
