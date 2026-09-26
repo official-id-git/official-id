@@ -42,6 +42,51 @@ export default function TreeICQRStudio() {
     setIsMounted(true);
   }, []);
 
+  // Trakteer Modal Opener (Interactive embed popup & fallback)
+  const openTrakteerModal = () => {
+    const modalUrl = "https://trakteer.id/v1/officialid/tip/embed/modal";
+    let overlay = document.getElementById("trakteer-overlay-modal");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.setAttribute("id", "trakteer-overlay-modal");
+      overlay.style.cssText =
+        "position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);padding:16px;";
+
+      const wrapper = document.createElement("div");
+      wrapper.style.cssText =
+        "position:relative;width:100%;max-width:440px;height:620px;max-height:92vh;border-radius:24px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.35);background:#fff;";
+
+      const closeBtn = document.createElement("button");
+      closeBtn.innerHTML = "✕";
+      closeBtn.style.cssText =
+        "position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:#f1f5f9;color:#334155;border:none;cursor:pointer;font-weight:bold;z-index:20;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,0.15);";
+      closeBtn.onclick = () => {
+        if (overlay) overlay.style.display = "none";
+      };
+
+      const iframe = document.createElement("iframe");
+      iframe.src = `${modalUrl}?embedId=0&ref=${encodeURIComponent(
+        typeof window !== "undefined" ? window.location.href : ""
+      )}`;
+      iframe.style.cssText = "width:100%;height:100%;border:0;";
+
+      wrapper.appendChild(closeBtn);
+      wrapper.appendChild(iframe);
+      overlay.appendChild(wrapper);
+      document.body.appendChild(overlay);
+
+      window.addEventListener("message", (e) => {
+        if (e.data && e.data.type === "embed.modalClosed") {
+          setTimeout(() => {
+            if (overlay) overlay.style.display = "none";
+          }, 200);
+        }
+      });
+    } else {
+      overlay.style.display = "flex";
+    }
+  };
+
   const captureFuncRef = useRef<(() => string | null) | null>(null);
   const voxelCountRef = useRef<number>(3200);
 
@@ -289,7 +334,7 @@ export default function TreeICQRStudio() {
               <div className="flex items-center gap-2">
                 <Box className="w-5 h-5 text-emerald-600" />
                 <h3 className="font-bold text-stone-900 text-base">
-                  3D Voxel Magic Tree QR Code
+                  About official.id
                 </h3>
               </div>
               <button
@@ -300,39 +345,76 @@ export default function TreeICQRStudio() {
               </button>
             </div>
 
-            <div className="text-xs text-stone-600 space-y-3 leading-relaxed">
+            <div className="text-xs text-stone-600 space-y-4 leading-relaxed">
               <p>
-                <strong>official.id</strong> menghadirkan generator QR Code 3D
-                Voxel revolusioner yang terinspirasi dari{" "}
-                <a
-                  href="https://tree.icqr.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-emerald-700 underline font-semibold"
-                >
-                  tree.icqr.com
-                </a>
-                .
+                <strong>official.id</strong> is a free service for creating
+                animated QR codes that can be reused and embedded on websites
+                using a white-label integration.
               </p>
 
-              <div className="p-3 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-2">
-                <h4 className="font-semibold text-stone-800">
-                  Fitur Unggulan:
+              <div className="text-stone-700 space-y-1">
+                <p>
+                  <strong>Created by</strong> Official.ID
+                </p>
+                <p>
+                  <strong>Inspired by</strong>{" "}
+                  <a
+                    href="https://x.com/reactiive_"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-emerald-700 underline font-semibold hover:text-emerald-800 inline-flex items-center gap-0.5"
+                  >
+                    Enzo Manuel Mangano
+                    <ExternalLink className="w-3 h-3 ml-0.5" />
+                  </a>{" "}
+                  and{" "}
+                  <a
+                    href="https://x.com/msiddique26"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-emerald-700 underline font-semibold hover:text-emerald-800 inline-flex items-center gap-0.5"
+                  >
+                    Mohamed Siddique
+                    <ExternalLink className="w-3 h-3 ml-0.5" />
+                  </a>
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-2.5">
+                <h4 className="font-bold text-stone-900 text-sm">
+                  Support Us
                 </h4>
-                <ul className="list-disc list-inside space-y-1 text-stone-600">
-                  <li>
-                    <strong>Animasi Angin Alami:</strong> Daun pohon bergoyang lembut terkena hembusan angin sejuk di mode 3D.
-                  </li>
-                  <li>
-                    <strong>Pohon Menjulang Tinggi:</strong> Batang pohon yang kokoh dan cabang rimbun menjulang ke kanopi kubah megah.
-                  </li>
-                  <li>
-                    <strong>100% Smartphone Camera Scannable:</strong> Di mode QR (tampilan atas), daun berhenti bergerak dan tersusun tepat sejajar grid QR code.
-                  </li>
-                  <li>
-                    <strong>Taman Pelataran Rerumputan:</strong> Lantai batu sandstone dengan rumput hijau segar di sekeliling border teras.
-                  </li>
-                </ul>
+                <p className="text-stone-600">
+                  Help us continuously improve the quality of our service by
+                  supporting us with a cup of coffee through Trakteer.
+                </p>
+                <div
+                  id="trakteer-btn-container"
+                  className="pt-1 flex flex-wrap items-center gap-3 min-h-[44px]"
+                >
+                  <button
+                    onClick={openTrakteerModal}
+                    type="button"
+                    className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-[#be1e2d] hover:bg-[#a01824] text-white text-xs font-bold shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                  >
+                    <img
+                      src="https://edge-cdn.trakteer.id/images/embed/trbtn-icon.png?v=14-05-2025"
+                      alt="Trakteer"
+                      className="w-4 h-4 object-contain"
+                    />
+                    <span>Dukung Saya di Trakteer</span>
+                  </button>
+
+                  <a
+                    href="https://trakteer.id/officialid"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-stone-400 hover:text-[#be1e2d] underline font-medium inline-flex items-center gap-0.5"
+                  >
+                    Buka tab baru
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                </div>
               </div>
             </div>
 

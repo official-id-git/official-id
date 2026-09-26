@@ -52,7 +52,6 @@ export default function ThreeVoxelTreeScene({
   const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const instancedMeshRef = useRef<THREE.InstancedMesh | null>(null);
-  const grassMeshRef = useRef<THREE.InstancedMesh | null>(null);
   const dirLightRef = useRef<THREE.DirectionalLight | null>(null);
   const particlesMeshRef = useRef<THREE.InstancedMesh | null>(null);
   const particlesDataRef = useRef<
@@ -279,7 +278,7 @@ export default function ThreeVoxelTreeScene({
       // Update Wind Shader Uniforms
       if (windUniformsRef.current) {
         windUniformsRef.current.uTime.value = timeInSec;
-        // In 3D: wind = 1.0 (leaves & grass sway in breeze). In QR: smoothly lerp to 0.0 for instant camera scan!
+        // In 3D: wind = 1.0 (canopy foliage gently sways in breeze). In QR: smoothly lerp to 0.0 for instant camera scan!
         const targetWind = currentMode === "3d" ? 1.0 : 0.0;
         windUniformsRef.current.uWind.value = THREE.MathUtils.lerp(
           windUniformsRef.current.uWind.value,
@@ -350,21 +349,6 @@ export default function ThreeVoxelTreeScene({
         }
       }
 
-      // Animate Swaying Grass (Sinks smoothly in QR mode so quiet zone is 100% white)
-      if (grassMeshRef.current) {
-        const targetGrassY = currentMode === "3d" ? 0.0 : -6.0;
-        grassMeshRef.current.position.y = THREE.MathUtils.lerp(
-          grassMeshRef.current.position.y,
-          targetGrassY,
-          0.08
-        );
-        if (currentMode === "qr" && grassMeshRef.current.position.y < -4.0) {
-          grassMeshRef.current.visible = false;
-        } else if (currentMode === "3d") {
-          grassMeshRef.current.visible = true;
-        }
-      }
-
       // Update Floating Particles
       if (particlesMeshRef.current && particlesDataRef.current.length > 0) {
         const pMesh = particlesMeshRef.current;
@@ -412,12 +396,6 @@ export default function ThreeVoxelTreeScene({
         sittingPersonRef.current.clear();
         sittingPersonRef.current = null;
       }
-      if (grassMeshRef.current && sceneRef.current) {
-        sceneRef.current.remove(grassMeshRef.current);
-        grassMeshRef.current.geometry.dispose();
-        (grassMeshRef.current.material as THREE.Material).dispose();
-        grassMeshRef.current = null;
-      }
       controls.dispose();
       renderer.dispose();
       canvasMountRef.current?.replaceChildren();
@@ -456,14 +434,6 @@ export default function ThreeVoxelTreeScene({
       instancedMeshRef.current = null;
     }
 
-    // Remove old grass mesh
-    if (grassMeshRef.current) {
-      scene.remove(grassMeshRef.current);
-      grassMeshRef.current.geometry.dispose();
-      (grassMeshRef.current.material as THREE.Material).dispose();
-      grassMeshRef.current = null;
-    }
-
     // Remove old sitting person group
     if (sittingPersonRef.current) {
       scene.remove(sittingPersonRef.current);
@@ -478,9 +448,8 @@ export default function ThreeVoxelTreeScene({
     const voxels: VoxelItem[] = generateVoxelTree(matrix, size, season);
     setVoxelCount(voxels.length);
 
-    // Separate environmental voxels, grass tufts, and character voxels
-    const treeVoxels = voxels.filter((v) => v.role !== "person" && v.role !== "grass");
-    const grassVoxels = voxels.filter((v) => v.role === "grass");
+    // Separate tree/ground voxels and character voxels
+    const treeVoxels = voxels.filter((v) => v.role !== "person");
     const personVoxels = voxels.filter((v) => v.role === "person");
 
     // 3. Create InstancedMesh with Wind Sway Shader for Foliage & Tree
@@ -493,7 +462,7 @@ export default function ThreeVoxelTreeScene({
       if (r === "leaf") {
         windWeights[i] = 1.0;
       } else if (r === "hedge") {
-        windWeights[i] = 0.40;
+        windWeights[i] = 0.20;
       } else if (r === "branch") {
         windWeights[i] = 0.35;
       } else {
@@ -507,7 +476,7 @@ export default function ThreeVoxelTreeScene({
       metalness: 0.08,
     });
 
-    // Injected GPU Wind Sway Shader: handles both grass fluttering & canopy swaying
+    // Injected GPU Wind Sway Shader: realistic gentle tree canopy swaying
     voxelMat.onBeforeCompile = (shader) => {
       shader.uniforms.uTime = windUniformsRef.current.uTime;
       shader.uniforms.uWind = windUniformsRef.current.uWind;
@@ -528,23 +497,14 @@ export default function ThreeVoxelTreeScene({
         #ifdef USE_INSTANCING
           mvPosition = instanceMatrix * mvPosition;
           if (aWindWeight > 0.01 && uWind > 0.001) {
-            if (mvPosition.y < 3.2) {
-              // Grass & low hedge blade flutter in the breeze!
-              float grassSwayX = sin(uTime * 5.2 + mvPosition.x * 2.8 + mvPosition.z * 1.8) * 0.28;
-              float grassSwayZ = cos(uTime * 4.6 + mvPosition.z * 2.8 + mvPosition.x * 1.5) * 0.22;
-              float h = clamp(mvPosition.y / 2.2, 0.0, 1.4);
-              mvPosition.x += grassSwayX * h * aWindWeight * uWind;
-              mvPosition.z += grassSwayZ * h * aWindWeight * uWind;
-            } else {
-              // Upper tree canopy & branch sway (starting from Y = 10 up to canopy apex)
-              float hFactor = clamp((mvPosition.y - 10.0) / 16.0, 0.0, 1.3);
-              float sway1 = sin(uTime * 2.2 + mvPosition.x * 0.28 + mvPosition.z * 0.28) * 0.46;
-              float sway2 = cos(uTime * 2.8 + mvPosition.z * 0.30 + mvPosition.y * 0.12) * 0.32;
-              float flutter = sin(uTime * 5.4 + mvPosition.x * 1.2 + mvPosition.z * 1.2) * 0.16;
-              mvPosition.x += (sway1 + flutter) * hFactor * aWindWeight * uWind;
-              mvPosition.z += (sway2 + flutter * 0.8) * hFactor * aWindWeight * uWind;
-              mvPosition.y += sin(uTime * 3.6 + mvPosition.x * 0.4 + mvPosition.z * 0.4) * 0.05 * hFactor * aWindWeight * uWind;
-            }
+            // Upper tree canopy & branch sway (starting from Y = 10 up to canopy apex)
+            float hFactor = clamp((mvPosition.y - 10.0) / 16.0, 0.0, 1.3);
+            float sway1 = sin(uTime * 2.2 + mvPosition.x * 0.28 + mvPosition.z * 0.28) * 0.46;
+            float sway2 = cos(uTime * 2.8 + mvPosition.z * 0.30 + mvPosition.y * 0.12) * 0.32;
+            float flutter = sin(uTime * 5.4 + mvPosition.x * 1.2 + mvPosition.z * 1.2) * 0.16;
+            mvPosition.x += (sway1 + flutter) * hFactor * aWindWeight * uWind;
+            mvPosition.z += (sway2 + flutter * 0.8) * hFactor * aWindWeight * uWind;
+            mvPosition.y += sin(uTime * 3.6 + mvPosition.x * 0.4 + mvPosition.z * 0.4) * 0.05 * hFactor * aWindWeight * uWind;
           }
         #endif
         mvPosition = modelViewMatrix * mvPosition;
@@ -579,41 +539,7 @@ export default function ThreeVoxelTreeScene({
     scene.add(instMesh);
     instancedMeshRef.current = instMesh;
 
-    // 4. Build Swaying Grass Mesh (sinks in QR mode for 100% white quiet zone)
-    if (grassVoxels.length > 0) {
-      const grassGeo = new THREE.BoxGeometry(1.0, 1.0, 1.0);
-      const grassWeights = new Float32Array(grassVoxels.length).fill(1.0);
-      grassGeo.setAttribute("aWindWeight", new THREE.InstancedBufferAttribute(grassWeights, 1));
-
-      const grassMesh = new THREE.InstancedMesh(grassGeo, voxelMat, grassVoxels.length);
-      grassMesh.castShadow = true;
-      grassMesh.receiveShadow = true;
-
-      for (let i = 0; i < grassVoxels.length; i++) {
-        const v = grassVoxels[i];
-        const s = v.size ?? 0.45;
-
-        dummy.position.set(v.x, v.y + s / 2, v.z);
-        dummy.scale.set(s, s, s);
-        dummy.rotation.set(0, 0, 0);
-        dummy.updateMatrix();
-
-        grassMesh.setMatrixAt(i, dummy.matrix);
-        grassMesh.setColorAt(i, new THREE.Color(v.color));
-      }
-
-      grassMesh.instanceMatrix.needsUpdate = true;
-      if (grassMesh.instanceColor) {
-        grassMesh.instanceColor.needsUpdate = true;
-      }
-
-      grassMesh.position.y = viewMode === "qr" ? -6.0 : 0.0;
-      grassMesh.visible = viewMode === "3d";
-      scene.add(grassMesh);
-      grassMeshRef.current = grassMesh;
-    }
-
-    // 5. Build Dramatic Sitting Person Group (leans against trunk)
+    // 4. Build Dramatic Sitting Person Group (leans against trunk)
     if (personVoxels.length > 0) {
       const pGroup = new THREE.Group();
       const pGeo = new THREE.BoxGeometry(1.0, 1.0, 1.0);

@@ -8,7 +8,7 @@ export interface VoxelItem {
   z: number;
   size?: number;
   color: string;
-  role: "trunk" | "branch" | "leaf" | "stone" | "border" | "hedge" | "flower" | "grass" | "person";
+  role: "trunk" | "branch" | "leaf" | "stone" | "border" | "hedge" | "flower" | "person";
   isQrDark?: boolean;
 }
 
@@ -24,7 +24,10 @@ export interface SeasonTheme {
   hedgeColor: string[];
   stonePaver: string[];
   stoneBorder: string;
-  grassColors: string[];
+  qrDark: string[];
+  finderOuter: string[];
+  finderInner: string[];
+  petalFloor: string[];
   particleColors: string[];
   accentColor: string;
 }
@@ -35,49 +38,60 @@ export const SEASONS: Record<SeasonType, SeasonTheme> = {
     badge: "🌳 Summer Green",
     bgColor: "#F6F1E7",
     paperColor: "#EFE8DA",
-    // Rich, high-contrast forest greens (scannable + lush 3D shading)
-    leafPrimary: ["#1B5E20", "#236B29", "#1E6024", "#2E7D32"],
-    leafHighlight: ["#2E7D32", "#388E3C", "#257A2D", "#1F6E27"],
-    leafShadow: ["#124417", "#0D3812", "#08240B", "#0F3214"],
+    // Lush vibrant forest greens with emerald highlights matching Reference Image 1
+    leafPrimary: ["#1E7E34", "#28A745", "#218838", "#19692C"],
+    leafHighlight: ["#4ADE80", "#22C55E", "#86EFAC", "#16A34A"],
+    leafShadow: ["#14532D", "#0F3D21", "#0B2E18", "#166534"],
     trunkPrimary: ["#4E342E", "#3E2723", "#5D4037", "#2E1B17"],
-    hedgeColor: ["#1B5E20", "#124417", "#0D3812"],
+    hedgeColor: ["#15803D", "#166534", "#14532D"],
     stonePaver: ["#FAF6EE", "#F5EFE4", "#FFFDF8", "#EFE8DA"],
     stoneBorder: "#D8CDBA",
-    grassColors: ["#33691E", "#3E7B24", "#2E6619"],
-    particleColors: ["#4CAF50", "#66BB6A", "#81C784", "#A5D6A7"],
-    accentColor: "#1B5E20",
+    qrDark: ["#052E16", "#064E3B", "#14532D", "#0D3812"],
+    finderOuter: ["#14532D", "#166534", "#15803D"],
+    finderInner: ["#16A34A", "#22C55E", "#4ADE80"],
+    petalFloor: ["#22C55E", "#4ADE80", "#16A34A"],
+    particleColors: ["#22C55E", "#4ADE80", "#16A34A", "#86EFAC"],
+    accentColor: "#16A34A",
   },
   spring: {
     name: "Sakura Spring",
     badge: "🌸 Sakura Blossom",
-    bgColor: "#FAF5F4",
-    paperColor: "#F4ECE9",
-    leafPrimary: ["#880E4F", "#7B0B46", "#991158", "#820948"],
-    leafHighlight: ["#AD1457", "#C2185B", "#9F1150", "#8D0F47"],
-    leafShadow: ["#4A052A", "#3B0321", "#30021A", "#260214"],
+    bgColor: "#FAF3F3",
+    paperColor: "#F5ECEC",
+    // Gorgeous cherry blossom cloud matching Reference Image 2: pinks, white blossoms, plum shadow
+    leafPrimary: ["#F472B6", "#EC4899", "#F43F5E", "#FB7185"],
+    leafHighlight: ["#FFFFFF", "#FFF1F2", "#FCE7F3", "#FBCFE8"],
+    leafShadow: ["#BE185D", "#9D174D", "#831843", "#701A75"],
     trunkPrimary: ["#4E342E", "#3E2723", "#5D4037", "#2E1B17"],
-    hedgeColor: ["#1B5E20", "#124417"],
-    stonePaver: ["#FFFCFB", "#FDF7F5", "#F8EFEA", "#F5E9E4"],
-    stoneBorder: "#D8C5BE",
-    grassColors: ["#33691E", "#3E7B24"],
-    particleColors: ["#FFB7C5", "#FFCCD5", "#FCE7F3", "#F8BBD0"],
-    accentColor: "#880E4F",
+    hedgeColor: ["#DB2777", "#BE185D", "#F472B6"],
+    stonePaver: ["#FFF5F7", "#FDF2F4", "#FAF0F2", "#FCE7F3"],
+    stoneBorder: "#D8C5CE",
+    qrDark: ["#500724", "#701A75", "#4A044E", "#831843"], // Deep plum burgundy QR tiles matching Ref Image 2
+    finderOuter: ["#BE185D", "#DB2777", "#F472B6"],
+    finderInner: ["#FFFFFF", "#FCE7F3", "#FBCFE8"],
+    petalFloor: ["#F472B6", "#FBCFE8", "#FFFFFF", "#FCE7F3"],
+    particleColors: ["#FFB7C5", "#FFCCD5", "#FCE7F3", "#F472B6", "#FFFFFF"],
+    accentColor: "#EC4899",
   },
   autumn: {
     name: "Golden Autumn",
     badge: "🍂 Golden Autumn",
-    bgColor: "#F8F3EA",
-    paperColor: "#EFE5D5",
-    leafPrimary: ["#7C2D12", "#873012", "#9A3412", "#70250E"],
-    leafHighlight: ["#C2410C", "#B45309", "#A6390B", "#933108"],
-    leafShadow: ["#431405", "#350F03", "#290A01", "#210701"],
+    bgColor: "#F7F3EA",
+    paperColor: "#EFE6D6",
+    // Warm golden maple & amber foliage matching Reference Image 3: amber, gold, cinnamon
+    leafPrimary: ["#F59E0B", "#D97706", "#EA580C", "#D97706"],
+    leafHighlight: ["#FDE68A", "#FCD34D", "#FBBF24", "#FEF08A"],
+    leafShadow: ["#B45309", "#92400E", "#78350F", "#6B21A8"],
     trunkPrimary: ["#4E342E", "#3E2723", "#5D4037", "#2E1B17"],
-    hedgeColor: ["#2A410E", "#1F3108"],
-    stonePaver: ["#FFFDF8", "#FAF5EB", "#F4ECDC", "#EFE5D3"],
-    stoneBorder: "#C7B89E",
-    grassColors: ["#3E7B24", "#33691E"],
-    particleColors: ["#F97316", "#FB923C", "#FBBF24", "#FED7AA"],
-    accentColor: "#7C2D12",
+    hedgeColor: ["#B45309", "#92400E", "#78350F"],
+    stonePaver: ["#FFFBEB", "#FEF3C7", "#FDF6E2", "#FAF5EB"],
+    stoneBorder: "#CFC3AD",
+    qrDark: ["#78350F", "#9A3412", "#451A03", "#92400E"], // Roasted amber chestnut QR tiles matching Ref Image 3
+    finderOuter: ["#92400E", "#B45309", "#D97706"],
+    finderInner: ["#FBBF24", "#F59E0B", "#FCD34D"],
+    petalFloor: ["#F59E0B", "#D97706", "#FBBF24", "#EA580C"],
+    particleColors: ["#F97316", "#FB923C", "#F59E0B", "#FBBF24", "#EA580C"],
+    accentColor: "#D97706",
   },
 };
 
@@ -217,16 +231,12 @@ export function generateVoxelTree(
 
       // Base dark tile on courtyard floor for QR modules (vital for 100% top-down QR scan)
       if (isInsideQr && matrix[r][c] === 1) {
-        const distSq = x * x + z * z;
         const isFinder = isFinderPattern(r, c, size);
-
-        let floorDarkColor = theme.leafShadow[0];
+        let floorDarkColor: string;
         if (isFinder) {
-          floorDarkColor = theme.leafShadow[0];
-        } else if (distSq >= canopyRadiusSq) {
-          floorDarkColor = theme.hedgeColor[0] || theme.leafPrimary[0];
+          floorDarkColor = theme.finderOuter[0];
         } else {
-          floorDarkColor = theme.leafShadow[0];
+          floorDarkColor = pickRandom(theme.qrDark, h);
         }
 
         voxels.push({
@@ -239,90 +249,10 @@ export function generateVoxelTree(
           isQrDark: true,
         });
       }
-
-      // 2. SWAYING PIXEL GRASS TUFTS AROUND THE 3 CORNER BOXES ("rumput pixel yang bergoyang kena angin")
-      // In the quiet zones and surrounding outer borders of Top-Left, Top-Right, and Bottom-Left finder patterns
-      const isNearTL = (r >= -quietZone && r <= 8 && c >= -quietZone && c <= 8) && (r < 0 || c < 0 || r === 7 || c === 7 || r === 8 || c === 8);
-      const isNearTR = (r >= -quietZone && r <= 8 && c >= size - 9 && c < size + quietZone) && (r < 0 || c >= size || r === 7 || c === size - 8 || r === 8 || c === size - 9);
-      const isNearBL = (r >= size - 9 && r < size + quietZone && c >= -quietZone && c <= 8) && (r >= size || c < 0 || r === size - 8 || c === 7 || r === size - 9 || c === 8);
-
-      if (isNearTL || isNearTR || isNearBL) {
-        const grassHash = coordHash(x, z, 77);
-        if (grassHash > 0.22) {
-          const grassColor = pickRandom(theme.grassColors, grassHash);
-          // Blade Base
-          voxels.push({
-            x,
-            y: 0.35,
-            z,
-            size: 0.62,
-            color: grassColor,
-            role: "grass",
-            isQrDark: false,
-          });
-
-          // Blade Mid (taller, swaying)
-          if (grassHash > 0.40) {
-            voxels.push({
-              x: x + (grassHash > 0.6 ? 0.06 : -0.06),
-              y: 0.95,
-              z: z + (grassHash > 0.5 ? -0.06 : 0.06),
-              size: 0.52,
-              color: pickRandom(theme.grassColors, grassHash * 1.7),
-              role: "grass",
-              isQrDark: false,
-            });
-          }
-
-          // Blade Tip (plume that flutters in the wind)
-          if (grassHash > 0.65) {
-            voxels.push({
-              x: x + (grassHash > 0.8 ? 0.10 : -0.10),
-              y: 1.55,
-              z: z + (grassHash > 0.7 ? 0.08 : -0.08),
-              size: 0.44,
-              color: pickRandom(theme.grassColors, grassHash * 2.5),
-              role: "grass",
-              isQrDark: false,
-            });
-          }
-
-          // Extra tall grass blade on prominent corner clusters
-          if (grassHash > 0.84) {
-            voxels.push({
-              x,
-              y: 2.15,
-              z,
-              size: 0.36,
-              color: pickRandom(theme.grassColors, grassHash * 3.8),
-              role: "grass",
-              isQrDark: false,
-            });
-          }
-
-          // Wildflower blossoms accenting the grass tufts
-          if (grassHash > 0.80) {
-            let flowerColor = "#FFFFFF"; // Pure white star flower
-            if (season === "spring") flowerColor = "#F472B6"; // Sakura pink
-            else if (season === "autumn") flowerColor = "#F59E0B"; // Marigold orange
-            else if (grassHash > 0.90) flowerColor = "#FACC15"; // Sunny dandelion
-
-            voxels.push({
-              x: x + (grassHash > 0.85 ? 0.08 : -0.08),
-              y: 1.65,
-              z: z + (grassHash > 0.85 ? 0.08 : -0.08),
-              size: 0.32,
-              color: flowerColor,
-              role: "grass",
-              isQrDark: false,
-            });
-          }
-        }
-      }
     }
   }
 
-  // 3. CORNER FINDER PATTERNS (Low Elegant Courtyard Garden Monuments with Swaying Grass Sprouts)
+  // 2. CORNER FINDER PATTERNS (Clean, Crisp, Elegant Garden Monuments - No messy grass)
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       if (matrix[r][c] === 1 && isFinderPattern(r, c, size)) {
@@ -338,51 +268,27 @@ export function generateVoxelTree(
             y: 0.45,
             z,
             size: 0.96,
-            color: pickRandom(theme.hedgeColor, h),
+            color: pickRandom(theme.finderOuter, h),
             role: "hedge",
             isQrDark: true,
           });
-
-          // Swaying grass sprouts on top of the outer hedge
-          if (coordHash(x, z, 99) > 0.42) {
-            voxels.push({
-              x,
-              y: 0.95,
-              z,
-              size: 0.50,
-              color: pickRandom(theme.grassColors, coordHash(x, z, 123)),
-              role: "grass",
-              isQrDark: true,
-            });
-            if (coordHash(x, z, 99) > 0.74) {
-              voxels.push({
-                x,
-                y: 1.50,
-                z,
-                size: 0.40,
-                color: pickRandom(theme.grassColors, coordHash(x, z, 456)),
-                role: "grass",
-                isQrDark: true,
-              });
-            }
-          }
         } else if (finderRole === "flower") {
-          // 3x3 inner square: decorative stone pedestal & garden monument
+          // 3x3 inner square: decorative pedestal & floral garden monument
           voxels.push({
             x,
-            y: 0.5,
+            y: 0.45,
             z,
             size: 0.96,
-            color: theme.leafShadow[0],
+            color: theme.finderOuter[0],
             role: "flower",
             isQrDark: true,
           });
           voxels.push({
             x,
-            y: 0.9,
+            y: 0.85,
             z,
             size: 0.96,
-            color: pickRandom(theme.leafHighlight, h),
+            color: pickRandom(theme.finderInner, h),
             role: "flower",
             isQrDark: true,
           });
@@ -391,7 +297,7 @@ export function generateVoxelTree(
     }
   }
 
-  // 4. SLENDER, MAJESTIC TRUNK WITH ROOT FLARE & SPREADING BRANCH ARMS
+  // 3. SLENDER, MAJESTIC TRUNK WITH ROOT FLARE & SPREADING BRANCH ARMS
   // Visible through the wide-open air (Y=1 to Y=14) under the expansive canopy!
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
@@ -463,8 +369,8 @@ export function generateVoxelTree(
     }
   }
 
-  // 5. WIDE SPREADING EXPANSIVE CANOPY (Majestic Ancient Elm / Sprawling Bonsai Crown)
-  // Diameter is widened to reach across the entire courtyard (~32 modules), leaving the 3 corner boxes visible!
+  // 4. WIDE SPREADING EXPANSIVE CANOPY (Majestic Weeping Pagoda Umbrella)
+  // Perfectly matches the 3 user reference photos with cascading weeping foliage and floating pixel clusters
   const isFinderBoxArea = (r: number, c: number) =>
     (r <= 7 && c <= 7) ||
     (r <= 7 && c >= size - 8) ||
@@ -485,10 +391,10 @@ export function generateVoxelTree(
 
           // Wide umbrella base: starts at trunkHeight - 2 at center and curves gently upward towards perimeter
           // leaving the view to the trunk, sitting person, and courtyard completely open and airy
-          const baseCanopyY = trunkHeight - 2 + Math.round(3.0 * Math.pow(normDist, 1.2));
+          const baseCanopyY = trunkHeight - 2 + Math.round(2.6 * Math.pow(normDist, 1.3));
 
           // Wide, plateau-style umbrella canopy thickness
-          const numLayers = Math.max(3, Math.round(maxCanopyLayers * (0.42 + 0.58 * dome)));
+          const numLayers = Math.max(3, Math.round(maxCanopyLayers * (0.38 + 0.62 * dome)));
 
           // Organic cloud lobe variation
           const extraCrown = Math.floor(2.2 * coordHash(x, z, 333) * dome);
@@ -501,10 +407,10 @@ export function generateVoxelTree(
             const h = coordHash(x, z, l * 31);
 
             let leafColor: string;
-            if (relH > 0.70) {
+            if (relH > 0.68) {
               // Top sunlit crown highlight
               leafColor = pickRandom(theme.leafHighlight, h);
-            } else if (relH > 0.22) {
+            } else if (relH > 0.20) {
               // Mid-canopy vibrant primary foliage
               leafColor = pickRandom(theme.leafPrimary, h);
             } else {
@@ -523,14 +429,55 @@ export function generateVoxelTree(
             });
           }
 
-          // Underside hanging leaf accents on the canopy edge for lush organic silhouette
-          if (normDist > 0.45 && normDist < 0.92 && coordHash(x, z, 888) > 0.55) {
+          // Weeping / Cascading leaf clusters dripping down around the perimeter (Signature look of Ref Images!)
+          if (normDist >= 0.48) {
+            const hDrop = coordHash(x, z, 777);
+            // 1-block drop below base
+            if (hDrop > 0.32) {
+              voxels.push({
+                x,
+                y: baseCanopyY - 1,
+                z,
+                size: 0.92,
+                color: pickRandom(theme.leafShadow, coordHash(x, z, 778)),
+                role: "leaf",
+                isQrDark: true,
+              });
+            }
+            // 2-block drop for weeping cascades
+            if (hDrop > 0.62) {
+              voxels.push({
+                x,
+                y: baseCanopyY - 2,
+                z,
+                size: 0.88,
+                color: pickRandom(theme.leafShadow, coordHash(x, z, 779)),
+                role: "leaf",
+                isQrDark: true,
+              });
+            }
+            // 3-block drop for delicate weeping tendril tips
+            if (hDrop > 0.84) {
+              voxels.push({
+                x,
+                y: baseCanopyY - 3,
+                z,
+                size: 0.84,
+                color: pickRandom(theme.leafShadow, coordHash(x, z, 780)),
+                role: "leaf",
+                isQrDark: true,
+              });
+            }
+          }
+
+          // Scattered floating foliage cubes around the canopy perimeter
+          if (normDist > 0.68 && normDist < 0.96 && coordHash(x, z, 999) > 0.68) {
             voxels.push({
               x,
-              y: baseCanopyY - 1,
+              y: baseCanopyY + Math.floor(coordHash(x, z, 1000) * 2),
               z,
-              size: 0.88,
-              color: pickRandom(theme.leafShadow, coordHash(x, z, 889)),
+              size: 0.82,
+              color: pickRandom(theme.leafHighlight, coordHash(x, z, 1001)),
               role: "leaf",
               isQrDark: true,
             });
@@ -540,7 +487,7 @@ export function generateVoxelTree(
     }
   }
 
-  // 6. DRAMATIC PIXEL PERSON SITTING UNDER THE TREE LEANING AGAINST TRUNK ("nyender")
+  // 5. DRAMATIC PIXEL PERSON SITTING UNDER THE TREE LEANING AGAINST TRUNK ("nyender")
   const personVoxels = generateSittingPersonVoxels();
   voxels.push(...personVoxels);
 
