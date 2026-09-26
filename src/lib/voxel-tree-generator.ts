@@ -465,49 +465,207 @@ export function generateVoxelSatria(
     }
   }
 
-  // 2. THE MAJESTIC 3D VOXEL GATOTKACA HERO STATUE
-  // Built directly from the user's authentic sprite pixels (GATOTKACA_PIXELS)
+  // 2. THE MAJESTIC 3D VOXEL GATOTKACA HERO STATUE (Goxel / MagicaVoxel 3D Sculpture)
+  // Transforms the authentic 2D pixel sprite into a full 3D volumetric character:
+  // - 3D Muscular Torso & Embossed Bintang Antakusuma chest star
+  // - 3D Rounded Arms, Shoulders (Kelat Bahu), Gauntlets (Brajamusti)
+  // - 3D Head, Face, Crown (Makuta Kasatriyan) & Rear Garuda Mungkur Crest
+  // - 3D Golden Flying Wings (Sayap Praba / Sayap Antakusuma) arching backward
+  // - 3D Royal Belt (Timang), Floating Red Sash (Sampur), and Blue Dodot folds
+  // - 3D Leg Stance (Kuda-kuda) firmly planted with Sandals & Gold Ankle Rings (Binggel)
   const scale = 0.22; // Scale factor for 64x124 sprite into ~27 unit tall statue
   const statueBaseY = 1.0; // Sits on top of the temple plinth
 
+  const shadeColor = (hex: string, factor: number): string => {
+    let c = hex.replace("#", "");
+    if (c.length === 3) c = c.split("").map((x) => x + x).join("");
+    const num = parseInt(c, 16);
+    if (isNaN(num)) return hex;
+    const r = Math.min(255, Math.max(0, Math.floor(((num >> 16) & 255) * factor)));
+    const g = Math.min(255, Math.max(0, Math.floor(((num >> 8) & 255) * factor)));
+    const b = Math.min(255, Math.max(0, Math.floor((num & 255) * factor)));
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  };
+
   for (const p of GATOTKACA_PIXELS) {
-    const vx = p.x * scale;
-    const vy = statueBaseY + p.y * scale;
+    const x = p.x;
+    const y = p.y;
+    const color = p.color;
+    const colorLower = color.toLowerCase();
 
-    // Calculate 3D Depth (Z-extrusion) based on armor & body features
-    let vz = 0;
-    const colorLower = p.color.toLowerCase();
+    // Determine anatomical depth bounds [zMin, zMax] in integer voxel steps
+    let zMin = 0;
+    let zMax = 0;
 
-    // Gold Chest Star & Armor -> Extrude forward
-    if (
-      p.y >= 50 &&
-      p.y <= 85 &&
-      (colorLower.includes("ea") ||
-        colorLower.includes("bc") ||
-        colorLower.includes("fe") ||
-        colorLower.includes("fa"))
-    ) {
-      vz = 0.5; // Star plate pops forward
-    } else if (p.y >= 90 && (colorLower === "#040203" || colorLower === "#1b1a1b")) {
-      // Ponytail hair flows backward
-      vz = -0.6;
-    } else if (p.y >= 30 && p.y <= 55 && colorLower.includes("b1302c")) {
-      // Red sash belt
-      vz = 0.4;
-    } else if (p.y >= 25 && p.y <= 50 && colorLower.includes("4163b0")) {
-      // Blue waistcloth
-      vz = 0.3;
+    if (y >= 88) {
+      // Head, Face & Crown
+      const dx = x - 2;
+      if (Math.abs(dx) <= 8) {
+        const r = Math.sqrt(Math.max(0, 64 - dx * dx)) / 8;
+        zMin = -Math.round(r * 4.5);
+        zMax = Math.round(r * 3.5);
+        // Nose bridge protrusion
+        if (y >= 98 && y <= 103 && x >= 0 && x <= 4) {
+          zMax += 2;
+        }
+      } else {
+        // Ear sumping flaring slightly
+        zMin = -1;
+        zMax = 1;
+      }
+    } else if (y >= 58) {
+      // Torso, Chest, Shoulders & Arms
+      if (Math.abs(x) <= 15) {
+        // Muscular chest volume
+        const r = Math.sqrt(Math.max(0, 225 - x * x)) / 15;
+        zMin = -Math.round(r * 4.5);
+        zMax = Math.round(r * 4.0);
+
+        // Gold Star emblem (Kotang Antakusuma) bold 3D relief
+        if (
+          y >= 68 &&
+          y <= 84 &&
+          Math.abs(x) <= 9 &&
+          (colorLower.includes("ea") ||
+            colorLower.includes("bc") ||
+            colorLower.includes("fe") ||
+            colorLower.includes("fa") ||
+            colorLower.includes("f0") ||
+            colorLower.includes("c8"))
+        ) {
+          zMax += 2;
+        }
+      } else {
+        // Shoulders & Arms (cylindrical cross-section)
+        const armCenter = x < 0 ? -23 : 23;
+        const dx = x - armCenter;
+        const r = Math.sqrt(Math.max(0, 20 - dx * dx));
+        zMin = -Math.round(r * 0.9);
+        zMax = Math.round(r * 0.9);
+      }
+    } else if (y >= 35) {
+      // Waist, Belt, Dodot & Hands
+      if (Math.abs(x) <= 14) {
+        const r = Math.sqrt(Math.max(0, 196 - x * x)) / 14;
+        zMin = -Math.round(r * 3.8);
+        zMax = Math.round(r * 3.8);
+
+        // Red sash (Sampur) floats forward in front
+        if (
+          Math.abs(x) <= 6 &&
+          (colorLower.includes("b1302c") ||
+            colorLower.includes("7e1b1b") ||
+            colorLower.includes("d94541"))
+        ) {
+          zMax += 2;
+        }
+      } else {
+        // Hands & Gauntlets (Brajamusti)
+        const handCenter = x < 0 ? -25 : 25;
+        const dx = x - handCenter;
+        const r = Math.sqrt(Math.max(0, 14 - dx * dx));
+        zMin = -Math.round(r);
+        zMax = Math.round(r);
+      }
+    } else {
+      // Legs & Feet (Stance / Kuda-kuda)
+      const legCenter = x < 0 ? -17 : 17;
+      const dx = x - legCenter;
+      const r = Math.sqrt(Math.max(0, 25 - dx * dx));
+      zMin = -Math.round(r * 0.9);
+      zMax = Math.round(r * 0.9);
+
+      // Feet on ground extend forward for solid grounding
+      if (y <= 4) {
+        zMax = Math.max(zMax, 3);
+        zMin = Math.min(zMin, -2);
+      }
     }
 
-    voxels.push({
-      x: vx,
-      y: vy,
-      z: vz,
-      size: scale * 1.05,
-      color: p.color,
-      role: "satria",
-      isQrDark: true,
-    });
+    // Populate 3D voxels across [zMin, zMax]
+    for (let z = zMin; z <= zMax; z += 1) {
+      let vColor = color;
+
+      if (z === zMax) {
+        // Front shell: pristine sprite color
+        vColor = color;
+      } else if (z === zMin && zMin < zMax) {
+        // Back shell: realistic back armor, hair, and clothing
+        if (y >= 90) {
+          vColor = "#151415"; // Back of head hair
+        } else if (y >= 58 && Math.abs(x) <= 14) {
+          vColor = Math.abs(x) <= 2 ? "#C89F39" : "#1B1A1B"; // Spinal gold strap or black plate
+        } else if (y < 35) {
+          vColor = "#1B1A1B"; // Dark pants
+        } else {
+          vColor = shadeColor(color, 0.72);
+        }
+      } else {
+        // Core & side flanks: rich ambient occlusion shading
+        vColor = shadeColor(color, 0.85);
+      }
+
+      voxels.push({
+        x: x * scale,
+        y: statueBaseY + y * scale,
+        z: z * scale,
+        size: scale * 1.04,
+        color: vColor,
+        role: "satria",
+        isQrDark: true,
+      });
+    }
+  }
+
+  // 3. 3D WAYANG WINGS (Sayap Praba / Sayap Antakusuma)
+  // Gatotkaca has golden wings on his back that arch backward and outward!
+  for (let wy = 65; wy <= 104; wy += 2) {
+    const progress = (wy - 65) / 39;
+    const wingSpan = 14 + Math.sin(progress * Math.PI) * 16;
+    const wingZ = -2.5 - progress * 3;
+
+    for (let wx = 14; wx <= wingSpan; wx += 2) {
+      const isTip = wx >= wingSpan - 3;
+      const wColor = isTip ? "#F0C857" : wx % 4 === 0 ? "#C89F39" : "#BC891F";
+
+      // Right Wing
+      voxels.push({
+        x: wx * scale,
+        y: statueBaseY + wy * scale,
+        z: wingZ * scale,
+        size: scale * 1.8,
+        color: wColor,
+        role: "satria",
+        isQrDark: true,
+      });
+
+      // Left Wing (Mirror)
+      voxels.push({
+        x: -wx * scale,
+        y: statueBaseY + wy * scale,
+        z: wingZ * scale,
+        size: scale * 1.8,
+        color: wColor,
+        role: "satria",
+        isQrDark: true,
+      });
+    }
+  }
+
+  // 4. GARUDA MUNGKUR CREST (Back of the royal crown)
+  for (let gy = 100; gy <= 112; gy += 2) {
+    const gz = -4 - (gy - 100) * 0.3;
+    for (let gx = -1; gx <= 5; gx += 2) {
+      voxels.push({
+        x: gx * scale,
+        y: statueBaseY + gy * scale,
+        z: gz * scale,
+        size: scale * 1.6,
+        color: "#FACC15",
+        role: "satria",
+        isQrDark: true,
+      });
+    }
   }
 
   return voxels;
