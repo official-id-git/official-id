@@ -44,11 +44,11 @@ export const SEASONS: Record<SeasonType, SeasonTheme> = {
     leafShadow: ["#14532D", "#0F3D21", "#0B2E18", "#166534"],
     trunkPrimary: ["#4E342E", "#3E2723", "#5D4037", "#2E1B17"],
     hedgeColor: ["#15803D", "#166534", "#14532D"],
-    stonePaver: ["#FAF6EE", "#F5EFE4", "#FFFDF8", "#EFE8DA"],
-    stoneBorder: "#D8CDBA",
-    qrDark: ["#052E16", "#064E3B", "#14532D", "#0D3812"],
-    finderOuter: ["#14532D", "#166534", "#15803D"],
-    finderInner: ["#16A34A", "#22C55E", "#4ADE80"],
+    stonePaver: ["#FFFFFF", "#FAF6EE", "#FDFCFA", "#F5EFE4"],
+    stoneBorder: "#E2DDD2",
+    qrDark: ["#052E16", "#064E3B", "#0D3812", "#022C22"],
+    finderOuter: ["#052E16", "#064E3B", "#14532D"],
+    finderInner: ["#052E16", "#022C22", "#064E3B"], // High-contrast solid dark core
     petalFloor: ["#22C55E", "#4ADE80", "#16A34A"],
     particleColors: ["#22C55E", "#4ADE80", "#16A34A", "#86EFAC"],
     accentColor: "#16A34A",
@@ -64,11 +64,11 @@ export const SEASONS: Record<SeasonType, SeasonTheme> = {
     leafShadow: ["#BE185D", "#9D174D", "#831843", "#701A75"],
     trunkPrimary: ["#4E342E", "#3E2723", "#5D4037", "#2E1B17"],
     hedgeColor: ["#DB2777", "#BE185D", "#F472B6"],
-    stonePaver: ["#FFF5F7", "#FDF2F4", "#FAF0F2", "#FCE7F3"],
-    stoneBorder: "#D8C5CE",
-    qrDark: ["#500724", "#701A75", "#4A044E", "#831843"], // Deep plum burgundy QR tiles matching Ref Image 2
-    finderOuter: ["#BE185D", "#DB2777", "#F472B6"],
-    finderInner: ["#FFFFFF", "#FCE7F3", "#FBCFE8"],
+    stonePaver: ["#FFFFFF", "#FFF5F7", "#FDF4F6", "#FAF0F2"],
+    stoneBorder: "#E8D5DE",
+    qrDark: ["#3B0764", "#4A044E", "#500724", "#300638"], // Deep plum burgundy QR tiles
+    finderOuter: ["#3B0764", "#4A044E", "#500724"],
+    finderInner: ["#3B0764", "#4A044E", "#2E0854"], // High-contrast solid dark plum core (NOT white)
     petalFloor: ["#F472B6", "#FBCFE8", "#FFFFFF", "#FCE7F3"],
     particleColors: ["#FFB7C5", "#FFCCD5", "#FCE7F3", "#F472B6", "#FFFFFF"],
     accentColor: "#EC4899",
@@ -84,11 +84,11 @@ export const SEASONS: Record<SeasonType, SeasonTheme> = {
     leafShadow: ["#B45309", "#92400E", "#78350F", "#6B21A8"],
     trunkPrimary: ["#4E342E", "#3E2723", "#5D4037", "#2E1B17"],
     hedgeColor: ["#B45309", "#92400E", "#78350F"],
-    stonePaver: ["#FFFBEB", "#FEF3C7", "#FDF6E2", "#FAF5EB"],
-    stoneBorder: "#CFC3AD",
-    qrDark: ["#78350F", "#9A3412", "#451A03", "#92400E"], // Roasted amber chestnut QR tiles matching Ref Image 3
-    finderOuter: ["#92400E", "#B45309", "#D97706"],
-    finderInner: ["#FBBF24", "#F59E0B", "#FCD34D"],
+    stonePaver: ["#FFFFFF", "#FFFBEB", "#FDF8ED", "#FEF3C7"],
+    stoneBorder: "#E5DAC6",
+    qrDark: ["#271708", "#381207", "#451A03", "#301306"], // Roasted deep dark espresso QR tiles
+    finderOuter: ["#271708", "#381207", "#451A03"],
+    finderInner: ["#271708", "#381207", "#1E1106"], // High-contrast solid dark espresso core (NOT yellow)
     petalFloor: ["#F59E0B", "#D97706", "#FBBF24", "#EA580C"],
     particleColors: ["#F97316", "#FB923C", "#F59E0B", "#FBBF24", "#EA580C"],
     accentColor: "#D97706",
@@ -183,7 +183,7 @@ export function generateVoxelTree(
   const voxels: VoxelItem[] = [];
 
   const center = (size - 1) / 2;
-  const quietZone = 4; // Standard 4-module quiet margin
+  const quietZone = 5; // Standard 4+ module clean quiet margin (ISO/IEC 18004)
 
   const scale = size / 29;
   const trunkHeight = Math.round(14 * scale); // Majestic trunk height (14 blocks high, leaving open airy space)
@@ -211,7 +211,7 @@ export function generateVoxelTree(
         x,
         y: 0,
         z,
-        size: 0.98,
+        size: 1.0,
         color: isPerimeter ? theme.stoneBorder : paverColor,
         role: isPerimeter ? "border" : "stone",
         isQrDark: false,
@@ -223,7 +223,7 @@ export function generateVoxelTree(
           x,
           y: 0.35,
           z,
-          size: 0.98,
+          size: 1.0,
           color: theme.stoneBorder,
           role: "border",
         });
@@ -243,7 +243,7 @@ export function generateVoxelTree(
           x,
           y: 0.04,
           z,
-          size: 0.98,
+          size: 1.0,
           color: floorDarkColor,
           role: "leaf",
           isQrDark: true,
@@ -267,7 +267,7 @@ export function generateVoxelTree(
             x,
             y: 0.45,
             z,
-            size: 0.96,
+            size: 1.0,
             color: pickRandom(theme.finderOuter, h),
             role: "hedge",
             isQrDark: true,
@@ -278,7 +278,7 @@ export function generateVoxelTree(
             x,
             y: 0.45,
             z,
-            size: 0.96,
+            size: 1.0,
             color: theme.finderOuter[0],
             role: "flower",
             isQrDark: true,
@@ -287,7 +287,7 @@ export function generateVoxelTree(
             x,
             y: 0.85,
             z,
-            size: 0.96,
+            size: 1.0,
             color: pickRandom(theme.finderInner, h),
             role: "flower",
             isQrDark: true,

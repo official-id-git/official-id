@@ -72,13 +72,17 @@ export default function ThreeVoxelTreeScene({
     viewModeRef.current = viewMode;
   }, [viewMode]);
 
-  // Wind animation shader uniforms ref
+  // Wind & QR mode transition shader uniforms ref
   const windUniformsRef = useRef<{
     uTime: { value: number };
     uWind: { value: number };
+    uQrMode: { value: number };
+    uQrDarkColor: { value: THREE.Color };
   }>({
     uTime: { value: 0 },
     uWind: { value: 1.0 },
+    uQrMode: { value: viewMode === "qr" ? 1.0 : 0.0 },
+    uQrDarkColor: { value: new THREE.Color(SEASONS[season].qrDark[0]) },
   });
 
   const animFrameRef = useRef<number | null>(null);
@@ -275,15 +279,23 @@ export default function ThreeVoxelTreeScene({
 
       const currentMode = viewModeRef.current;
 
-      // Update Wind Shader Uniforms
+      // Update Wind & QR Mode Shader Uniforms
       if (windUniformsRef.current) {
         windUniformsRef.current.uTime.value = timeInSec;
-        // In 3D: wind = 1.0 (canopy foliage gently sways in breeze). In QR: smoothly lerp to 0.0 for instant camera scan!
+        // In 3D: wind = 1.0 (canopy foliage gently sways in breeze). In QR: strictly 0.0 for crisp scanning
         const targetWind = currentMode === "3d" ? 1.0 : 0.0;
         windUniformsRef.current.uWind.value = THREE.MathUtils.lerp(
           windUniformsRef.current.uWind.value,
           targetWind,
-          0.08
+          0.12
+        );
+
+        // Smoothly lerp uQrMode: 0.0 in 3D (full height), 1.0 in QR (flat high-contrast scannable tiles)
+        const targetQrMode = currentMode === "qr" ? 1.0 : 0.0;
+        windUniformsRef.current.uQrMode.value = THREE.MathUtils.lerp(
+          windUniformsRef.current.uQrMode.value,
+          targetQrMode,
+          0.10
         );
       }
 
@@ -419,6 +431,10 @@ export default function ThreeVoxelTreeScene({
         particlesMeshRef.current.instanceColor.needsUpdate = true;
       }
     }
+
+    if (windUniformsRef.current) {
+      windUniformsRef.current.uQrDarkColor.value.set(theme.qrDark[0]);
+    }
   }, [season]);
 
   // Re-generate Tree Voxels when URL or Season changes
@@ -452,11 +468,12 @@ export default function ThreeVoxelTreeScene({
     const treeVoxels = voxels.filter((v) => v.role !== "person");
     const personVoxels = voxels.filter((v) => v.role === "person");
 
-    // 3. Create InstancedMesh with Wind Sway Shader for Foliage & Tree
+    // 3. Create InstancedMesh with Wind Sway & QR Mode Flattening Shader
     const voxelGeo = new THREE.BoxGeometry(1.0, 1.0, 1.0);
 
-    // Pass per-instance wind weight attribute
+    // Pass per-instance wind weight attribute & isQrDark attribute
     const windWeights = new Float32Array(treeVoxels.length);
+    const isQrDarks = new Float32Array(treeVoxels.length);
     for (let i = 0; i < treeVoxels.length; i++) {
       const r = treeVoxels[i].role;
       if (r === "leaf") {
@@ -468,23 +485,30 @@ export default function ThreeVoxelTreeScene({
       } else {
         windWeights[i] = 0.0;
       }
+      isQrDarks[i] = treeVoxels[i].isQrDark ? 1.0 : 0.0;
     }
     voxelGeo.setAttribute("aWindWeight", new THREE.InstancedBufferAttribute(windWeights, 1));
+    voxelGeo.setAttribute("aIsQrDark", new THREE.InstancedBufferAttribute(isQrDarks, 1));
 
     const voxelMat = new THREE.MeshStandardMaterial({
       roughness: 0.82,
       metalness: 0.08,
     });
 
-    // Injected GPU Wind Sway Shader: realistic gentle tree canopy swaying
+    // Injected GPU Wind Sway & Smooth QR Mode Flattening Shader
     voxelMat.onBeforeCompile = (shader) => {
       shader.uniforms.uTime = windUniformsRef.current.uTime;
       shader.uniforms.uWind = windUniformsRef.current.uWind;
+      shader.uniforms.uQrMode = windUniformsRef.current.uQrMode;
+      shader.uniforms.uQrDarkColor = windUniformsRef.current.uQrDarkColor;
 
       shader.vertexShader = `
         attribute float aWindWeight;
+        attribute float aIsQrDark;
         uniform float uTime;
         uniform float uWind;
+        uniform float uQrMode;
+        varying float vIsQrDark;
       ` + shader.vertexShader;
 
       shader.vertexShader = shader.vertexShader.replace(
@@ -496,19 +520,45 @@ export default function ThreeVoxelTreeScene({
         #endif
         #ifdef USE_INSTANCING
           mvPosition = instanceMatrix * mvPosition;
-          if (aWindWeight > 0.01 && uWind > 0.001) {
-            // Upper tree canopy & branch sway (starting from Y = 10 up to canopy apex)
+
+          // 1. In 3D: natural wind sway. In QR mode (uQrMode -> 1.0): strictly stationary
+          if (aWindWeight > 0.01 && uWind > 0.001 && uQrMode < 0.15) {
             float hFactor = clamp((mvPosition.y - 10.0) / 16.0, 0.0, 1.3);
             float sway1 = sin(uTime * 2.2 + mvPosition.x * 0.28 + mvPosition.z * 0.28) * 0.46;
             float sway2 = cos(uTime * 2.8 + mvPosition.z * 0.30 + mvPosition.y * 0.12) * 0.32;
             float flutter = sin(uTime * 5.4 + mvPosition.x * 1.2 + mvPosition.z * 1.2) * 0.16;
-            mvPosition.x += (sway1 + flutter) * hFactor * aWindWeight * uWind;
-            mvPosition.z += (sway2 + flutter * 0.8) * hFactor * aWindWeight * uWind;
-            mvPosition.y += sin(uTime * 3.6 + mvPosition.x * 0.4 + mvPosition.z * 0.4) * 0.05 * hFactor * aWindWeight * uWind;
+            float effectiveWind = uWind * (1.0 - uQrMode);
+            mvPosition.x += (sway1 + flutter) * hFactor * aWindWeight * effectiveWind;
+            mvPosition.z += (sway2 + flutter * 0.8) * hFactor * aWindWeight * effectiveWind;
+            mvPosition.y += sin(uTime * 3.6 + mvPosition.x * 0.4 + mvPosition.z * 0.4) * 0.05 * hFactor * aWindWeight * effectiveWind;
+          }
+
+          // 2. In QR Mode: smooth collapse of canopy foliage down onto the ground floor (Y -> 0.04)
+          // creating a 100% crisp, razor-sharp 2D QR Code tile surface with zero occlusions or gaps!
+          if (uQrMode > 0.001 && mvPosition.y > 0.5) {
+            mvPosition.y = mix(mvPosition.y, 0.04, uQrMode);
           }
         #endif
         mvPosition = modelViewMatrix * mvPosition;
+        vIsQrDark = aIsQrDark;
         gl_Position = projectionMatrix * mvPosition;
+        `
+      );
+
+      // In fragment shader: enforce deep high-contrast dark color for all QR dark modules in QR mode
+      shader.fragmentShader = `
+        uniform float uQrMode;
+        uniform vec3 uQrDarkColor;
+        varying float vIsQrDark;
+      ` + shader.fragmentShader;
+
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <color_fragment>",
+        `
+        #include <color_fragment>
+        if (uQrMode > 0.01 && vIsQrDark > 0.5) {
+          diffuseColor.rgb = mix(diffuseColor.rgb, uQrDarkColor, uQrMode * 0.96);
+        }
         `
       );
     };

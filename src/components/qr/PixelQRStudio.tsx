@@ -10,20 +10,20 @@ import {
   QRPixelData,
 } from "@/lib/qr-pixel-engine";
 import {
-  Sparkles,
+  WandMagicSparkles,
   Download,
-  Share2,
-  Box,
-  TreePine,
-  Building2,
-  Triangle,
+  ShareNodes,
+  CubesStacked,
+  Shapes,
+  Building,
+  Landmark,
   Layers,
   Play,
-  RotateCcw,
+  Refresh,
   Check,
   QrCode,
-  Sliders,
-} from "lucide-react";
+  AdjustmentsHorizontal,
+} from "flowbite-react-icons/outline";
 
 export default function PixelQRStudio() {
   const [text, setText] = useState("https://official.id/harizal");
@@ -137,7 +137,7 @@ export default function PixelQRStudio() {
               </>
             ) : (
               <>
-                <Box className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
+                <CubesStacked className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
                 <span>3D Isometric Voxel ({Math.round(morphValue * 100)}%)</span>
               </>
             )}
@@ -158,7 +158,7 @@ export default function PixelQRStudio() {
         <div className="w-full max-w-[500px] rounded-2xl border border-slate-800 bg-slate-900/60 p-4 backdrop-blur-xl">
           <div className="flex items-center justify-between text-xs font-medium text-slate-300 mb-2">
             <span className="flex items-center gap-1.5">
-              <Sliders className="h-3.5 w-3.5 text-indigo-400" />
+              <AdjustmentsHorizontal className="h-3.5 w-3.5 text-indigo-400" />
               Tingkat Ekstrusi Voxel 3D
             </span>
             <span className="font-mono text-indigo-400">{Math.round(morphValue * 100)}%</span>
@@ -204,7 +204,7 @@ export default function PixelQRStudio() {
         <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
           <div className="flex items-center justify-between">
             <label className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-indigo-400" />
+              <WandMagicSparkles className="h-4 w-4 text-indigo-400" />
               Link / Data QR Code
             </label>
             <span className="text-[11px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
@@ -225,7 +225,7 @@ export default function PixelQRStudio() {
               className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 hover:bg-slate-700 hover:text-white transition"
               title="Salin Link"
             >
-              {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Share2 className="h-4 w-4" />}
+              {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <ShareNodes className="h-4 w-4" />}
             </button>
           </div>
 
@@ -250,15 +250,15 @@ export default function PixelQRStudio() {
         {/* Shape Archetype Selector */}
         <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
           <label className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-            <Box className="h-4 w-4 text-cyan-400" />
+            <CubesStacked className="h-4 w-4 text-cyan-400" />
             Bentuk Arsitektur 3D (Voxel Topology)
           </label>
 
           <div className="grid grid-cols-2 gap-2.5">
             {[
-              { id: "tree", label: "Magic Tree (ICQR)", icon: TreePine, desc: "Kubah kanopi pohon bertingkat" },
-              { id: "city", label: "Skyline City", icon: Building2, desc: "Gedung metropolis acak tinggi" },
-              { id: "pyramid", label: "Pyramid Dome", icon: Triangle, desc: "Piramida dari pusat ke luar" },
+              { id: "tree", label: "Magic Tree (ICQR)", icon: Shapes, desc: "Kubah kanopi pohon bertingkat" },
+              { id: "city", label: "Skyline City", icon: Building, desc: "Gedung metropolis acak tinggi" },
+              { id: "pyramid", label: "Pyramid Dome", icon: Landmark, desc: "Piramida dari pusat ke luar" },
               { id: "flat", label: "Uniform Block", icon: Layers, desc: "Tinggi balok seragam rata" },
             ].map((item) => {
               const Icon = item.icon;
@@ -287,7 +287,7 @@ export default function PixelQRStudio() {
         {/* Color Theme Selector */}
         <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
           <label className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-emerald-400" />
+            <WandMagicSparkles className="h-4 w-4 text-emerald-400" />
             Palet Warna Pixel Art
           </label>
 
@@ -339,7 +339,7 @@ export default function PixelQRStudio() {
             className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3.5 text-slate-400 hover:bg-slate-800 hover:text-white transition"
             title="Reset ke Default"
           >
-            <RotateCcw className="h-4 w-4" />
+            <Refresh className="h-4 w-4" />
           </button>
         </div>
       </div>

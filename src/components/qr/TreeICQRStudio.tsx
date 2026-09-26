@@ -12,21 +12,24 @@ import {
 } from "@/lib/voxel-tree-generator";
 import { ambientAudio } from "@/lib/ambient-audio";
 import {
-  Share2,
-  Volume2,
-  VolumeX,
-  Info,
+  ShareNodes,
+  VolumeUp,
+  VolumeMute,
+  InfoCircle,
   Download,
-  Copy,
+  FileCopyAlt,
   Check,
-  Box,
+  CubesStacked,
   Eye,
-  Sparkles,
-  ExternalLink,
+  WandMagicSparkles,
+  ArrowUpRightFromSquare,
   Layers,
-} from "lucide-react";
+  CameraPhoto,
+  Close,
+} from "flowbite-react-icons/outline";
 
 import ThreeVoxelTreeScene from "@/components/qr/ThreeVoxelTreeScene";
+import WebARModal from "@/components/qr/WebARModal";
 
 export default function TreeICQRStudio() {
   const [url, setUrl] = useState("https://official.id/harizal");
@@ -36,6 +39,7 @@ export default function TreeICQRStudio() {
   const [isCopied, setIsCopied] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showARModal, setShowARModal] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   React.useEffect(() => {
@@ -185,7 +189,7 @@ export default function TreeICQRStudio() {
           </button>
         </div>
 
-        {/* Action Controls (Audio, Snapshot/Export, Info) */}
+        {/* Action Controls (Audio, Mode AR, Snapshot/Export, Info) */}
         <div className="flex items-center gap-2">
           {/* Ambient Audio Toggle */}
           <button
@@ -198,16 +202,26 @@ export default function TreeICQRStudio() {
             title={isPlayingAudio ? "Matikan Suara Alam" : "Nyalakan Suara Alam (Breeze & Birds)"}
           >
             {isPlayingAudio ? (
-              <Volume2 className="w-4 h-4 animate-pulse" />
+              <VolumeUp className="w-4 h-4 animate-pulse" />
             ) : (
-              <VolumeX className="w-4 h-4" />
+              <VolumeMute className="w-4 h-4" />
             )}
+          </button>
+
+          {/* Mode AR Button */}
+          <button
+            onClick={() => setShowARModal(true)}
+            className="h-10 px-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white flex items-center justify-center gap-1.5 shadow-sm transition font-medium text-xs"
+            title="Buka Mode AR (Augmented Reality) Kamera"
+          >
+            <CameraPhoto className="w-4 h-4" />
+            <span className="hidden sm:inline font-bold">Mode AR</span>
           </button>
 
           {/* Export & 3D Voxel Tools */}
           <button
             onClick={() => setShowExportModal(true)}
-            className="w-10 h-10 rounded-full bg-white/80 hover:bg-white text-stone-700 flex items-center justify-center shadow-sm transition"
+            className="w-10 h-10 rounded-full bg-white/80 hover:bg-white text-stone-700 flex items-center justify-center shadow-sm transition active:scale-95"
             title="Export Gambar & Model Voxel (Goxel / MagicaVoxel)"
           >
             <Download className="w-4 h-4" />
@@ -216,10 +230,10 @@ export default function TreeICQRStudio() {
           {/* Info Modal Trigger */}
           <button
             onClick={() => setShowInfoModal(true)}
-            className="w-10 h-10 rounded-full bg-white/80 hover:bg-white text-stone-700 flex items-center justify-center shadow-sm transition"
+            className="w-10 h-10 rounded-full bg-white/80 hover:bg-white text-stone-700 flex items-center justify-center shadow-sm transition active:scale-95"
             title="Tentang official.id 3D Voxel Tree"
           >
-            <Info className="w-4 h-4" />
+            <InfoCircle className="w-4 h-4" />
           </button>
         </div>
       </header>
@@ -243,11 +257,11 @@ export default function TreeICQRStudio() {
         </div>
       </main>
 
-      {/* Primary Interaction Pill Button (Matching tree.icqr.com) */}
-      <div className="flex justify-center -mt-1 mb-2 z-30">
+      {/* Primary Interaction Pill Buttons (Matching tree.icqr.com + Mode AR) */}
+      <div className="flex flex-wrap items-center justify-center -mt-1 mb-2 z-30 gap-2.5">
         <button
           onClick={() => setViewMode(viewMode === "3d" ? "qr" : "3d")}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-white/95 hover:bg-white text-stone-800 text-xs sm:text-sm font-semibold tracking-tight shadow-md hover:shadow-lg border border-stone-200/90 backdrop-blur-md transition-all active:scale-95"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/95 hover:bg-white text-stone-800 text-xs sm:text-sm font-semibold tracking-tight shadow-md hover:shadow-lg border border-stone-200/90 backdrop-blur-md transition-all active:scale-95"
         >
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
           <span>
@@ -255,6 +269,15 @@ export default function TreeICQRStudio() {
               ? "Tap the tree to see QR code"
               : "Tap to see 3D model"}
           </span>
+        </button>
+
+        <button
+          onClick={() => setShowARModal(true)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold tracking-tight shadow-md hover:shadow-lg border border-emerald-500/80 backdrop-blur-md transition-all active:scale-95"
+          title="Lihat Pohon di Ruangan Nyata Anda (Mode AR)"
+        >
+          <CameraPhoto className="w-4 h-4" />
+          <span>Mode AR</span>
         </button>
       </div>
 
@@ -282,7 +305,7 @@ export default function TreeICQRStudio() {
               </>
             ) : (
               <>
-                <Share2 className="w-4 h-4" />
+                <ShareNodes className="w-4 h-4" />
                 <span className="hidden sm:inline">Share</span>
               </>
             )}
@@ -332,7 +355,7 @@ export default function TreeICQRStudio() {
           <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-stone-200 space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
-                <Box className="w-5 h-5 text-emerald-600" />
+                <CubesStacked className="w-5 h-5 text-emerald-600" />
                 <h3 className="font-bold text-stone-900 text-base">
                   About official.id
                 </h3>
@@ -340,8 +363,9 @@ export default function TreeICQRStudio() {
               <button
                 onClick={() => setShowInfoModal(false)}
                 className="w-7 h-7 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 flex items-center justify-center transition"
+                title="Tutup"
               >
-                ✕
+                <Close className="w-4 h-4" />
               </button>
             </div>
 
@@ -365,7 +389,7 @@ export default function TreeICQRStudio() {
                     className="text-emerald-700 underline font-semibold hover:text-emerald-800 inline-flex items-center gap-0.5"
                   >
                     Enzo Manuel Mangano
-                    <ExternalLink className="w-3 h-3 ml-0.5" />
+                    <ArrowUpRightFromSquare className="w-3 h-3 ml-0.5" />
                   </a>{" "}
                   and{" "}
                   <a
@@ -375,7 +399,7 @@ export default function TreeICQRStudio() {
                     className="text-emerald-700 underline font-semibold hover:text-emerald-800 inline-flex items-center gap-0.5"
                   >
                     Mohamed Siddique
-                    <ExternalLink className="w-3 h-3 ml-0.5" />
+                    <ArrowUpRightFromSquare className="w-3 h-3 ml-0.5" />
                   </a>
                 </p>
               </div>
@@ -412,7 +436,7 @@ export default function TreeICQRStudio() {
                     className="text-[11px] text-stone-400 hover:text-[#be1e2d] underline font-medium inline-flex items-center gap-0.5"
                   >
                     Buka tab baru
-                    <ExternalLink className="w-2.5 h-2.5" />
+                    <ArrowUpRightFromSquare className="w-2.5 h-2.5" />
                   </a>
                 </div>
               </div>
@@ -444,8 +468,9 @@ export default function TreeICQRStudio() {
               <button
                 onClick={() => setShowExportModal(false)}
                 className="w-7 h-7 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 flex items-center justify-center transition"
+                title="Tutup"
               >
-                ✕
+                <Close className="w-4 h-4" />
               </button>
             </div>
 
@@ -466,7 +491,7 @@ export default function TreeICQRStudio() {
                     Foto resolusi tinggi sudut pandang saat ini ({viewMode.toUpperCase()})
                   </p>
                 </div>
-                <Download className="w-4 h-4 text-stone-400 group-hover:text-emerald-600" />
+                <CameraPhoto className="w-4 h-4 text-stone-400 group-hover:text-emerald-600" />
               </button>
 
               <button
@@ -481,7 +506,7 @@ export default function TreeICQRStudio() {
                     Format voxel universal kompatibel dengan Goxel & MagicaVoxel
                   </p>
                 </div>
-                <Box className="w-4 h-4 text-stone-400 group-hover:text-emerald-600" />
+                <CubesStacked className="w-4 h-4 text-stone-400 group-hover:text-emerald-600" />
               </button>
 
               <button
@@ -511,6 +536,15 @@ export default function TreeICQRStudio() {
           </div>
         </div>
       )}
+
+      {/* WebAR Augmented Reality Modal */}
+      <WebARModal
+        url={url}
+        season={season}
+        isOpen={showARModal}
+        onClose={() => setShowARModal(false)}
+        onSeasonChange={(s) => setSeason(s)}
+      />
     </div>
   );
 }
