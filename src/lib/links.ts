@@ -71,7 +71,7 @@ export async function getLinkBySlug(slug: string): Promise<MagicLink | null> {
   // 1. Query ke Supabase jika kredensial terpasang
   if (isSupabaseConfigured()) {
     try {
-      const supabase = await createServerClient();
+      const supabase = createAdminClient();
       const { data, error } = await supabase
         .from("magic_links")
         .select("*")
@@ -85,13 +85,16 @@ export async function getLinkBySlug(slug: string): Promise<MagicLink | null> {
           destination: data.destination,
           season: data.season as SeasonType,
           title: data.title,
+          brand_name: data.brand_name,
+          brand_logo_url: data.brand_logo_url,
+          brand_accent: data.brand_accent,
           clicks_count: data.clicks_count,
           created_at: data.created_at,
           updated_at: data.updated_at,
         };
       }
-    } catch {
-      /* Fallback jika env bermasalah */
+    } catch (err) {
+      console.error("Error reading link from Supabase:", err);
     }
   }
 

@@ -108,9 +108,14 @@ export default function TreeICQRStudio() {
 
   // 1. Teks yang benar-benar dicetak di QR code fisik: shortlink menuju mode scan AR /[slug]/q
   // Sebelum diisi oleh pengguna, default QR Code mengarah ke official.id
+  const activeSlug = slug || customSlugInput.trim().toLowerCase();
   const qrText = slug ? `${shortlinkBase}/${slug}/q` : "https://official.id";
   // 2. Link share untuk dibagikan di medsos / bio: /[slug]
-  const shareLink = slug ? `${shortlinkBase}/${slug}` : `${shortlinkBase || "https://official.id"}`;
+  const shareLink = slug
+    ? `${shortlinkBase}/${slug}`
+    : activeSlug
+    ? `${shortlinkBase}/${activeSlug}`
+    : `${shortlinkBase || "https://official.id"}`;
   // 3. Snippet embed untuk website / iframe:
   const embedSnippet = slug
     ? `<div class="official-id-tree" data-slug="${slug}"></div>\n<script src="${shortlinkBase}/embed.js" async></script>`
@@ -159,7 +164,7 @@ export default function TreeICQRStudio() {
 
   // Simpan / update link ke Supabase & fail-safe cache
   const handleSaveLink = React.useCallback(
-    async (overrideSlug?: string, overrideSeason?: SeasonType) => {
+    async (overrideSlug?: string, overrideSeason?: SeasonType): Promise<string | null> => {
       let dest = destinationUrl.trim();
       if (!dest) {
         setErrorMessage("Silakan isi URL tujuan terlebih dahulu!");
@@ -168,7 +173,7 @@ export default function TreeICQRStudio() {
           setSaveStatus("idle");
           setErrorMessage("");
         }, 3000);
-        return;
+        return null;
       }
 
       if (slugCheckStatus === "taken") {
@@ -178,7 +183,7 @@ export default function TreeICQRStudio() {
           setSaveStatus("idle");
           setErrorMessage("");
         }, 3000);
-        return;
+        return null;
       }
 
       if (slugCheckStatus === "invalid") {
@@ -188,7 +193,7 @@ export default function TreeICQRStudio() {
           setSaveStatus("idle");
           setErrorMessage("");
         }, 3000);
-        return;
+        return null;
       }
 
       // Auto-prefix https:// jika pengguna belum menyertakan skema
@@ -235,6 +240,7 @@ export default function TreeICQRStudio() {
           // Beralih otomatis ke QR view agar pengguna langsung melihat QR code yang dihasilkan
           setViewMode("qr");
           setTimeout(() => setSaveStatus("idle"), 3500);
+          return data.slug as string;
         } else {
           setErrorMessage(data.error || "Gagal menyimpan link");
           setSaveStatus("error");
@@ -242,6 +248,7 @@ export default function TreeICQRStudio() {
             setSaveStatus("idle");
             setErrorMessage("");
           }, 3500);
+          return null;
         }
       } catch {
         setErrorMessage("Gagal menghubungi server. Silakan coba lagi.");
@@ -250,6 +257,7 @@ export default function TreeICQRStudio() {
           setSaveStatus("idle");
           setErrorMessage("");
         }, 3500);
+        return null;
       }
     },
     [destinationUrl, customSlugInput, season, slug, brandName, brandLogoUrl, honeypotVal, slugCheckStatus, slugError]
@@ -615,6 +623,14 @@ export default function TreeICQRStudio() {
             </div>
           </div>
 
+          {/* Catatan UX Ramah: Peringatan Tautan Permanen (Bahasa Inggris Santai & Tepat Grammar) */}
+          <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-amber-50/85 border border-amber-200/80 text-[11px] text-amber-900 leading-snug">
+            <span className="text-amber-600 text-xs shrink-0 mt-0.5 select-none">💡</span>
+            <p>
+              <strong className="font-semibold text-amber-950">Heads up:</strong> Links can&apos;t be edited once created—make sure everything looks good before saving!
+            </p>
+          </div>
+
           {/* Pengaturan Brand Whitelabel (Accordion) */}
           <div className="border-t border-stone-100 pt-1.5">
             <button
@@ -717,6 +733,12 @@ export default function TreeICQRStudio() {
                 <p className="text-[10px] text-stone-500">
                   Ditanam di QR fisik. Kamera HP scan $\rightarrow$ WebAR 10s $\rightarrow$ auto-redirect ke tujuan.
                 </p>
+                {destinationUrl.trim() && (
+                  <p className="text-[10px] text-stone-600 truncate mt-0.5">
+                    <span className="text-stone-400">Target redirect:</span>{" "}
+                    <span className="font-mono text-emerald-800 font-semibold">{destinationUrl}</span>
+                  </p>
+                )}
               </div>
             </div>
 
@@ -753,24 +775,52 @@ export default function TreeICQRStudio() {
                   <span className="font-mono text-sky-800 font-bold text-[11px] truncate">
                     {shareLink}
                   </span>
+                  {!slug && (
+                    <span className="text-[9px] bg-amber-100 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded font-medium">
+                      belum disimpan
+                    </span>
+                  )}
                 </div>
                 <p className="text-[10px] text-stone-500">
                   Untuk dibagikan di WA / IG Bio. Menampilkan pohon voxel 3D whitelabel interaktif.
                 </p>
+                {destinationUrl.trim() && (
+                  <p className="text-[10px] text-stone-600 truncate mt-0.5">
+                    <span className="text-stone-400">Menuju ke:</span>{" "}
+                    <span className="font-mono text-sky-800 font-semibold">{destinationUrl}</span>
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
-              <a
-                href={slug ? `/${slug}` : `/`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={async () => {
+                  if (slug) {
+                    window.open(`/${slug}`, "_blank");
+                  } else {
+                    if (!destinationUrl.trim()) {
+                      setErrorMessage("Silakan isi URL Tujuan Pengguna terlebih dahulu!");
+                      setSaveStatus("error");
+                      setTimeout(() => {
+                        setSaveStatus("idle");
+                        setErrorMessage("");
+                      }, 3000);
+                      return;
+                    }
+                    const newSlug = await handleSaveLink();
+                    if (newSlug) {
+                      window.open(`/${newSlug}`, "_blank");
+                    }
+                  }
+                }}
                 className="px-2.5 py-1 rounded-xl bg-sky-100 hover:bg-sky-200 text-sky-800 text-[11px] font-semibold flex items-center gap-1 transition"
-                title="Buka halaman share whitelabel"
+                title={slug ? "Buka halaman share whitelabel" : "Simpan & buka halaman share"}
               >
                 <span>Lihat</span>
                 <ArrowUpRightFromSquare className="w-3 h-3" />
-              </a>
+              </button>
               <button
                 type="button"
                 onClick={handleCopyLink}

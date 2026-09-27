@@ -19,6 +19,7 @@ import {
 import { buildTreeMesh, createWindUniforms, disposeTreeMesh } from "@/lib/voxel-three";
 import { track } from "@/lib/track";
 import { BASE_URL } from "@/lib/slug";
+import { ArrowUpRightFromSquare } from "flowbite-react-icons/outline";
 
 export interface ViewerBrand {
   name?: string | null;
@@ -539,15 +540,37 @@ export default function TreeViewer({
         </div>
       </div>
 
-      <div className="mt-4 flex w-full max-w-md gap-3 px-5">
+      {/* Tampilan URL Tujuan Eksplisit agar pengunjung/pemilik melihat target link sebenarnya */}
+      {!isEmbed && destination && (
+        <div className="mt-3 flex flex-col items-center gap-1 px-5 max-w-md w-full">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-stone-400">
+            Tautan Tujuan
+          </span>
+          <a
+            href={destination}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => track(slug, "visit_click", source)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/85 backdrop-blur-xs border border-stone-200/90 text-xs font-mono text-stone-800 hover:text-emerald-700 hover:border-emerald-300 transition shadow-2xs max-w-full group"
+            title={`Buka langsung: ${destination}`}
+          >
+            <span className="text-emerald-600">🔗</span>
+            <span className="truncate max-w-[280px] sm:max-w-[340px]">{destination}</span>
+            <ArrowUpRightFromSquare className="w-3 h-3 text-stone-400 group-hover:text-emerald-600 shrink-0" />
+          </a>
+        </div>
+      )}
+
+      <div className="mt-3 flex w-full max-w-md gap-3 px-5">
         <a
           href={destination}
           target={linkTarget}
           rel="noopener noreferrer"
           onClick={() => track(slug, "visit_click", source)}
-          className="flex flex-1 items-center justify-center rounded-2xl border border-stone-200 bg-white py-3 text-sm font-semibold text-stone-800 shadow-sm transition hover:bg-stone-50 active:scale-[0.98]"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl border border-stone-200 bg-white py-3 text-sm font-semibold text-stone-800 shadow-sm transition hover:bg-stone-50 active:scale-[0.98]"
         >
-          Kunjungi link
+          <span>Kunjungi Link</span>
+          <ArrowUpRightFromSquare className="w-3.5 h-3.5 text-stone-400" />
         </a>
         <a
           href={`${arUrl}?from=${source}`}

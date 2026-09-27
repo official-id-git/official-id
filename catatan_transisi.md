@@ -130,6 +130,25 @@ Dokumen ini merangkum seluruh riwayat percakapan, instruksi pengguna, evolusi fi
     - Pesan error spesifik jika URL kosong atau slug sudah terpakai.
   - Tombol switcher musim disesuaikan agar tidak memicu pesan error simpan saat pengguna hanya ingin melihat pratinjau (*preview*) musim sebelum membuat tautan.
 
+### Tahap 12: Perbaikan Tautan Share Medsos, Proteksi Pratinjau Demo, dan Catatan UX Bahasa Inggris
+- **Kendala yang Ditemukan**:
+  - Tombol **Lihat** pada baris *2. Link Share Medsos* mengarahkan ke root `/` (tampilan demo studio) apabila tautan belum tersimpan ke state atau belum selesai dibuat.
+  - Pada halaman penampil whitelabel `/[slug]`, pengguna dan pengunjung tidak dapat melihat URL tujuan secara eksplisit di layar, sehingga menimbulkan persepsi bahwa yang terbuka adalah halaman demo default.
+  - Dibutuhkan panduan UX ramah berbahasa Inggris kasual di bawah input URL dan Slug untuk memperingatkan pengguna bahwa tautan yang sudah dibuat tidak dapat diedit kembali.
+- **Tindakan & Solusi Teknis**:
+  1. **Pengingat UX Bahasa Inggris Santai & Tepat Grammar**:
+     - Ditambahkan card informasi dengan gaya ramah di bawah input *URL Tujuan Pengguna* dan *Custom Slug*:
+       > `💡 Heads up: Links can't be edited once created—make sure everything looks good before saving!`
+  2. **Proteksi & Sinkronisasi Tombol "Lihat" (*Link Share Medsos*)**:
+     - Tombol **Lihat** kini tidak lagi menavigasi ke `/` saat tautan belum disimpan.
+     - Jika pengguna mengeklik **Lihat** sebelum menyimpan tetapi sudah mengisi URL tujuan, sistem secara otomatis mengeksekusi `handleSaveLink()` dan langsung membuka tab baru ke slug yang baru saja berhasil dibuat.
+     - Ditambahkan indikator teks URL target tujuan langsung di bawah nama shortlink (*Target URL: ...*).
+  3. **Visualisasi URL Tujuan Eksplisit di `TreeViewer` (`/[slug]`)**:
+     - Menambahkan card pill interaktif yang menampilkan tautan tujuan asli (misal: `🔗 https://instagram.com/...`) di atas tombol aksi.
+     - Mengubah label tombol aksi dari sekadar "Kunjungi link" menjadi tombol informatif "Kunjungi Link" dengan ikon panah keluar (*external link*).
+  4. **Stabilitas Pembacaan Supabase Data Layer**:
+     - Fungsi `getLinkBySlug` pada [`src/lib/links.ts`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/src/lib/links.ts) diperbarui menggunakan `createAdminClient()` langsung sehingga pembacaan halaman SSR `/[slug]` di Vercel selalu konsisten dan tidak terkendala konteks cookie pengguna anonim.
+
 ---
 
 ## 3. Struktur Berkas & Komponen Inti
