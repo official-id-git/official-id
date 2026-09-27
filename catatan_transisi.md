@@ -102,7 +102,7 @@ Dokumen ini merangkum seluruh riwayat percakapan, instruksi pengguna, evolusi fi
   - **[`src/app/robots.ts`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/src/app/robots.ts)**: Menyediakan file `robots.txt` standar Next.js yang mengizinkan seluruh halaman publik dan memblokir perayapan endpoint backend `/api/`.
   - **[`src/app/sitemap.ts`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/src/app/sitemap.ts)**: Menyediakan `sitemap.xml` dinamis untuk didaftarkan ke Google Search Console.
 
-### Tahap 11: Hardening Header Keamanan & Deployment Produksi
+### Tahap 11: Hardening Header Keamanan & Deployment Produksi Awal
 - **Kebutuhan**: Header HTTP enterprise untuk pencegahan XSS, clickjacking, dan sniffing data, verifikasi build lokal tanpa error, dan push langsung ke Git & Vercel.
 - **Tindakan**:
   - Diperbarui [`next.config.ts`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/next.config.ts) dengan header:
@@ -118,7 +118,7 @@ Dokumen ini merangkum seluruh riwayat percakapan, instruksi pengguna, evolusi fi
     - Commit `1724506`: Default input kosong, default QR `official.id`, dan penyempurnaan SEO.
   - Vercel memproses commit `main` dan mendistribusikan aplikasi secara langsung ke jaringan CDN global di `https://official.id`.
 
-### Tahap 11: Tombol Utama "Simpan & Buat QR Code" yang Jelas & Terdedikasi
+### Tahap 12: Tombol Utama "Simpan & Buat QR Code" yang Jelas & Terdedikasi
 - **Kebutuhan**: Memperbaiki kebingungan pengguna di mana setelah mengisi URL tujuan dan custom slug, tidak ada tombol simpan yang jelas untuk menyimpan tautan ke database dan menghasilkan (*generate*) QR Code-nya (sebelumnya hanya berupa tombol kecil "Terapkan" yang menyatu di baris slug).
 - **Tindakan**:
   - Formulir input dibungkus dalam elemen `<form onSubmit={...}>` yang mendukung penyimpanan instan via tombol keyboard **Enter** pada semua input.
@@ -129,12 +129,13 @@ Dokumen ini merangkum seluruh riwayat percakapan, instruksi pengguna, evolusi fi
     - Status sukses: `Tersimpan! QR Code Berhasil Dibuat ✓`, ledakan efek **Confetti** 🎉, dan otomatis beralih ke mode tampilan QR Code pada kanvas agar pengguna langsung melihat QR-nya.
     - Pesan error spesifik jika URL kosong atau slug sudah terpakai.
   - Tombol switcher musim disesuaikan agar tidak memicu pesan error simpan saat pengguna hanya ingin melihat pratinjau (*preview*) musim sebelum membuat tautan.
+  - Commit: `82ee9d0` (*fix(studio): add dedicated 'Simpan & Buat QR Code' button with enter submission and feedback*).
 
-### Tahap 12: Perbaikan Tautan Share Medsos, Proteksi Pratinjau Demo, dan Catatan UX Bahasa Inggris
+### Tahap 13: Perbaikan Tautan Share Medsos, Proteksi Pratinjau Demo, dan Catatan UX Bahasa Inggris Santai
 - **Kendala yang Ditemukan**:
   - Tombol **Lihat** pada baris *2. Link Share Medsos* mengarahkan ke root `/` (tampilan demo studio) apabila tautan belum tersimpan ke state atau belum selesai dibuat.
   - Pada halaman penampil whitelabel `/[slug]`, pengguna dan pengunjung tidak dapat melihat URL tujuan secara eksplisit di layar, sehingga menimbulkan persepsi bahwa yang terbuka adalah halaman demo default.
-  - Dibutuhkan panduan UX ramah berbahasa Inggris kasual di bawah input URL dan Slug untuk memperingatkan pengguna bahwa tautan yang sudah dibuat tidak dapat diedit kembali.
+  - Dibutuhkan panduan UX ramah berbahasa Inggris kasual di bawah input URL dan Slug untuk memperingatkan pengguna bahwa tautan yang sudah dibuat tidak dapat diedit kembali (*immutable link notice*).
 - **Tindakan & Solusi Teknis**:
   1. **Pengingat UX Bahasa Inggris Santai & Tepat Grammar**:
      - Ditambahkan card informasi dengan gaya ramah di bawah input *URL Tujuan Pengguna* dan *Custom Slug*:
@@ -142,12 +143,17 @@ Dokumen ini merangkum seluruh riwayat percakapan, instruksi pengguna, evolusi fi
   2. **Proteksi & Sinkronisasi Tombol "Lihat" (*Link Share Medsos*)**:
      - Tombol **Lihat** kini tidak lagi menavigasi ke `/` saat tautan belum disimpan.
      - Jika pengguna mengeklik **Lihat** sebelum menyimpan tetapi sudah mengisi URL tujuan, sistem secara otomatis mengeksekusi `handleSaveLink()` dan langsung membuka tab baru ke slug yang baru saja berhasil dibuat.
-     - Ditambahkan indikator teks URL target tujuan langsung di bawah nama shortlink (*Target URL: ...*).
+     - Ditambahkan indikator teks URL target tujuan langsung di bawah nama shortlink (*Target URL: ...*), serta badge `belum disimpan` jika masih draf.
   3. **Visualisasi URL Tujuan Eksplisit di `TreeViewer` (`/[slug]`)**:
-     - Menambahkan card pill interaktif yang menampilkan tautan tujuan asli (misal: `🔗 https://instagram.com/...`) di atas tombol aksi.
+     - Menambahkan card pill interaktif yang menampilkan tautan tujuan asli (misal: `🔗 https://instagram.com/harizal.official ↗`) di atas tombol aksi.
      - Mengubah label tombol aksi dari sekadar "Kunjungi link" menjadi tombol informatif "Kunjungi Link" dengan ikon panah keluar (*external link*).
   4. **Stabilitas Pembacaan Supabase Data Layer**:
      - Fungsi `getLinkBySlug` pada [`src/lib/links.ts`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/src/lib/links.ts) diperbarui menggunakan `createAdminClient()` langsung sehingga pembacaan halaman SSR `/[slug]` di Vercel selalu konsisten dan tidak terkendala konteks cookie pengguna anonim.
+  5. **Verifikasi & Deployment Produksi**:
+     - Commit: `068100d` (*fix(studio & viewer): enhance share link handling, display target destination, and add casual english immutable link notice*).
+     - Diverifikasi langsung di production `https://official.id` dan `https://official.id/harizal`:
+       - Teks pengingat bahasa Inggris muncul di bawah input.
+       - Tautan `harizal` menampilkan target `https://instagram.com/harizal.official` dengan tombol interaktif yang aktif.
 
 ---
 
@@ -183,4 +189,7 @@ Dokumen ini merangkum seluruh riwayat percakapan, instruksi pengguna, evolusi fi
    - File PNG beresolusi 1024x1024 piksel siap cetak di media fisik apa pun.
 3. **Mendaftarkan Situs ke Google Search Console**:
    - Daftarkan sitemap di Google Search Console dengan memasukkan URL: `https://official.id/sitemap.xml`.
+4. **Membagikan & Memeriksa Tautan Whitelabel**:
+   - Salin tautan dari baris *2. Link Share Medsos* atau klik tombol **Lihat** untuk membuka pratinjau halaman share.
+   - Halaman share (`/[slug]`) menampilkan pohon 3D interaktif, matriks QR tajam, serta kartu pill eksplisit tujuan URL sehingga pengunjung dapat langsung mengeklik *Kunjungi Link* menuju website pemilik.
 
