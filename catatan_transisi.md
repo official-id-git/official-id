@@ -172,6 +172,24 @@ Dokumen ini merangkum seluruh riwayat percakapan, instruksi pengguna, evolusi fi
 
 ---
 
+### Tahap 10: 3D Hibiscus Flower Voxel, Animasi Kelopak Hidup, Logo Tengah Lingkaran, & Flowbite Icons
+- **Kebutuhan**:
+  1. Menambahkan varian ke-4: Bunga Raya / Hibiscus (`flower` / `🌺 Hibiscus Bloom`) berbasis voxel 3D padat yang menyerupai foto referensi (`media_1792160645329.jpg`).
+  2. Memberikan animasi kelopak dan putik bunga yang bergerak hidup (*breathing, wave, flutter*) menggunakan GPU vertex shader.
+  3. Fitur upload logo PNG di tengah QR Code dengan latar belakang bulat putih sempurna (*true circle*), proporsi terukur (19%-25%), tanpa merusak atau menutupi keterbacaan scanner QR.
+  4. Memperbaiki tombol pengaturan bentuk dan ukuran logo agar tidak saling tumpang tindih (*anti-collision layout*).
+  5. Mengganti seluruh emoji/karakter simbolik di UI dengan ikon SVG resmi dari `flowbite-react-icons/outline`.
+  6. Mendorong (*push*) commit ke Git repository dan melakukan deployment ke Vercel production (`https://official.id`).
+- **Tindakan**:
+  - Dibuat generator bunga voxel padat di [`src/lib/voxel-tree-generator.ts`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/src/lib/voxel-tree-generator.ts) dengan formula kelopak polar $\cos(5\theta)$, bibir merah tebal `#DC2626`, relief gradasi kuning `#FACC15`, bintang merah pusat `#991B1B`, dan 5 filamen benang sari merah melengkung dengan ujung anther kuning emas.
+  - Diinjeksi GPU vertex shader di [`src/components/qr/ThreeVoxelTreeScene.tsx`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/src/components/qr/ThreeVoxelTreeScene.tsx) dengan bobot gerak untuk role `petal` dan `stamen` sehingga kelopak bernapas dan bergelombang dinamis.
+  - Wadah kanvas dan badge logo dikunci pada rasio aspek 1:1 sempurna (`aspect-square` dan `rounded-full`) sehingga latar logo selalu berbentuk lingkaran murni (bukan lonjong/oval).
+  - Tata letak tombol pengaturan logo dirombak menjadi dua baris independen selebar penuh (*full-width 3-column grids*), memastikan tidak ada tombol yang saling bertabrakan di resolusi layar mana pun.
+  - Seluruh emoji digantikan dengan ikon Flowbite: `Lightbulb`, `Image`, `ShieldCheck`, `ChevronUp`, `ChevronDown`, `ExclamationCircle`, `Printer`, `Palette`, `FileCode`, `FileCsv`, `Users`, `Messages`, `QrCode`, `Layers`, `Link`, `Check`, dan `Close`.
+  - Proyek berhasil di-build tanpa error dan di-push ke branch `main` (`origin/main`) untuk memicu deployment otomatis Vercel ke `https://official.id`.
+
+---
+
 ## 3. Struktur Berkas & Komponen Inti
 
 | Berkas | Peran & Deskripsi |
