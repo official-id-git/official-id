@@ -24,13 +24,21 @@ attribute float aSway;      // 0 = diam (tanah, finder, orang), 1 = pucuk pohon
 attribute float aLeaf;      // intensitas getaran daun kecil / ujung sari
 attribute float aPhase;     // fase acak per voxel
 attribute float aGrowDelay; // 0.0 - 0.75: kapan voxel ini mulai tumbuh
-attribute float aPetal;     // 1.0 = kelopak bunga hibiscus hidup
-attribute float aStamen;    // 1.0 = putik & benang sari melengkung
+attribute float aPetal;     // 1.0 = kelopak bunga hidup
+attribute float aStamen;    // 1.0 = putik & benang sari
+attribute float aPart;      // Patrakomala: -1=core, 0..4=petals, 10..13=stamens, -99=tree/floor
+attribute float aU;         // parameter 0..1 sepanjang kelopak/benang sari
+attribute float aAng;       // sudut radial theta kelopak/benang sari
 uniform float uTime;
 uniform vec3 uWindDir;
 uniform float uStrength;
 uniform float uFlutter;
 uniform float uGrowth;
+
+vec3 rotA(vec3 v, vec3 k, float a){
+  float c = cos(a), s = sin(a);
+  return v * c + cross(k, v) * s + k * dot(k, v) * (1.0 - c);
+}
 `;
 
 export const WIND_PROJECT_VERTEX = /* glsl */ `
@@ -47,61 +55,72 @@ vec4 mvPosition = vec4( transformed, 1.0 );
   mvPosition = instanceMatrix * mvPosition;
 #endif
 {
-  vec3 dir = normalize(uWindDir);
-  float bend = aSway * aSway; // makin tinggi makin melentur
+  // Basis ortonormal bunga Patrakomala
+  vec3 fU = vec3(0.7071068, 0.0, -0.7071068);
+  vec3 fN = vec3(0.4472136, 0.7745967, 0.4472136);
+  vec3 fV = vec3(-0.5477226, 0.6324555, -0.5477226);
+  vec3 fCenter = vec3(0.0, 11.5, 0.0);
 
-  // 1. Hembusan angin alami umum
-  float gust = 0.55 + 0.35 * sin(uTime * 0.8) + 0.2 * sin(uTime * 2.3 + 1.7);
-  float wave = sin(uTime * 1.6 - dot(mvPosition.xz, dir.xz) * 0.35);
-  vec3 sway = dir * (gust + 0.35 * wave) * uStrength * bend;
-  sway.y -= length(sway.xz) * 0.25;
+  if (aPart > -5.0) {
+    // 1. Koordinat lokal dalam ruang kelopak Patrakomala
+    vec3 rel = mvPosition.xyz - fCenter;
+    vec3 localP = vec3(dot(rel, fU), dot(rel, fN), dot(rel, fV));
+    vec3 origLocalP = localP;
 
-  // 2. KELOPAK BUNGA HIDUP (LIVING PETAL BLOOM & BREATHING MOTION)
-  vec3 petalMotion = vec3(0.0);
-  if (aPetal > 0.05) {
-    float distXZ = length(mvPosition.xz);
-    vec2 normRad = (distXZ > 0.1) ? normalize(mvPosition.xz) : vec2(0.707, 0.707);
+    // 2. Hembusan angin & deformasi rotasi Rodrigues (Patrakomala Wind Algorithm)
+    float gust = 0.65 + 0.35 * sin(uTime * 0.7) * sin(uTime * 0.31 + 1.3) + 0.3 * max(0.0, sin(uTime * 0.45 - 0.6));
+    float W = uStrength * gust;
 
-    // a. Denyut mekar/bernapas halus
-    float breathe = sin(uTime * 2.2) * 0.35;
-    
-    // b. Gelombang ombak merambat dari pusat mahkota ke ujung kelopak
-    float ripple = sin(uTime * 3.4 - distXZ * 0.45 + aPhase * 0.6) * 0.42;
-    
-    // c. Getaran lembut pada tepi kelopak merah-kuning
-    float edgeFlutter = sin(uTime * 5.8 + aPhase) * 0.22;
+    vec3 up = vec3(0.0, 1.0, 0.0);
+    vec3 d  = vec3(cos(aAng), 0.0, sin(aAng));
+    vec3 k  = vec3(-sin(aAng), 0.0, cos(aAng));
+    vec3 wd = normalize(vec3(1.0, 0.0, 0.35));
 
-    petalMotion.x = normRad.x * breathe * 0.75 + sin(uTime * 1.8 + aPhase) * 0.22;
-    petalMotion.z = normRad.y * breathe * 0.75 + cos(uTime * 1.8 + aPhase) * 0.22;
-    petalMotion.y = (ripple + edgeFlutter) * (0.6 + 0.4 * aSway);
-    petalMotion *= aPetal * (0.7 + 0.5 * uStrength);
+    if (aPart > -0.5 && aPart < 4.5) {
+      // KELOPAK: melengkung bertahap dari pangkal ke ujung + bergetar memutar
+      float face = 0.7 + 0.3 * dot(d, wd);
+      float wave = sin(uTime * 2.2 + aPhase - aU * 2.4);
+      float a = W * face * (0.06 + 0.11 * wave) * aU * aU * 1.6;
+      vec3 h = d * 1.6 + up * 0.5;
+      localP = h + rotA(localP - h, k, a);
+      float tw = W * 0.10 * aU * sin(uTime * 3.1 + aPhase * 1.7 - aU * 3.0);
+      localP = rotA(localP, d, tw);
+    } else if (aPart > 9.5) {
+      // PUTIK & BENANG SARI: mengayun anggun seperti cambuk, ujung tertinggal dari pangkal
+      float lag = aU * 1.8;
+      float a1 = W * (0.09 * sin(uTime * 1.8 + aPhase - lag) + 0.035 * sin(uTime * 5.3 + aPhase * 2.1 - lag * 1.4)) * aU;
+      float a2 = W * (0.07 * sin(uTime * 1.25 + aPhase * 0.8 - lag) + 0.05) * aU;
+      vec3 h = vec3(0.0, 2.0, 0.0);
+      localP = h + rotA(localP - h, k, a1);
+      localP = h + rotA(localP - h, up, a2);
+    }
+
+    // Seluruh bunga bergoyang pelan
+    float s = W * 0.03 * sin(uTime * 0.9);
+    localP = rotA(localP, vec3(0.0, 0.0, 1.0), s);
+
+    // 3. Proyeksikan delta kembali ke ruang dunia diorama
+    vec3 deltaLocal = localP - origLocalP;
+    vec3 deltaWorld = deltaLocal.x * fU + deltaLocal.y * fN + deltaLocal.z * fV;
+    mvPosition.xyz += deltaWorld * popScale;
+  } else {
+    // Standard tree wind & leaf flutter
+    vec3 dir = normalize(uWindDir);
+    float bend = aSway * aSway;
+
+    float gust = 0.55 + 0.35 * sin(uTime * 0.8) + 0.2 * sin(uTime * 2.3 + 1.7);
+    float wave = sin(uTime * 1.6 - dot(mvPosition.xz, dir.xz) * 0.35);
+    vec3 sway = dir * (gust + 0.35 * wave) * uStrength * bend;
+    sway.y -= length(sway.xz) * 0.25;
+
+    vec3 flutter = vec3(
+      sin(uTime * 6.3 + aPhase),
+      0.6 * sin(uTime * 7.7 + aPhase * 1.9),
+      cos(uTime * 5.9 + aPhase * 1.3)
+    ) * uFlutter * aLeaf * (0.4 + 0.6 * aSway);
+
+    mvPosition.xyz += (sway + flutter) * popScale;
   }
-
-  // 3. PUTIK & BENANG SARI (ELEGANT ARCHING STAMEN SWAY & GOLDEN ANTHER SHIMMER)
-  vec3 stamenMotion = vec3(0.0);
-  if (aStamen > 0.05) {
-    // a. Ayunan anggun benang sari melengkung
-    float stamenWave = sin(uTime * 2.6 + aPhase * 0.4) * 0.75;
-    float stamenCross = cos(uTime * 2.1 + aPhase * 0.6) * 0.55;
-    float stamenLift = sin(uTime * 3.2 + aPhase) * 0.35;
-
-    // b. Getaran cepat & kilau kepala sari emas di ujung putik
-    float tipShimmer = sin(uTime * 8.5 + aPhase * 1.5) * 0.26 * aLeaf;
-
-    stamenMotion.x = (stamenWave + tipShimmer) * aSway;
-    stamenMotion.z = (stamenCross + tipShimmer * 0.7) * aSway;
-    stamenMotion.y = stamenLift * aSway;
-    stamenMotion *= aStamen * (0.8 + 0.6 * uStrength);
-  }
-
-  // 4. Getaran daun individual pohon biasa
-  vec3 flutter = vec3(
-    sin(uTime * 6.3 + aPhase),
-    0.6 * sin(uTime * 7.7 + aPhase * 1.9),
-    cos(uTime * 5.9 + aPhase * 1.3)
-  ) * uFlutter * aLeaf * (0.4 + 0.6 * aSway);
-
-  mvPosition.xyz += (sway * (1.0 - aPetal * 0.5) + petalMotion + stamenMotion + flutter * (1.0 - aPetal - aStamen)) * popScale;
 }
 mvPosition = modelViewMatrix * mvPosition;
 gl_Position = projectionMatrix * mvPosition;
@@ -114,7 +133,7 @@ export function applyWind(material: THREE.Material, uniforms: WindUniforms) {
       .replace("#include <common>", `#include <common>\n${WIND_DECLARATIONS}`)
       .replace("#include <project_vertex>", WIND_PROJECT_VERTEX);
   };
-  material.customProgramCacheKey = () => "voxel-wind-growth-v4";
+  material.customProgramCacheKey = () => "voxel-wind-growth-patrakomala-v5";
 }
 
 export function buildWindAttributes(voxels: VoxelItem[]) {
@@ -125,6 +144,9 @@ export function buildWindAttributes(voxels: VoxelItem[]) {
   const growDelay = new Float32Array(n);
   const petal = new Float32Array(n);
   const stamen = new Float32Array(n);
+  const part = new Float32Array(n);
+  const uParam = new Float32Array(n);
+  const ang = new Float32Array(n);
 
   let maxY = 3;
   for (const v of voxels) {
@@ -143,6 +165,10 @@ export function buildWindAttributes(voxels: VoxelItem[]) {
   for (let i = 0; i < n; i++) {
     const v = voxels[i];
     const distXZ = Math.hypot(v.x, v.z) / maxDistXZ;
+
+    part[i] = v.part !== undefined ? v.part : -99.0;
+    uParam[i] = v.u !== undefined ? v.u : 0.0;
+    ang[i] = v.ang !== undefined ? v.ang : 0.0;
 
     if (v.role === "stone" || v.role === "border" || v.y < 1) {
       growDelay[i] = 0.0;
@@ -174,7 +200,7 @@ export function buildWindAttributes(voxels: VoxelItem[]) {
 
     const normY = Math.min(1, Math.max(0, (v.y - rootY) / (maxY - rootY)));
     sway[i] = Math.pow(normY, 1.2);
-    phase[i] = (v.x * 12.9898 + v.y * 78.233 + v.z * 37.719) % (Math.PI * 2);
+    phase[i] = v.phase !== undefined ? v.phase : ((v.x * 12.9898 + v.y * 78.233 + v.z * 37.719) % (Math.PI * 2));
 
     if (v.role === "petal" || v.role === "flower") {
       petal[i] = 1.0;
@@ -187,7 +213,7 @@ export function buildWindAttributes(voxels: VoxelItem[]) {
     }
   }
 
-  return { sway, leaf, phase, growDelay, petal, stamen };
+  return { sway, leaf, phase, growDelay, petal, stamen, part, uParam, ang };
 }
 
 export function buildTreeMesh(
@@ -196,13 +222,16 @@ export function buildTreeMesh(
   options?: { shadows?: boolean }
 ): THREE.InstancedMesh {
   const geo = new THREE.BoxGeometry(1, 1, 1);
-  const { sway, leaf, phase, growDelay, petal, stamen } = buildWindAttributes(voxels);
+  const { sway, leaf, phase, growDelay, petal, stamen, part, uParam, ang } = buildWindAttributes(voxels);
   geo.setAttribute("aSway", new THREE.InstancedBufferAttribute(sway, 1));
   geo.setAttribute("aLeaf", new THREE.InstancedBufferAttribute(leaf, 1));
   geo.setAttribute("aPhase", new THREE.InstancedBufferAttribute(phase, 1));
   geo.setAttribute("aGrowDelay", new THREE.InstancedBufferAttribute(growDelay, 1));
   geo.setAttribute("aPetal", new THREE.InstancedBufferAttribute(petal, 1));
   geo.setAttribute("aStamen", new THREE.InstancedBufferAttribute(stamen, 1));
+  geo.setAttribute("aPart", new THREE.InstancedBufferAttribute(part, 1));
+  geo.setAttribute("aU", new THREE.InstancedBufferAttribute(uParam, 1));
+  geo.setAttribute("aAng", new THREE.InstancedBufferAttribute(ang, 1));
 
   const mat = new THREE.MeshStandardMaterial({ roughness: 0.82, metalness: 0.05 });
   applyWind(mat, wind);

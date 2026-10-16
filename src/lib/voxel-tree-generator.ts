@@ -10,6 +10,10 @@ export interface VoxelItem {
   color: string;
   role: "trunk" | "branch" | "leaf" | "stone" | "border" | "hedge" | "flower" | "person" | "petal" | "stamen";
   isQrDark?: boolean;
+  part?: number;
+  u?: number;
+  ang?: number;
+  phase?: number;
 }
 
 export interface SeasonTheme {
@@ -101,23 +105,23 @@ export const SEASONS: Record<SeasonType, SeasonTheme> = {
     accentColor: "#D97706",
   },
   flower: {
-    name: "Hibiscus Bloom",
-    badge: "🌺 Hibiscus Bloom",
+    name: "Patrakomala Bloom",
+    badge: "🌺 Patrakomala Bloom",
     bgColor: "#FFF8F8",
     paperColor: "#FDF2F4",
-    leafPrimary: ["#DC2626", "#B91C1C", "#E11D48", "#991B1B"],
-    leafHighlight: ["#FACC15", "#FDE047", "#FBBF24", "#FEF08A"],
-    leafShadow: ["#991B1B", "#7F1D1D", "#881337", "#4C0519"],
+    leafPrimary: ["#D8261D", "#B51913", "#E02F21", "#991B1B"],
+    leafHighlight: ["#F8D31F", "#FBE04A", "#FBBF24", "#FEF08A"],
+    leafShadow: ["#B51913", "#7F1D1D", "#881337", "#4C0519"],
     trunkPrimary: ["#166534", "#15803D", "#14532D", "#0F3D21"],
-    hedgeColor: ["#DC2626", "#B91C1C", "#991B1B"],
+    hedgeColor: ["#D8261D", "#B51913", "#991B1B"],
     stonePaver: ["#FFFFFF", "#FFF5F7", "#FDF4F6", "#FFF1F2"],
     stoneBorder: "#E8D0DA",
     qrDark: ["#991B1B", "#7F1D1D", "#881337", "#4C0519"],
     finderOuter: ["#991B1B", "#7F1D1D", "#881337"],
     finderInner: ["#7F1D1D", "#4C0519", "#991B1B"],
-    petalFloor: ["#FACC15", "#FDE047", "#DC2626", "#F43F5E"],
-    particleColors: ["#FACC15", "#FDE047", "#DC2626", "#FB7185", "#FDA4AF"],
-    accentColor: "#DC2626",
+    petalFloor: ["#F8D31F", "#FBE04A", "#D8261D", "#E02F21"],
+    particleColors: ["#F8D31F", "#FBE04A", "#D8261D", "#E02F21", "#FDA4AF"],
+    accentColor: "#D8261D",
   },
 };
 
@@ -688,9 +692,8 @@ export function generateVoxelFlower(
 
   const center = (size - 1) / 2;
   const quietZone = 5;
-  const scale = size / 29;
 
-  // 1. LANTAI COURTYARD & PERIMETER (sama seperti tree)
+  // 1. LANTAI COURTYARD & PERIMETER
   for (let r = -quietZone; r < size + quietZone; r++) {
     for (let c = -quietZone; c < size + quietZone; c++) {
       const x = c - center;
@@ -712,22 +715,49 @@ export function generateVoxelFlower(
         color: isPerimeter ? theme.stoneBorder : pickRandom(theme.stonePaver, h),
         role: isPerimeter ? "border" : "stone",
         isQrDark: false,
+        part: -99,
+        u: 0,
+        ang: 0,
+        phase: 0,
       });
 
       if (isPerimeter) {
-        voxels.push({ x, y: 0.35, z, size: 1.0, color: theme.stoneBorder, role: "border" });
+        voxels.push({
+          x,
+          y: 0.35,
+          z,
+          size: 1.0,
+          color: theme.stoneBorder,
+          role: "border",
+          part: -99,
+          u: 0,
+          ang: 0,
+          phase: 0,
+        });
       }
 
       if (isInsideQr && matrix[r][c] === 1) {
         const floorDarkColor = isFinderPattern(r, c, size)
           ? theme.finderOuter[0]
           : pickRandom(theme.qrDark, h);
-        voxels.push({ x, y: 0.04, z, size: 1.0, color: floorDarkColor, role: "leaf", isQrDark: true });
+        voxels.push({
+          x,
+          y: 0.04,
+          z,
+          size: 1.0,
+          color: floorDarkColor,
+          role: "leaf",
+          isQrDark: true,
+          part: -99,
+          u: 0,
+          ang: 0,
+          phase: 0,
+        });
       }
     }
   }
 
-  // 2. FINDER PATTERN (monumen taman – sama seperti tree)
+  // 2. FINDER PATTERN (monumen taman QR)
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       if (matrix[r][c] === 1 && isFinderPattern(r, c, size)) {
@@ -737,165 +767,234 @@ export function generateVoxelFlower(
         const h = coordHash(x, z, 55);
 
         if (finderRole === "hedge") {
-          voxels.push({ x, y: 0.45, z, size: 1.0, color: pickRandom(theme.finderOuter, h), role: "hedge", isQrDark: true });
-        } else if (finderRole === "flower") {
-          voxels.push({ x, y: 0.45, z, size: 1.0, color: theme.finderOuter[0], role: "flower", isQrDark: true });
-          voxels.push({ x, y: 0.85, z, size: 1.0, color: pickRandom(theme.finderInner, h), role: "flower", isQrDark: true });
-        }
-      }
-    }
-  }
-
-  // 3. BATANG HIJAU BUNGA (menopang bunga anggun dari tengah courtyard)
-  const stemBaseY = 1;
-  const flowerCenterY = 12.0;
-
-  for (let y = stemBaseY; y <= flowerCenterY - 1; y++) {
-    const t = (y - stemBaseY) / (flowerCenterY - stemBaseY);
-    const sx = Math.sin(t * Math.PI * 0.5) * -1.2;
-    const sz = Math.sin(t * Math.PI * 0.5) * -1.2;
-    voxels.push({ x: sx, y, z: sz, size: 0.95, color: "#166534", role: "trunk", isQrDark: false });
-    voxels.push({ x: sx + 0.6, y, z: sz, size: 0.85, color: "#15803D", role: "trunk", isQrDark: false });
-    voxels.push({ x: sx, y, z: sz + 0.6, size: 0.85, color: "#14532D", role: "trunk", isQrDark: false });
-  }
-
-  // Daun hijau penopang di bawah bunga
-  const leaves = [
-    { lx: 2.2, ly: 6.0, lz: -1.5 },
-    { lx: 2.8, ly: 6.3, lz: -2.0 },
-    { lx: -2.2, ly: 7.2, lz: 1.8 },
-    { lx: -2.9, ly: 7.5, lz: 2.3 },
-    { lx: -1.5, ly: 9.0, lz: -2.2 },
-    { lx: -2.0, ly: 9.3, lz: -2.8 },
-  ];
-  for (const l of leaves) {
-    voxels.push({ x: l.lx, y: l.ly, z: l.lz, size: 0.9, color: "#22C55E", role: "leaf", isQrDark: false });
-  }
-
-  // 4. BUNGA HIBISCUS PADAT 3D (PERSIS REFERENSI DESAIN)
-  // Basis ortonormal menghadap ke arah kamera isometrik (50, 42, 50) dengan sudut pandang prima
-  const N = { x: 0.519, y: 0.679, z: 0.519 };  // Normal muka bunga (miring ke atas dan menghadap kamera)
-  const V = { x: -0.480, y: 0.734, z: -0.480 }; // Arah "atas" mahkota bunga
-  const U = { x: 0.707, y: 0.0, z: -0.707 };    // Arah "kanan" mahkota bunga
-  const fCenter = { x: 0, y: flowerCenterY, z: 0 };
-  const R_base = 11.2;
-
-  // Sampling grid mahkota padat: 5 kelopak bertingkat dengan bingkai merah & tubuh kuning
-  const stepSize = 0.88;
-  for (let v = -14; v <= 14; v += stepSize) {
-    for (let u = -14; u <= 14; u += stepSize) {
-      const r = Math.hypot(u, v);
-      if (r < 0.2) continue;
-      const phi = Math.atan2(v, u);
-      const theta = phi - 0.22;
-      // Kontur 5 kelopak Hibiscus mekar
-      const R_outer = R_base * (1.0 + 0.38 * Math.cos(5 * theta) + 0.08 * Math.cos(10 * theta));
-
-      if (r <= R_outer) {
-        const isRim = r >= R_outer - 1.7; // Bingkai merah pinggir kelopak
-        const R_star = 5.2 * (1.0 + 0.65 * Math.cos(5 * theta));
-        const isStar = r <= R_star; // Pola bintang merah di bagian tengah
-
-        let baseColor = "#FACC15";
-        let maxW = 1;
-
-        if (isRim) {
-          baseColor = "#DC2626"; // Merah menyala pembingkai kelopak
-          maxW = 2;
-        } else if (isStar) {
-          baseColor = "#991B1B"; // Merah tua crimson pusat bunga
-          maxW = 3;
-        } else {
-          // Permukaan kelopak kuning bertingkat (stepped terraced relief)
-          if (r > R_outer - 4.5) {
-            baseColor = "#FDE047"; // Kuning terang di step atas
-            maxW = 1;
-          } else {
-            baseColor = "#FACC15"; // Kuning pekat di step tengah
-            maxW = 2;
-          }
-        }
-
-        // Emit voxel bertingkat tebal (dari dasar hingga puncak relief)
-        for (let w = -1; w < maxW; w++) {
-          const x = fCenter.x + u * U.x + v * V.x + w * N.x;
-          const y = fCenter.y + u * U.y + v * V.y + w * N.y;
-          const z = fCenter.z + u * U.z + v * V.z + w * N.z;
-
-          // Lapisan punggung (-1) diberi warna merah penahan
-          const col = w === -1 ? "#B91C1C" : baseColor;
           voxels.push({
-            x: +x.toFixed(2),
-            y: +y.toFixed(2),
-            z: +z.toFixed(2),
-            size: 0.96,
-            color: col,
-            role: "petal",
-            isQrDark: false,
+            x,
+            y: 0.45,
+            z,
+            size: 1.0,
+            color: pickRandom(theme.finderOuter, h),
+            role: "hedge",
+            isQrDark: true,
+            part: -99,
+            u: 0,
+            ang: 0,
+            phase: 0,
+          });
+        } else if (finderRole === "flower") {
+          voxels.push({
+            x,
+            y: 0.45,
+            z,
+            size: 1.0,
+            color: theme.finderOuter[0],
+            role: "flower",
+            isQrDark: true,
+            part: -99,
+            u: 0,
+            ang: 0,
+            phase: 0,
+          });
+          voxels.push({
+            x,
+            y: 0.85,
+            z,
+            size: 1.0,
+            color: pickRandom(theme.finderInner, h),
+            role: "flower",
+            isQrDark: true,
+            part: -99,
+            u: 0,
+            ang: 0,
+            phase: 0,
           });
         }
       }
     }
   }
 
-  // 5. BENANG SARI HIBISCUS MELENGKUNG MENJULUR (STAMENS & GOLDEN ANTHERS)
-  // Menjulur melengkung ke kanan-atas dengan kepala sari kuning emas
-  const filaments = [
-    { targetU: 8.5, targetV: 11.0, forwardN: 8.5, length: 16 },
-    { targetU: 11.5, targetV: 8.5, forwardN: 7.5, length: 15 },
-    { targetU: 6.5, targetV: 13.0, forwardN: 9.5, length: 17 },
-    { targetU: 12.5, targetV: 5.5, forwardN: 6.5, length: 14 },
-    { targetU: 9.5, targetV: 9.5, forwardN: 8.5, length: 16 },
+  // 3. BATANG HIJAU BUNGA (menopang bunga dari tengah courtyard)
+  const stemBaseY = 1;
+  const flowerCenterY = 11.5;
+
+  for (let y = stemBaseY; y <= flowerCenterY - 1; y++) {
+    const t = (y - stemBaseY) / (flowerCenterY - stemBaseY);
+    const sx = Math.sin(t * Math.PI * 0.5) * -1.0;
+    const sz = Math.sin(t * Math.PI * 0.5) * -1.0;
+    voxels.push({ x: sx, y, z: sz, size: 0.95, color: "#166534", role: "trunk", isQrDark: false, part: -99, u: 0, ang: 0, phase: 0 });
+    voxels.push({ x: sx + 0.6, y, z: sz, size: 0.85, color: "#15803D", role: "trunk", isQrDark: false, part: -99, u: 0, ang: 0, phase: 0 });
+    voxels.push({ x: sx, y, z: sz + 0.6, size: 0.85, color: "#14532D", role: "trunk", isQrDark: false, part: -99, u: 0, ang: 0, phase: 0 });
+  }
+
+  // Daun hijau penopang di bawah mahkota bunga
+  const leaves = [
+    { lx: 2.2, ly: 5.5, lz: -1.5 },
+    { lx: 2.8, ly: 5.8, lz: -2.0 },
+    { lx: -2.2, ly: 6.8, lz: 1.8 },
+    { lx: -2.9, ly: 7.1, lz: 2.3 },
+    { lx: -1.5, ly: 8.5, lz: -2.2 },
+    { lx: -2.0, ly: 8.8, lz: -2.8 },
   ];
+  for (const l of leaves) {
+    voxels.push({ x: l.lx, y: l.ly, z: l.lz, size: 0.9, color: "#22C55E", role: "leaf", isQrDark: false, part: -99, u: 0, ang: 0, phase: 0 });
+  }
 
-  for (const f of filaments) {
-    for (let step = 1; step <= f.length; step++) {
-      const t = step / f.length;
-      const u = f.targetU * Math.pow(t, 1.15);
-      const v = f.targetV * Math.pow(t, 1.15);
-      const arch = Math.sin(t * Math.PI) * 2.8;
-      const w = 2.6 + f.forwardN * t + arch;
+  // 4. BUNGA VOXEL PATRAKOMALA 3D (Authentic Bandung Emblem Algorithm)
+  // Basis ortonormal menghadap ke arah kamera isometrik (50, 42, 50) dengan sudut pandang prima
+  const fU = { x: 0.7071068, y: 0.0, z: -0.7071068 };
+  const fN = { x: 0.4472136, y: 0.7745967, z: 0.4472136 };
+  const fV = {
+    x: fN.y * fU.z - fN.z * fU.y,
+    y: fN.z * fU.x - fN.x * fU.z,
+    z: fN.x * fU.y - fN.y * fU.x,
+  }; // (-0.5477226, 0.6324555, -0.5477226)
+  const fCenter = { x: 0, y: flowerCenterY, z: 0 };
 
-      const isTip = step >= f.length - 1;
-      const x = fCenter.x + u * U.x + v * V.x + w * N.x;
-      const y = fCenter.y + u * U.y + v * V.y + w * N.y;
-      const z = fCenter.z + u * U.z + v * V.z + w * N.z;
+  // Palet Warna Khas Patrakomala
+  const COL = {
+    red: "#D8261D",      // Patrakomala scarlet red
+    redDk: "#B51913",    // Deep carmine red underside
+    tongue: "#E02F21",   // Central crimson flame
+    yellow: "#F8D31F",   // Vibrant golden yellow
+    yellowLt: "#FBE04A", // Sunny stamen highlight
+  };
 
-      voxels.push({
-        x: +x.toFixed(2),
-        y: +y.toFixed(2),
-        z: +z.toFixed(2),
-        size: isTip ? 1.05 : 0.72,
-        color: isTip ? "#FACC15" : "#DC2626",
-        role: "stamen",
-        isQrDark: false,
-      });
+  const localVox = new Map<string, { lx: number; ly: number; lz: number; color: string; part: number; u: number; ang: number; phase: number; role: "petal" | "stamen" }>();
+  function putLocal(lx: number, ly: number, lz: number, color: string, part: number, u: number, ang: number, phase: number, role: "petal" | "stamen" = "petal") {
+    const k = `${lx},${ly},${lz}`;
+    if (localVox.has(k)) return;
+    localVox.set(k, { lx, ly, lz, color, part, u, ang, phase, role });
+  }
 
-      if (isTip) {
-        // Bulb anther emas 3D di ujung benang sari
-        voxels.push({
-          x: +(x + 0.45 * U.x).toFixed(2),
-          y: +(y + 0.45 * V.y).toFixed(2),
-          z: +(z + 0.45 * N.z).toFixed(2),
-          size: 0.85,
-          color: "#FDE047",
-          role: "stamen",
-          isQrDark: false,
-        });
-        voxels.push({
-          x: +(x - 0.45 * U.x).toFixed(2),
-          y: +(y - 0.45 * V.y).toFixed(2),
-          z: +(z - 0.45 * N.z).toFixed(2),
-          size: 0.85,
-          color: "#FBBF24",
-          role: "stamen",
-          isQrDark: false,
-        });
+  // 5 Kelopak Patrakomala Kincir (Pinwheel Petals)
+  const PETALS = 5, R0 = 1.6, LEN = 13.8, WMAX = 5.4;
+
+  for (let i = 0; i < PETALS; i++) {
+    const th = (i * Math.PI * 2) / PETALS + Math.PI / 2;
+    const cs = Math.cos(th), sn = Math.sin(th);
+    const phase = i * 1.37;
+
+    for (let x = -17; x <= 17; x++) {
+      for (let z = -17; z <= 17; z++) {
+        const s = x * cs + z * sn;  // jarak sepanjang kelopak
+        const v = -x * sn + z * cs; // posisi melintang kelopak
+        if (s < R0 - 0.5 || s > R0 + LEN) continue;
+
+        const t = Math.min(Math.max((s - R0) / LEN, 0), 1);
+        const c = 2.8 * t * t; // kelopak melengkung (efek kincir pinwheel)
+        const ruffle = 1 + 0.09 * Math.sin(t * 19 + i * 1.7 + (v > c ? 0 : 2.3)) + 0.05 * Math.sin(t * 41 + i);
+        const w = WMAX * Math.pow(Math.sin(Math.PI * t), 0.55) * ruffle + 0.35;
+        const dv = v - c;
+        if (Math.abs(dv) > w) continue;
+
+        const d = Math.abs(dv) / w;
+        const edge = w - Math.abs(dv);
+        // yb: kelopak melengkung ke atas (dish bowl) + miring agar saling menumpuk
+        const yb = Math.round(3.8 * t * t + 0.12 * dv + 0.5);
+        const thick = 1 + Math.round(1.3 * (1 - d * d) * (1 - 0.35 * t));
+        const u = t;
+
+        // Lidah merah khas Patrakomala dari pusat
+        const tt = t / 0.62;
+        let tongue = false;
+        if (tt < 1) {
+          const tw = (1.8 * Math.pow(1 - tt, 0.7) + 0.45) * (1 + 0.28 * Math.sin(tt * 13 + i));
+          tongue = Math.abs(v - (c * 0.55 - 0.3)) < tw && edge > 1.0;
+        }
+
+        putLocal(x, yb, z, COL.redDk, i, u, th, phase, "petal"); // Lapisan dasar merah tua
+        if (edge <= 0.85) {
+          putLocal(x, yb + 1, z, COL.red, i, u, th, phase, "petal"); // Bingkai merah timbul
+        } else {
+          for (let l = 1; l <= thick; l++) {
+            putLocal(x, yb + l, z, l === thick ? COL.yellowLt : COL.yellow, i, u, th, phase, "petal");
+          }
+          if (tongue) {
+            putLocal(x, yb + thick + 1, z, COL.tongue, i, u, th, phase, "petal");
+          }
+        }
       }
     }
   }
 
-  // 6. KELOPAK JATUH DI LANTAI (scattered fallen petals on courtyard)
+  // Inti bunga Patrakomala (Core Sphere)
+  for (let x = -3; x <= 3; x++) {
+    for (let y = 1; y <= 3; y++) {
+      for (let z = -3; z <= 3; z++) {
+        if (Math.hypot(x, (y - 1) * 1.1, z) <= 2.9) {
+          putLocal(x, y, z, COL.red, -1, 0, 0, 0, "petal");
+        }
+      }
+    }
+  }
+
+  // Putik / benang sari anggun Patrakomala (4 Arching Stamens with Golden Anther Pollen Tips)
+  const BETA = -0.35;
+  const STAMENS = [
+    { a: BETA - 0.38, len: 14.5, h: 4.5, side: 1.3 },
+    { a: BETA - 0.12, len: 17.0, h: 6.5, side: -0.8 },
+    { a: BETA + 0.14, len: 15.5, h: 3.5, side: 1.0 },
+    { a: BETA + 0.40, len: 13.0, h: 5.5, side: -1.3 },
+  ];
+
+  STAMENS.forEach((st, j) => {
+    const dx = Math.cos(st.a), dz = Math.sin(st.a);
+    const px = -dz, pz = dx;
+    const path = (u: number) => {
+      const r = st.len * u, side = st.side * Math.sin(Math.PI * u);
+      return [dx * r + px * side, 2.0 + st.h * Math.sin(Math.PI * u * 0.62), dz * r + pz * side];
+    };
+    const phase = j * 1.3 + 0.4;
+
+    for (let u = 0; u <= 1; u += 0.016) {
+      const [cx, cy, cz] = path(u);
+      const rad = 0.85 - 0.25 * u;
+      for (let x = Math.floor(cx - 1); x <= Math.ceil(cx + 1); x++) {
+        for (let y = Math.floor(cy - 1); y <= Math.ceil(cy + 1); y++) {
+          for (let z = Math.floor(cz - 1); z <= Math.ceil(cz + 1); z++) {
+            if (Math.hypot(x - cx, y - cy, z - cz) <= rad) {
+              putLocal(x, y, z, COL.red, 10 + j, u, st.a, phase, "stamen");
+            }
+          }
+        }
+      }
+    }
+
+    // Ujung kepala sari (anther) emas
+    const [tx, ty, tz] = path(1);
+    for (let x = Math.floor(tx - 2); x <= Math.ceil(tx + 2); x++) {
+      for (let y = Math.floor(ty - 2); y <= Math.ceil(ty + 2); y++) {
+        for (let z = Math.floor(tz - 2); z <= Math.ceil(tz + 2); z++) {
+          if (Math.hypot(x - tx, y - ty, z - tz) <= 1.4) {
+            const col = (y - ty) >= 0.3 ? COL.yellowLt : COL.yellow;
+            putLocal(x, y, z, col, 10 + j, 1.0, st.a, phase, "stamen");
+          }
+        }
+      }
+    }
+  });
+
+  // Transformasi semua voxel bunga lokal ke ruang dunia diorama official.id
+  for (const item of localVox.values()) {
+    const wx = +(fCenter.x + item.lx * fU.x + item.ly * fN.x + item.lz * fV.x).toFixed(2);
+    const wy = +(fCenter.y + item.lx * fU.y + item.ly * fN.y + item.lz * fV.y).toFixed(2);
+    const wz = +(fCenter.z + item.lx * fU.z + item.ly * fN.z + item.lz * fV.z).toFixed(2);
+
+    voxels.push({
+      x: wx,
+      y: wy,
+      z: wz,
+      size: 0.96,
+      color: item.color,
+      role: item.role,
+      isQrDark: false,
+      part: item.part,
+      u: item.u,
+      ang: item.ang,
+      phase: item.phase,
+    });
+  }
+
+  // 5. KELOPAK JATUH DI LANTAI (scattered fallen petals on courtyard floor)
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       if (matrix[r][c] !== 1 || isFinderPattern(r, c, size)) continue;
@@ -912,6 +1011,10 @@ export function generateVoxelFlower(
           color: pickRandom(theme.petalFloor, h),
           role: "petal",
           isQrDark: false,
+          part: -99,
+          u: 0,
+          ang: 0,
+          phase: 0,
         });
       }
     }

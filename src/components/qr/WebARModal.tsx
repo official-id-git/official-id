@@ -608,13 +608,16 @@ export default function WebARModal({
     const wind = windRef.current!;
 
     const geo = new THREE.BoxGeometry(1, 1, 1);
-    const { sway, leaf, phase, growDelay, petal, stamen } = buildWindAttributes(voxels);
+    const { sway, leaf, phase, growDelay, petal, stamen, part, uParam, ang } = buildWindAttributes(voxels);
     geo.setAttribute("aSway", new THREE.InstancedBufferAttribute(sway, 1));
     geo.setAttribute("aLeaf", new THREE.InstancedBufferAttribute(leaf, 1));
     geo.setAttribute("aPhase", new THREE.InstancedBufferAttribute(phase, 1));
     geo.setAttribute("aGrowDelay", new THREE.InstancedBufferAttribute(growDelay, 1));
     geo.setAttribute("aPetal", new THREE.InstancedBufferAttribute(petal, 1));
     geo.setAttribute("aStamen", new THREE.InstancedBufferAttribute(stamen, 1));
+    geo.setAttribute("aPart", new THREE.InstancedBufferAttribute(part, 1));
+    geo.setAttribute("aU", new THREE.InstancedBufferAttribute(uParam, 1));
+    geo.setAttribute("aAng", new THREE.InstancedBufferAttribute(ang, 1));
 
     const mat = new THREE.MeshStandardMaterial({ roughness: 0.82, metalness: 0.05 });
     applyWind(mat, wind);

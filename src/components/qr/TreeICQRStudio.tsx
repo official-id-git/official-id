@@ -87,6 +87,7 @@ import {
   FileCsv,
   Users,
   Messages,
+  Lock,
 } from "flowbite-react-icons/outline";
 
 import {
@@ -188,6 +189,17 @@ export default function TreeICQRStudio() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [shortlinkBase, setShortlinkBase] = useState("https://official.id");
   const [season, setSeason] = useState<SeasonType>("spring");
+  const isSeasonLocked = Boolean(slug);
+
+  const handleResetForm = () => {
+    setSlug("");
+    setDestinationUrl("");
+    setCustomSlugInput("");
+    setSlugCheckStatus("idle");
+    setSlugError("");
+    setErrorMessage("");
+    setSaveStatus("idle");
+  };
   const [viewMode, setViewMode] = useState<"3d" | "qr">("3d");
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -729,6 +741,116 @@ export default function TreeICQRStudio() {
               tabIndex={-1}
               autoComplete="off"
             />
+          </div>
+
+          {/* Pilihan Variasi & Tema Animasi 3D (Berada di atas input URL Tujuan Pengguna) */}
+          <div className="flex flex-col gap-1.5 pb-1">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-bold text-stone-600 flex items-center gap-1.5">
+                <Palette className="w-3.5 h-3.5 text-stone-500" />
+                <span>Pilihan Tema &amp; Animasi 3D</span>
+              </label>
+              {isSeasonLocked && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/90 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                    <Lock className="w-2.5 h-2.5" />
+                    <span>Terkunci</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleResetForm}
+                    className="text-[10px] font-semibold text-emerald-700 hover:text-emerald-800 underline transition"
+                    title="Buat link baru dan buka kunci pilihan tema"
+                  >
+                    Buat Link Baru
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Grid 4 Tombol Pilihan Variasi Tema */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 w-full text-xs font-medium">
+              <button
+                type="button"
+                disabled={isSeasonLocked}
+                onClick={() => {
+                  if (isSeasonLocked) return;
+                  setSeason("summer");
+                }}
+                className={`flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl transition border text-center ${
+                  season === "summer"
+                    ? "bg-[#EFE8DA] text-stone-900 border-stone-400 font-bold shadow-sm ring-2 ring-stone-400/40"
+                    : isSeasonLocked
+                    ? "opacity-35 cursor-not-allowed bg-stone-50 text-stone-400 border-stone-200 pointer-events-none"
+                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-50 border-stone-200/80 active:scale-[0.98]"
+                }`}
+                title={isSeasonLocked ? "Tema terkunci untuk link yang telah tersimpan" : "Pilih tema Summer Green"}
+              >
+                <span>🌳 Summer Green</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isSeasonLocked}
+                onClick={() => {
+                  if (isSeasonLocked) return;
+                  setSeason("spring");
+                }}
+                className={`flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl transition border text-center ${
+                  season === "spring"
+                    ? "bg-pink-50 text-pink-950 border-pink-300 font-bold shadow-sm ring-2 ring-pink-400/40"
+                    : isSeasonLocked
+                    ? "opacity-35 cursor-not-allowed bg-stone-50 text-stone-400 border-stone-200 pointer-events-none"
+                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-50 border-stone-200/80 active:scale-[0.98]"
+                }`}
+                title={isSeasonLocked ? "Tema terkunci untuk link yang telah tersimpan" : "Pilih tema Sakura Spring"}
+              >
+                <span>🌸 Sakura Spring</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isSeasonLocked}
+                onClick={() => {
+                  if (isSeasonLocked) return;
+                  setSeason("autumn");
+                }}
+                className={`flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl transition border text-center ${
+                  season === "autumn"
+                    ? "bg-amber-50 text-amber-950 border-amber-300 font-bold shadow-sm ring-2 ring-amber-400/40"
+                    : isSeasonLocked
+                    ? "opacity-35 cursor-not-allowed bg-stone-50 text-stone-400 border-stone-200 pointer-events-none"
+                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-50 border-stone-200/80 active:scale-[0.98]"
+                }`}
+                title={isSeasonLocked ? "Tema terkunci untuk link yang telah tersimpan" : "Pilih tema Golden Autumn"}
+              >
+                <span>🍂 Golden Autumn</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isSeasonLocked}
+                onClick={() => {
+                  if (isSeasonLocked) return;
+                  setSeason("flower");
+                }}
+                className={`flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl transition border text-center ${
+                  season === "flower"
+                    ? "bg-rose-50 text-rose-950 border-rose-300 font-bold shadow-sm ring-2 ring-rose-400/40"
+                    : isSeasonLocked
+                    ? "opacity-35 cursor-not-allowed bg-stone-50 text-stone-400 border-stone-200 pointer-events-none"
+                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-50 border-stone-200/80 active:scale-[0.98]"
+                }`}
+                title={isSeasonLocked ? "Tema terkunci untuk link yang telah tersimpan" : "Pilih tema Hibiscus Bloom"}
+              >
+                <span>🌺 Hibiscus Bloom</span>
+              </button>
+            </div>
+            {isSeasonLocked && (
+              <p className="text-[10px] text-stone-400 italic">
+                * Variasi tema dan animasi 3D dikunci agar konsisten dengan shortlink yang telah dibuat ({slug}).
+              </p>
+            )}
           </div>
 
           {/* Baris 1: Input URL Tujuan */}
@@ -1370,76 +1492,6 @@ export default function TreeICQRStudio() {
           </div>
         </div>
 
-        {/* Season Switcher Pills */}
-        <div className="flex items-center gap-2 w-full justify-center text-xs font-medium">
-          <button
-            type="button"
-            onClick={() => {
-              setSeason("summer");
-              if (destinationUrl.trim() && slug) {
-                handleSaveLink(undefined, "summer");
-              }
-            }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition ${
-              season === "summer"
-                ? "bg-[#EFE8DA] text-stone-900 shadow-sm border border-stone-300 font-bold"
-                : "text-stone-600 hover:text-stone-900 hover:bg-white/40"
-            }`}
-          >
-            <span>🌳 Summer Green</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setSeason("spring");
-              if (destinationUrl.trim() && slug) {
-                handleSaveLink(undefined, "spring");
-              }
-            }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition ${
-              season === "spring"
-                ? "bg-white text-stone-900 shadow-sm border border-stone-200/80 font-bold"
-                : "text-stone-600 hover:text-stone-900 hover:bg-white/40"
-            }`}
-          >
-            <span>🌸 Sakura Spring</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setSeason("autumn");
-              if (destinationUrl.trim() && slug) {
-                handleSaveLink(undefined, "autumn");
-              }
-            }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition ${
-              season === "autumn"
-                ? "bg-white text-stone-900 shadow-sm border border-stone-200/80 font-bold"
-                : "text-stone-600 hover:text-stone-900 hover:bg-white/40"
-            }`}
-          >
-            <span>🍂 Golden Autumn</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setSeason("flower");
-              if (destinationUrl.trim() && slug) {
-                handleSaveLink(undefined, "flower");
-              }
-            }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition ${
-              season === "flower"
-                ? "bg-white text-stone-900 shadow-sm border border-stone-200/80 font-bold"
-                : "text-stone-600 hover:text-stone-900 hover:bg-white/40"
-            }`}
-          >
-            <span>🌺 Hibiscus Bloom</span>
-          </button>
-        </div>
       </footer>
 
       {/* Info & About Modal */}

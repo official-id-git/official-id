@@ -516,8 +516,18 @@ export default function ThreeVoxelTreeScene({
     const windWeights = new Float32Array(treeVoxels.length);
     const isQrDarks = new Float32Array(treeVoxels.length);
     const isDecoratives = new Float32Array(treeVoxels.length);
+    const parts = new Float32Array(treeVoxels.length);
+    const uParams = new Float32Array(treeVoxels.length);
+    const angs = new Float32Array(treeVoxels.length);
+    const phases = new Float32Array(treeVoxels.length);
+
     for (let i = 0; i < treeVoxels.length; i++) {
       const v = treeVoxels[i];
+      parts[i] = v.part !== undefined ? v.part : -99.0;
+      uParams[i] = v.u !== undefined ? v.u : 0.0;
+      angs[i] = v.ang !== undefined ? v.ang : 0.0;
+      phases[i] = v.phase !== undefined ? v.phase : ((v.x * 12.9898 + v.y * 78.233 + v.z * 37.719) % (Math.PI * 2));
+
       const r = v.role;
       if (r === "leaf") {
         windWeights[i] = 1.0;
@@ -544,6 +554,10 @@ export default function ThreeVoxelTreeScene({
     voxelGeo.setAttribute("aWindWeight", new THREE.InstancedBufferAttribute(windWeights, 1));
     voxelGeo.setAttribute("aIsQrDark", new THREE.InstancedBufferAttribute(isQrDarks, 1));
     voxelGeo.setAttribute("aIsDecorative", new THREE.InstancedBufferAttribute(isDecoratives, 1));
+    voxelGeo.setAttribute("aPart", new THREE.InstancedBufferAttribute(parts, 1));
+    voxelGeo.setAttribute("aU", new THREE.InstancedBufferAttribute(uParams, 1));
+    voxelGeo.setAttribute("aAng", new THREE.InstancedBufferAttribute(angs, 1));
+    voxelGeo.setAttribute("aPhase", new THREE.InstancedBufferAttribute(phases, 1));
 
     const voxelMat = new THREE.MeshStandardMaterial({
       roughness: 0.82,
@@ -561,10 +575,19 @@ export default function ThreeVoxelTreeScene({
         attribute float aWindWeight;
         attribute float aIsQrDark;
         attribute float aIsDecorative;
+        attribute float aPart;
+        attribute float aU;
+        attribute float aAng;
+        attribute float aPhase;
         uniform float uTime;
         uniform float uWind;
         uniform float uQrMode;
         varying float vIsQrDark;
+
+        vec3 rotA(vec3 v, vec3 k, float a){
+          float c = cos(a), s = sin(a);
+          return v * c + cross(k, v) * s + k * dot(k, v) * (1.0 - c);
+        }
       ` + shader.vertexShader;
 
       shader.vertexShader = shader.vertexShader.replace(
@@ -577,31 +600,59 @@ export default function ThreeVoxelTreeScene({
         #ifdef USE_INSTANCING
           mvPosition = instanceMatrix * mvPosition;
 
-          // 1. In 3D: Natural wind sway & ORGANIC LIVING FLOWER MOTION (kelopak bergerak hidup)
-          if (aWindWeight > 0.01 && uWind > 0.001 && uQrMode < 0.15) {
-            float hFactor = clamp((mvPosition.y - 2.0) / 16.0, 0.0, 1.4);
+          // 1. In 3D: Natural wind sway & Patrakomala Organic Motion
+          if (uWind > 0.001 && uQrMode < 0.15) {
             float effectiveWind = uWind * (1.0 - uQrMode);
 
-            // Living breathing pulse: kelopak mengembang-mengempis perlahan seperti bernapas
-            float breathe = sin(uTime * 2.2) * 0.28;
-            
-            // Ripple wave through flower petals traveling from center outward
-            float radialDist = length(mvPosition.xz);
-            float wave = sin(uTime * 3.4 - radialDist * 0.45) * 0.38;
-            
-            // Living flutter at petal edges and stamen tips
-            float flutter = sin(uTime * 6.2 + mvPosition.x * 1.3 + mvPosition.z * 1.3) * 0.22;
-            
-            // Standard wind sway
-            float sway1 = sin(uTime * 2.0 + mvPosition.x * 0.25 + mvPosition.z * 0.25) * 0.42;
-            float sway2 = cos(uTime * 2.6 + mvPosition.z * 0.28 + mvPosition.y * 0.12) * 0.30;
-            
-            vec2 radDir = (radialDist > 0.1) ? normalize(mvPosition.xz) : vec2(0.707, 0.707);
-            
-            // Displace in 3D: combines radial breathing + petal ripple + wind sway
-            mvPosition.x += (sway1 + flutter) * hFactor * aWindWeight * effectiveWind + radDir.x * breathe * aWindWeight * 0.4;
-            mvPosition.z += (sway2 + flutter * 0.8) * hFactor * aWindWeight * effectiveWind + radDir.y * breathe * aWindWeight * 0.4;
-            mvPosition.y += (wave + sin(uTime * 3.2 + mvPosition.x * 0.3) * 0.15) * hFactor * aWindWeight * effectiveWind;
+            if (aPart > -5.0) {
+              vec3 fU = vec3(0.7071068, 0.0, -0.7071068);
+              vec3 fN = vec3(0.4472136, 0.7745967, 0.4472136);
+              vec3 fV = vec3(-0.5477226, 0.6324555, -0.5477226);
+              vec3 fCenter = vec3(0.0, 11.5, 0.0);
+
+              vec3 rel = mvPosition.xyz - fCenter;
+              vec3 localP = vec3(dot(rel, fU), dot(rel, fN), dot(rel, fV));
+              vec3 origLocalP = localP;
+
+              float gust = 0.65 + 0.35 * sin(uTime * 0.7) * sin(uTime * 0.31 + 1.3) + 0.3 * max(0.0, sin(uTime * 0.45 - 0.6));
+              float W = effectiveWind * gust;
+
+              vec3 up = vec3(0.0, 1.0, 0.0);
+              vec3 d  = vec3(cos(aAng), 0.0, sin(aAng));
+              vec3 k  = vec3(-sin(aAng), 0.0, cos(aAng));
+              vec3 wd = normalize(vec3(1.0, 0.0, 0.35));
+
+              if (aPart > -0.5 && aPart < 4.5) {
+                float face = 0.7 + 0.3 * dot(d, wd);
+                float wave = sin(uTime * 2.2 + aPhase - aU * 2.4);
+                float a = W * face * (0.06 + 0.11 * wave) * aU * aU * 1.6;
+                vec3 h = d * 1.6 + up * 0.5;
+                localP = h + rotA(localP - h, k, a);
+                float tw = W * 0.10 * aU * sin(uTime * 3.1 + aPhase * 1.7 - aU * 3.0);
+                localP = rotA(localP, d, tw);
+              } else if (aPart > 9.5) {
+                float lag = aU * 1.8;
+                float a1 = W * (0.09 * sin(uTime * 1.8 + aPhase - lag) + 0.035 * sin(uTime * 5.3 + aPhase * 2.1 - lag * 1.4)) * aU;
+                float a2 = W * (0.07 * sin(uTime * 1.25 + aPhase * 0.8 - lag) + 0.05) * aU;
+                vec3 h = vec3(0.0, 2.0, 0.0);
+                localP = h + rotA(localP - h, k, a1);
+                localP = h + rotA(localP - h, up, a2);
+              }
+
+              float s = W * 0.03 * sin(uTime * 0.9);
+              localP = rotA(localP, vec3(0.0, 0.0, 1.0), s);
+
+              vec3 deltaLocal = localP - origLocalP;
+              mvPosition.xyz += deltaLocal.x * fU + deltaLocal.y * fN + deltaLocal.z * fV;
+            } else if (aWindWeight > 0.01) {
+              float hFactor = clamp((mvPosition.y - 2.0) / 16.0, 0.0, 1.4);
+              float sway1 = sin(uTime * 2.0 + mvPosition.x * 0.25 + mvPosition.z * 0.25) * 0.42;
+              float sway2 = cos(uTime * 2.6 + mvPosition.z * 0.28 + mvPosition.y * 0.12) * 0.30;
+              float flutter = sin(uTime * 6.2 + mvPosition.x * 1.3 + mvPosition.z * 1.3) * 0.22;
+              mvPosition.x += (sway1 + flutter) * hFactor * aWindWeight * effectiveWind;
+              mvPosition.z += (sway2 + flutter * 0.8) * hFactor * aWindWeight * effectiveWind;
+              mvPosition.y += sin(uTime * 3.2 + mvPosition.x * 0.3) * 0.15 * hFactor * aWindWeight * effectiveWind;
+            }
           }
 
           // 2. In QR Mode:
