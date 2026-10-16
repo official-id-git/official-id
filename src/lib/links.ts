@@ -79,15 +79,25 @@ export async function getLinkBySlug(slug: string): Promise<MagicLink | null> {
         .maybeSingle();
 
       if (!error && data) {
+        let finalSeason = data.season as SeasonType;
+        let cleanAccent = data.brand_accent;
+        if (cleanAccent && cleanAccent.includes("season:")) {
+          const match = cleanAccent.match(/season:([a-z0-9_-]+)/);
+          if (match && match[1]) {
+            finalSeason = match[1] as SeasonType;
+          }
+          cleanAccent = cleanAccent.replace(/\|?season:[a-z0-9_-]+/, "").trim() || null;
+        }
+
         return {
           id: data.id,
           slug: data.slug,
           destination: data.destination,
-          season: data.season as SeasonType,
+          season: finalSeason,
           title: data.title,
           brand_name: data.brand_name,
           brand_logo_url: data.brand_logo_url,
-          brand_accent: data.brand_accent,
+          brand_accent: cleanAccent,
           clicks_count: data.clicks_count,
           created_at: data.created_at,
           updated_at: data.updated_at,
@@ -136,7 +146,7 @@ export async function saveMagicLink(
   if (isSupabaseConfigured()) {
     try {
       const supabase = createAdminClient();
-      const { data, error } = await supabase
+      let res = await supabase
         .from("magic_links")
         .upsert(
           {
@@ -154,15 +164,50 @@ export async function saveMagicLink(
         .select()
         .single();
 
-      if (!error && data) {
-        return data as MagicLink;
+      // Jika enum database belum memiliki nilai season baru (seperti 'flower' -> code 22P02)
+      // fallback ke 'spring' yang kompatibel dan simpan tag season di brand_accent
+      if (res.error && (res.error.code === "22P02" || res.error.message?.includes("enum"))) {
+        const fallbackAccent = link.brand_accent
+          ? `${link.brand_accent}|season:${link.season}`
+          : `season:${link.season}`;
+
+        res = await supabase
+          .from("magic_links")
+          .upsert(
+            {
+              slug: link.slug,
+              destination: link.destination,
+              season: "spring",
+              title: link.title || "official.id — Magic Tree",
+              brand_name: link.brand_name || null,
+              brand_logo_url: link.brand_logo_url || null,
+              brand_accent: fallbackAccent,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "slug" }
+          )
+          .select()
+          .single();
       }
-    } catch {
-      /* simpan fallback ke memori jika offline */
+
+      if (!res.error && res.data) {
+        return {
+          ...res.data,
+          season: link.season,
+        } as MagicLink;
+      }
+
+      if (res.error) {
+        console.error("Gagal menyimpan ke Supabase magic_links:", res.error);
+        throw new Error(res.error.message || "Gagal menyimpan ke database Supabase");
+      }
+    } catch (err) {
+      console.error("Error connecting to Supabase in saveMagicLink:", err);
+      throw err;
     }
   }
 
-  // Simpan ke memory dan disk cache
+  // Simpan ke memory dan disk cache (untuk preview offline lokal)
   IN_MEMORY_LINKS[link.slug] = link;
   const disk = readDiskCache();
   disk[link.slug] = link;

@@ -455,9 +455,32 @@ export default function TreeICQRStudio() {
       handleCopyLink();
     }
   };
+  const handleToggleViewMode = async () => {
+    if (viewMode === "3d") {
+      // Jika pengguna sudah mengisi URL tujuan tapi belum disimpan, simpan otomatis agar QR on-screen langsung aktif & valid!
+      if (!slug && destinationUrl.trim()) {
+        await handleSaveLink();
+      }
+      setViewMode("qr");
+    } else {
+      setViewMode("3d");
+    }
+  };
 
   const handleDownloadPrintQr = async () => {
     try {
+      let activeQrText = qrText;
+      let activeExportSlug = slug;
+
+      // Jika pengguna sudah mengisi URL tujuan tapi belum tersimpan, otomatis simpan ke server!
+      if (!slug && destinationUrl.trim()) {
+        const newSlug = await handleSaveLink();
+        if (newSlug) {
+          activeExportSlug = newSlug;
+          activeQrText = `${shortlinkBase}/${newSlug}/q`;
+        }
+      }
+
       const canvas = document.createElement("canvas");
       const size = 1024;
       canvas.width = size;
@@ -468,7 +491,7 @@ export default function TreeICQRStudio() {
         ctx.fillRect(0, 0, size, size);
       }
 
-      await QRCode.toCanvas(canvas, qrText, {
+      await QRCode.toCanvas(canvas, activeQrText, {
         width: 1024,
         margin: 3,
         errorCorrectionLevel: "H",
@@ -489,7 +512,7 @@ export default function TreeICQRStudio() {
 
       canvas.toBlob((blob) => {
         if (!blob) return;
-        downloadBlob(blob, `official-id-${slug || "custom"}-qrcode.png`);
+        downloadBlob(blob, `official-id-${activeExportSlug || "custom"}-qrcode.png`);
         try {
           confetti({
             particleCount: 50,
@@ -580,7 +603,7 @@ export default function TreeICQRStudio() {
               logoSizePercent={logoSizePercent}
               season={season}
               viewMode={viewMode}
-              onViewModeToggle={() => setViewMode(viewMode === "3d" ? "qr" : "3d")}
+              onViewModeToggle={handleToggleViewMode}
               onSceneReady={({ captureImage, getVoxelCount }) => {
                 captureFuncRef.current = captureImage;
                 voxelCountRef.current = getVoxelCount();
@@ -648,7 +671,7 @@ export default function TreeICQRStudio() {
       {/* Primary Interaction Pill Buttons (Matching tree.icqr.com + Mode AR + Direct QR Download) */}
       <div className="flex flex-wrap items-center justify-center -mt-1 mb-2 z-30 gap-2.5">
         <button
-          onClick={() => setViewMode(viewMode === "3d" ? "qr" : "3d")}
+          onClick={handleToggleViewMode}
           className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/95 hover:bg-white text-stone-800 text-xs sm:text-sm font-semibold tracking-tight shadow-md hover:shadow-lg border border-stone-200/90 backdrop-blur-md transition-all active:scale-95"
         >
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
