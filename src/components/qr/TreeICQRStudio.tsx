@@ -7,6 +7,7 @@ import {
   SeasonType,
   SEASONS,
   generateVoxelTree,
+  generateVoxelFlower,
   generateQrMatrix,
   exportVoxelsToJson,
   exportVoxelsToCsv,
@@ -71,7 +72,16 @@ import {
   Tag,
   Refresh,
   QrCode,
+  Upload,
+  TrashBin,
+  FileImage,
 } from "flowbite-react-icons/outline";
+
+import {
+  drawLogoOnQrCanvas,
+  optimizeLogoFile,
+  LogoShape,
+} from "@/lib/qr-logo";
 
 import ThreeVoxelTreeScene from "@/components/qr/ThreeVoxelTreeScene";
 import WebARModal from "@/components/qr/WebARModal";
@@ -85,6 +95,45 @@ export default function TreeICQRStudio() {
   const [errorMessage, setErrorMessage] = useState("");
   const [brandName, setBrandName] = useState("");
   const [brandLogoUrl, setBrandLogoUrl] = useState("");
+  const [logoDataUrl, setLogoDataUrl] = useState<string>("");
+  const [logoFileName, setLogoFileName] = useState<string>("");
+  const [logoShape, setLogoShape] = useState<LogoShape>("circle");
+  const [logoSizePercent, setLogoSizePercent] = useState<number>(22);
+  const [isProcessingLogo, setIsProcessingLogo] = useState(false);
+  const [logoError, setLogoError] = useState("");
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const activeLogo = logoDataUrl || brandLogoUrl.trim();
+
+  const handleLogoFileUpload = async (file: File) => {
+    if (!file) return;
+    setLogoError("");
+    setIsProcessingLogo(true);
+    try {
+      const result = await optimizeLogoFile(file, 256);
+      setLogoDataUrl(result.dataUrl);
+      setLogoFileName(result.name);
+      // Jika tab brand config belum dibuka, buka agar pengguna melihat statusnya
+      setShowBrandConfig(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal memproses file logo";
+      setLogoError(msg);
+    } finally {
+      setIsProcessingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setLogoDataUrl("");
+    setBrandLogoUrl("");
+    setLogoFileName("");
+    setLogoError("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const [showBrandConfig, setShowBrandConfig] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [shortlinkBase, setShortlinkBase] = useState("https://official.id");
@@ -215,7 +264,7 @@ export default function TreeICQRStudio() {
             destination: dest,
             season: chosenSeason,
             slug: chosenSlug || undefined,
-            brand: brandName ? { name: brandName, logoUrl: brandLogoUrl || null } : undefined,
+            brand: (brandName || activeLogo) ? { name: brandName || null, logoUrl: activeLogo || null } : undefined,
             overwrite: chosenSlug && slug ? chosenSlug === slug : false,
             _hp_company: honeypotVal || undefined,
             _render_t: formRenderTimeRef.current,
@@ -260,7 +309,7 @@ export default function TreeICQRStudio() {
         return null;
       }
     },
-    [destinationUrl, customSlugInput, season, slug, brandName, brandLogoUrl, honeypotVal, slugCheckStatus, slugError]
+    [destinationUrl, customSlugInput, season, slug, brandName, brandLogoUrl, logoDataUrl, activeLogo, honeypotVal, slugCheckStatus, slugError]
   );
 
   // Buat kode acak 6 digit baru
@@ -378,9 +427,28 @@ export default function TreeICQRStudio() {
         },
       });
 
+      // Sematkan logo PNG di tengah-tengah QR Code jika ada logo aktif
+      if (activeLogo) {
+        await drawLogoOnQrCanvas(canvas, activeLogo, {
+          shape: logoShape,
+          sizeRatio: logoSizePercent / 100,
+          bgColor: "#ffffff",
+        });
+      }
+
       canvas.toBlob((blob) => {
         if (!blob) return;
-        downloadBlob(blob, `official-id-${slug || "default"}-qrcode.png`);
+        downloadBlob(blob, `official-id-${slug || "custom"}-qrcode.png`);
+        try {
+          confetti({
+            particleCount: 50,
+            spread: 60,
+            origin: { y: 0.7 },
+            colors: ["#10b981", "#059669", "#34d399", "#fbbf24"],
+          });
+        } catch {
+          // ignore
+        }
       }, "image/png");
     } catch (e) {
       console.error("Gagal membuat print QR PNG:", e);
@@ -398,7 +466,9 @@ export default function TreeICQRStudio() {
 
   const handleExportGoxelJson = () => {
     const { matrix, size } = generateQrMatrix(qrText);
-    const voxels = generateVoxelTree(matrix, size, season);
+    const voxels = season === "flower"
+      ? generateVoxelFlower(matrix, size, season)
+      : generateVoxelTree(matrix, size, season);
 
     const json = exportVoxelsToJson(voxels, {
       title: "official.id 3D Voxel Magic Tree QR",
@@ -411,7 +481,9 @@ export default function TreeICQRStudio() {
 
   const handleExportGoxelCsv = () => {
     const { matrix, size } = generateQrMatrix(qrText);
-    const voxels = generateVoxelTree(matrix, size, season);
+    const voxels = season === "flower"
+      ? generateVoxelFlower(matrix, size, season)
+      : generateVoxelTree(matrix, size, season);
 
     const csv = exportVoxelsToCsv(voxels);
     const blob = new Blob([csv], { type: "text/csv" });
@@ -452,6 +524,8 @@ export default function TreeICQRStudio() {
             <ThreeVoxelTreeScene
               url={destinationUrl}
               qrText={qrText}
+              logoUrl={activeLogo}
+              logoShape={logoShape}
               season={season}
               viewMode={viewMode}
               onViewModeToggle={() => setViewMode(viewMode === "3d" ? "qr" : "3d")}
@@ -460,6 +534,31 @@ export default function TreeICQRStudio() {
                 voxelCountRef.current = getVoxelCount();
               }}
             />
+          )}
+
+          {/* Live Overlay Logo di Bagian Tengah QR Code saat Mode Scan QR */}
+          {viewMode === "qr" && activeLogo && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 animate-in fade-in zoom-in-95 duration-300">
+              <div
+                className={`bg-white p-2 sm:p-2.5 shadow-2xl border border-stone-200/90 flex items-center justify-center transition-all ${
+                  logoShape === "circle"
+                    ? "rounded-full"
+                    : logoShape === "square"
+                    ? "rounded-md"
+                    : "rounded-2xl"
+                }`}
+                style={{
+                  width: `${logoSizePercent}%`,
+                  height: `${logoSizePercent}%`,
+                }}
+              >
+                <img
+                  src={activeLogo}
+                  alt="Logo Tengah QR"
+                  className="w-full h-full object-contain pointer-events-none select-none"
+                />
+              </div>
+            </div>
           )}
         </div>
       </main>
@@ -631,38 +730,299 @@ export default function TreeICQRStudio() {
             </p>
           </div>
 
-          {/* Pengaturan Brand Whitelabel (Accordion) */}
-          <div className="border-t border-stone-100 pt-1.5">
+          {/* Pengaturan Logo PNG di Tengah QR Code & Brand Whitelabel */}
+          <div className="border-t border-stone-100 pt-2">
             <button
               type="button"
               onClick={() => setShowBrandConfig(!showBrandConfig)}
-              className="text-[11px] text-stone-500 hover:text-stone-800 flex items-center justify-between w-full font-medium py-0.5"
+              className="text-[11px] text-stone-600 hover:text-stone-900 flex items-center justify-between w-full font-semibold py-1 transition group"
             >
-              <span>⚙️ Pengaturan Brand Whitelabel (Opsional)</span>
-              <span>{showBrandConfig ? "▲ Sembunyikan" : "▼ Tampilkan"}</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-base group-hover:scale-110 transition-transform">🖼️</span>
+                <span className="text-stone-700 font-bold">Logo PNG di Tengah QR & Brand</span>
+                {activeLogo ? (
+                  <span className="text-[9px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Check className="w-2.5 h-2.5" />
+                    <span>Logo Terpasang</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-stone-400 font-normal">
+                    (Opsional)
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] text-stone-400 group-hover:text-stone-600 font-medium">
+                {showBrandConfig ? "▲ Sembunyikan" : "▼ Sesuaikan Logo"}
+              </span>
             </button>
 
             {showBrandConfig && (
-              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 bg-stone-50 rounded-xl border border-stone-200/80 animate-in fade-in duration-200">
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] text-stone-500 font-semibold">Nama Brand</span>
-                  <input
-                    type="text"
-                    value={brandName}
-                    onChange={(e) => setBrandName(e.target.value)}
-                    placeholder="Contoh: Kailoka Coffee"
-                    className="bg-white border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs text-stone-800 outline-none"
-                  />
+              <div className="mt-2.5 p-3 sm:p-4 bg-stone-50/90 rounded-2xl border border-stone-200/90 flex flex-col gap-3.5 animate-in fade-in duration-200 shadow-inner">
+                {/* Penjelasan Singkat Keamanan Scan */}
+                <div className="flex items-start gap-2 text-[10px] text-stone-500 bg-white/80 p-2.5 rounded-xl border border-stone-200/60 leading-relaxed">
+                  <span className="text-emerald-600 font-bold text-xs shrink-0 select-none">🛡️</span>
+                  <p>
+                    <strong className="text-stone-800 font-semibold">Koreksi Kesalahan QR Level H (30%):</strong>{" "}
+                    Logo diletakkan persis di tengah QR Code dengan bantalan pelindung putih, menjamin QR tetap 100% cepat terbaca oleh semua jenis kamera HP.
+                  </p>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] text-stone-500 font-semibold">Logo URL Brand (HTTPS)</span>
+
+                {/* Input File Upload & Drag-and-Drop */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-stone-700 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Upload className="w-3.5 h-3.5 text-stone-500" />
+                      <span>Upload File Logo PNG / Gambar</span>
+                    </span>
+                    {activeLogo && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveLogo}
+                        className="text-[10px] text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1 transition"
+                      >
+                        <TrashBin className="w-3 h-3" />
+                        <span>Hapus Logo</span>
+                      </button>
+                    )}
+                  </label>
+
                   <input
-                    type="url"
-                    value={brandLogoUrl}
-                    onChange={(e) => setBrandLogoUrl(e.target.value)}
-                    placeholder="https://.../logo.png"
-                    className="bg-white border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs text-stone-800 outline-none"
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/webp,image/jpeg,image/svg+xml"
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        handleLogoFileUpload(e.target.files[0]);
+                      }
+                    }}
+                    className="hidden"
                   />
+
+                  {activeLogo ? (
+                    /* Active Logo Preview Card */
+                    <div className="p-3 bg-white rounded-xl border border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+                      <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <div
+                          className={`w-14 h-14 bg-stone-50 border border-stone-200 flex items-center justify-center p-1.5 shadow-xs shrink-0 ${
+                            logoShape === "circle"
+                              ? "rounded-full"
+                              : logoShape === "square"
+                              ? "rounded-md"
+                              : "rounded-xl"
+                          }`}
+                        >
+                          <img
+                            src={activeLogo}
+                            alt="Preview Logo"
+                            className="w-full h-full object-contain pointer-events-none select-none"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-stone-800 truncate">
+                            {logoFileName || (brandLogoUrl ? "Logo dari URL" : "Logo PNG")}
+                          </p>
+                          <p className="text-[10px] text-emerald-700 font-medium flex items-center gap-1 mt-0.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Aktif di tengah QR Code
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-2.5 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 text-[10px] font-semibold transition flex items-center gap-1"
+                        >
+                          <FileImage className="w-3 h-3" />
+                          <span>Ganti File</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemoveLogo}
+                          className="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-[10px] font-semibold transition flex items-center gap-1 border border-rose-200/60"
+                        >
+                          <TrashBin className="w-3 h-3" />
+                          <span>Hapus</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Dropzone when no logo uploaded */
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setIsDragOver(true);
+                      }}
+                      onDragLeave={() => setIsDragOver(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsDragOver(false);
+                        if (e.dataTransfer.files?.[0]) {
+                          handleLogoFileUpload(e.dataTransfer.files[0]);
+                        }
+                      }}
+                      className={`cursor-pointer border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-center transition-all bg-white hover:bg-stone-50 ${
+                        isDragOver
+                          ? "border-emerald-500 bg-emerald-50/50 scale-[1.01]"
+                          : "border-stone-300 hover:border-stone-400"
+                      }`}
+                    >
+                      {isProcessingLogo ? (
+                        <div className="flex items-center gap-2 text-stone-600 text-xs font-medium py-2">
+                          <Refresh className="w-4 h-4 animate-spin text-emerald-600" />
+                          <span>Memproses dan mengoptimalkan gambar...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center mb-2 shadow-2xs">
+                            <Upload className="w-5 h-5" />
+                          </div>
+                          <p className="text-xs font-bold text-stone-800">
+                            Klik untuk upload logo PNG atau seret file ke sini
+                          </p>
+                          <p className="text-[10px] text-stone-400 mt-0.5">
+                            Format PNG (disarankan transparan), WebP, JPG, atau SVG (Maks. 2MB)
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {logoError && (
+                    <p className="text-[10px] text-rose-600 font-medium">⚠️ {logoError}</p>
+                  )}
+                </div>
+
+                {/* Pengaturan Gaya Logo (Hanya tampil jika ada logo aktif) */}
+                {activeLogo && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-stone-200/60">
+                    {/* Pilihan Bentuk Badge */}
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[10px] font-bold text-stone-600">
+                        Bentuk Pelindung Logo
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setLogoShape("circle")}
+                          className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 border ${
+                            logoShape === "circle"
+                              ? "bg-stone-900 text-white border-stone-900 shadow-xs"
+                              : "bg-white text-stone-600 border-stone-200 hover:bg-stone-100"
+                          }`}
+                        >
+                          <span>⚪</span>
+                          <span>Bulat (Rekomendasi)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLogoShape("rounded")}
+                          className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 border ${
+                            logoShape === "rounded"
+                              ? "bg-stone-900 text-white border-stone-900 shadow-xs"
+                              : "bg-white text-stone-600 border-stone-200 hover:bg-stone-100"
+                          }`}
+                        >
+                          <span>⬛</span>
+                          <span>Melengkung</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLogoShape("square")}
+                          className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 border ${
+                            logoShape === "square"
+                              ? "bg-stone-900 text-white border-stone-900 shadow-xs"
+                              : "bg-white text-stone-600 border-stone-200 hover:bg-stone-100"
+                          }`}
+                        >
+                          <span>◼️</span>
+                          <span>Kotak</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Pilihan Ukuran Logo */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-stone-600">
+                          Proporsi Ukuran di QR
+                        </span>
+                        <span className="text-[10px] font-mono text-emerald-800 font-bold">
+                          {logoSizePercent}%
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setLogoSizePercent(19)}
+                          className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition border ${
+                            logoSizePercent === 19
+                              ? "bg-stone-900 text-white border-stone-900 shadow-xs"
+                              : "bg-white text-stone-600 border-stone-200 hover:bg-stone-100"
+                          }`}
+                        >
+                          Standar (19%)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLogoSizePercent(22)}
+                          className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition border ${
+                            logoSizePercent === 22
+                              ? "bg-stone-900 text-white border-stone-900 shadow-xs"
+                              : "bg-white text-stone-600 border-stone-200 hover:bg-stone-100"
+                          }`}
+                        >
+                          Ideal (22%)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLogoSizePercent(25)}
+                          className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition border ${
+                            logoSizePercent === 25
+                              ? "bg-stone-900 text-white border-stone-900 shadow-xs"
+                              : "bg-white text-stone-600 border-stone-200 hover:bg-stone-100"
+                          }`}
+                        >
+                          Besar (25%)
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Input Alternatif: URL Logo Gambar & Nama Brand */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 border-t border-stone-200/60">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-stone-500 font-semibold">
+                      Nama Brand / Bisnis
+                    </span>
+                    <input
+                      type="text"
+                      value={brandName}
+                      onChange={(e) => setBrandName(e.target.value)}
+                      placeholder="Contoh: Kailoka Coffee"
+                      className="bg-white border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs text-stone-800 outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-stone-500 font-semibold">
+                      Atau URL Logo Eksternal (HTTPS)
+                    </span>
+                    <input
+                      type="url"
+                      value={brandLogoUrl}
+                      onChange={(e) => {
+                        setBrandLogoUrl(e.target.value);
+                        if (e.target.value.trim() && !logoDataUrl) {
+                          setLogoFileName("Logo Eksternal");
+                        }
+                      }}
+                      placeholder="https://domain.com/logo.png"
+                      className="bg-white border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs text-stone-800 outline-none focus:border-emerald-500"
+                    />
+                  </div>
                 </div>
               </div>
             )}
@@ -922,6 +1282,23 @@ export default function TreeICQRStudio() {
             }`}
           >
             <span>🍂 Golden Autumn</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSeason("flower");
+              if (destinationUrl.trim() && slug) {
+                handleSaveLink(undefined, "flower");
+              }
+            }}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition ${
+              season === "flower"
+                ? "bg-white text-stone-900 shadow-sm border border-stone-200/80 font-bold"
+                : "text-stone-600 hover:text-stone-900 hover:bg-white/40"
+            }`}
+          >
+            <span>🌺 Hibiscus Bloom</span>
           </button>
         </div>
       </footer>

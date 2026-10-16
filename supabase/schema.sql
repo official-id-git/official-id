@@ -44,8 +44,8 @@ DROP TABLE IF EXISTS public.user_roles CASCADE;
 DROP TYPE IF EXISTS season_type CASCADE;
 DROP TYPE IF EXISTS user_role_type CASCADE;
 
--- 2. Buat ENUM untuk Musim (Summer, Sakura/Spring, Autumn)
-CREATE TYPE season_type AS ENUM ('summer', 'spring', 'autumn');
+-- 2. Buat ENUM untuk Musim (Summer, Sakura/Spring, Autumn, Flower/Hibiscus)
+CREATE TYPE season_type AS ENUM ('summer', 'spring', 'autumn', 'flower');
 
 -- 3. Buat Tabel `magic_links` (Menyimpan URL yang diinput pengguna & slug QR)
 CREATE TABLE public.magic_links (

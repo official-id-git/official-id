@@ -7,6 +7,7 @@ import {
   SeasonType,
   VoxelItem,
   generateVoxelTree,
+  generateVoxelFlower,
   generateQrMatrix,
   generateParticles,
 } from "@/lib/voxel-tree-generator";
@@ -695,7 +696,10 @@ export default function WebARModal({
     }
 
     const { matrix, size } = generateQrMatrix(encodedText);
-    const voxels = generateVoxelTree(matrix, size, season, { scanSafeTop: true });
+    const voxels =
+      season === "flower"
+        ? generateVoxelFlower(matrix, size, season, { scanSafeTop: true })
+        : generateVoxelTree(matrix, size, season, { scanSafeTop: true });
     const wind = windRef.current!;
 
     const geo = new THREE.BoxGeometry(1, 1, 1);
@@ -1004,6 +1008,7 @@ export default function WebARModal({
                   ["summer", "🌳 Summer"],
                   ["spring", "🌸 Sakura"],
                   ["autumn", "🍂 Autumn"],
+                  ["flower", "🌺 Hibiscus Bloom"],
                 ] as [SeasonType, string][]
               ).map(([s, label]) => (
                 <button

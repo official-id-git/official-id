@@ -17,7 +17,7 @@ import {
   verifyHumanSubmission,
 } from "@/lib/security";
 
-const SEASONS = new Set(["summer", "spring", "autumn"]);
+const SEASONS = new Set(["summer", "spring", "autumn", "flower"]);
 
 export async function POST(req: Request) {
   try {
@@ -46,11 +46,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Batasi Ukuran Payload (Max 10KB) untuk mencegah serangan memory exhaustion
+    // 3. Batasi Ukuran Payload (Max 256KB) untuk mencegah serangan memory exhaustion serta mendukung logo PNG
     const contentLength = Number(req.headers.get("content-length") || 0);
-    if (contentLength > 10_240) {
+    if (contentLength > 262_144) {
       return NextResponse.json(
-        { error: "Ukuran payload melebihi batas keamanan (Maksimal 10KB)." },
+        { error: "Ukuran payload melebihi batas keamanan (Maksimal 256KB)." },
         { status: 413 }
       );
     }

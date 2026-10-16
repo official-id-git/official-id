@@ -8,12 +8,15 @@ import {
   SeasonType,
   SEASONS,
   generateVoxelTree,
+  generateVoxelFlower,
   generateQrMatrix,
 } from "@/lib/voxel-tree-generator";
 
 interface ThreeVoxelTreeSceneProps {
   url: string;
   qrText?: string;
+  logoUrl?: string | null;
+  logoShape?: "rounded" | "circle" | "square";
   season: SeasonType;
   viewMode: "3d" | "qr";
   onViewModeToggle: () => void;
@@ -42,6 +45,8 @@ const easeInOutCubic = (t: number) =>
 export default function ThreeVoxelTreeScene({
   url,
   qrText,
+  logoUrl,
+  logoShape = "circle",
   season,
   viewMode,
   onViewModeToggle,
@@ -92,6 +97,8 @@ export default function ThreeVoxelTreeScene({
 
   // Sitting person model group ref (animates breathing and sinks in QR mode)
   const sittingPersonRef = useRef<THREE.Group | null>(null);
+  // Center logo model group ref (animates and floats at QR center)
+  const centerLogoRef = useRef<THREE.Group | null>(null);
 
   // Transition state
   const isTransitioningRef = useRef<boolean>(false);
@@ -366,6 +373,25 @@ export default function ThreeVoxelTreeScene({
         }
       }
 
+      // Animate Center Logo (Floats at QR center in top-down view, sinks in 3D mode)
+      if (centerLogoRef.current) {
+        const targetY = currentMode === "qr" ? 0.0 : -10.0;
+        const targetScale = currentMode === "qr" ? 1.0 : 0.001;
+        centerLogoRef.current.position.y = THREE.MathUtils.lerp(
+          centerLogoRef.current.position.y,
+          targetY,
+          0.1
+        );
+        centerLogoRef.current.scale.setScalar(
+          THREE.MathUtils.lerp(centerLogoRef.current.scale.x, targetScale, 0.1)
+        );
+        if (currentMode === "3d" && centerLogoRef.current.scale.x < 0.02) {
+          centerLogoRef.current.visible = false;
+        } else if (currentMode === "qr") {
+          centerLogoRef.current.visible = true;
+        }
+      }
+
       // Update Floating Particles
       if (particlesMeshRef.current && particlesDataRef.current.length > 0) {
         const pMesh = particlesMeshRef.current;
@@ -412,6 +438,11 @@ export default function ThreeVoxelTreeScene({
         sceneRef.current.remove(sittingPersonRef.current);
         sittingPersonRef.current.clear();
         sittingPersonRef.current = null;
+      }
+      if (centerLogoRef.current && sceneRef.current) {
+        sceneRef.current.remove(centerLogoRef.current);
+        centerLogoRef.current.clear();
+        centerLogoRef.current = null;
       }
       controls.dispose();
       renderer.dispose();
@@ -466,8 +497,10 @@ export default function ThreeVoxelTreeScene({
     const textToEncode = qrText || url;
     const { matrix, size } = generateQrMatrix(textToEncode);
 
-    // 2. Generate 3D Voxel Array for the Majestic Magic Tree & Sitting Person
-    const voxels: VoxelItem[] = generateVoxelTree(matrix, size, season, { scanSafeTop: true });
+    // 2. Generate 3D Voxel Array – flower mode uses flower generator, others use tree generator
+    const voxels: VoxelItem[] = season === "flower"
+      ? generateVoxelFlower(matrix, size, season, { scanSafeTop: true })
+      : generateVoxelTree(matrix, size, season, { scanSafeTop: true });
     setVoxelCount(voxels.length);
 
     // Separate tree/ground voxels and character voxels
@@ -620,6 +653,80 @@ export default function ThreeVoxelTreeScene({
       sittingPersonRef.current = pGroup;
     }
   }, [url, qrText, season]);
+
+  // Center Logo Badge in 3D/QR Scene
+  useEffect(() => {
+    if (!sceneRef.current) return;
+    const scene = sceneRef.current;
+
+    if (centerLogoRef.current) {
+      scene.remove(centerLogoRef.current);
+      centerLogoRef.current.clear();
+      centerLogoRef.current = null;
+    }
+
+    if (!logoUrl) return;
+
+    const group = new THREE.Group();
+    const textToEncode = qrText || url;
+    const { size } = generateQrMatrix(textToEncode);
+    const badgeW = size * 0.22;
+    const innerW = badgeW * 0.78;
+
+    // White backing badge
+    const badgeGeo =
+      logoShape === "circle"
+        ? new THREE.CylinderGeometry(badgeW / 2, badgeW / 2, 0.08, 32)
+        : new THREE.BoxGeometry(badgeW, 0.08, badgeW);
+
+    const badgeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const badgeMesh = new THREE.Mesh(badgeGeo, badgeMat);
+    badgeMesh.position.y = 0.10;
+    group.add(badgeMesh);
+
+    // Texture plane for PNG logo
+    const textureLoader = new THREE.TextureLoader();
+    if (!logoUrl.startsWith("data:")) {
+      textureLoader.setCrossOrigin("anonymous");
+    }
+    textureLoader.load(
+      logoUrl,
+      (texture) => {
+        texture.generateMipmaps = true;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        const logoGeo = new THREE.PlaneGeometry(innerW, innerW);
+        const logoMat = new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          side: THREE.DoubleSide,
+        });
+        const logoPlane = new THREE.Mesh(logoGeo, logoMat);
+        logoPlane.rotation.x = -Math.PI / 2;
+        logoPlane.position.y = 0.16;
+        group.add(logoPlane);
+      },
+      undefined,
+      (err) => {
+        console.warn("Could not load Three.js logo texture:", err);
+      }
+    );
+
+    const isQr = viewModeRef.current === "qr";
+    group.position.y = isQr ? 0.0 : -10.0;
+    group.scale.setScalar(isQr ? 1.0 : 0.001);
+    group.visible = isQr;
+    scene.add(group);
+    centerLogoRef.current = group;
+
+    return () => {
+      if (centerLogoRef.current && sceneRef.current) {
+        sceneRef.current.remove(centerLogoRef.current);
+        centerLogoRef.current.clear();
+        centerLogoRef.current = null;
+      }
+    };
+  }, [logoUrl, logoShape, qrText, url]);
 
   // Trigger Smooth Camera Transition ("3d" <-> "qr")
   const triggerCameraTransition = useCallback(

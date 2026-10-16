@@ -15,6 +15,7 @@ import {
   SeasonType,
   generateQrMatrix,
   generateVoxelTree,
+  generateVoxelFlower,
 } from "@/lib/voxel-tree-generator";
 import { buildTreeMesh, createWindUniforms, disposeTreeMesh } from "@/lib/voxel-three";
 import { track } from "@/lib/track";
@@ -181,7 +182,11 @@ export default function TreeViewer({
     const windOn = reduceMotion ? 0.3 : WIND_ON;
     // Mulai dengan angin 0 karena default adalah QR
     const wind = createWindUniforms(0);
-    const mesh = buildTreeMesh(generateVoxelTree(matrix, size, season), wind, {
+    const voxels =
+      season === "flower"
+        ? generateVoxelFlower(matrix, size, season, { scanSafeTop: true })
+        : generateVoxelTree(matrix, size, season);
+    const mesh = buildTreeMesh(voxels, wind, {
       shadows: renderer.shadowMap.enabled,
     });
     scene.add(mesh);
@@ -486,12 +491,23 @@ export default function TreeViewer({
           type="button"
           onClick={toggleQr}
           aria-label="Kembali ke tampilan pohon"
-          className={`absolute inset-[13%] rounded-2xl p-3 shadow-xl transition duration-500 ${
+          className={`absolute inset-[13%] rounded-2xl p-3 shadow-xl transition duration-500 relative flex items-center justify-center ${
             qrOverlay ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0"
           }`}
           style={{ background: theme.paperColor }}
         >
           <QrSvg matrix={matrix} size={size} dark={theme.qrDark[0]} light={theme.paperColor} />
+          {brand?.logoUrl && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="p-1.5 sm:p-2 bg-white rounded-full shadow-md border border-stone-200/80 flex items-center justify-center w-[22%] h-[22%]">
+                <img
+                  src={brand.logoUrl}
+                  alt={brand.name || "Brand Logo"}
+                  className="w-full h-full object-contain pointer-events-none select-none rounded-full"
+                />
+              </div>
+            </div>
+          )}
         </button>
       </div>
 

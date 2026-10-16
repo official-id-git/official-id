@@ -11,7 +11,7 @@ function ARContent() {
 
   const toUrl = searchParams.get("to") || "https://official.id";
   const seasonParam = (searchParams.get("season") || "summer") as SeasonType;
-  const initialSeason: SeasonType = ["summer", "spring", "autumn"].includes(seasonParam)
+  const initialSeason: SeasonType = ["summer", "spring", "autumn", "flower"].includes(seasonParam)
     ? seasonParam
     : "summer";
 

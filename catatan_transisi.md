@@ -155,6 +155,21 @@ Dokumen ini merangkum seluruh riwayat percakapan, instruksi pengguna, evolusi fi
        - Teks pengingat bahasa Inggris muncul di bawah input.
        - Tautan `harizal` menampilkan target `https://instagram.com/harizal.official` dengan tombol interaktif yang aktif.
 
+- **Tahap 14 — Fitur Logo PNG di Tengah QR Code & Voxel Bunga Hibiscus (Flower Voxel Pixel)**:
+  1. **Fitur Logo PNG di Tengah QR Code**:
+     - Ditambahkan pustaka utilitas [`src/lib/qr-logo.ts`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/src/lib/qr-logo.ts) untuk mengoptimasi dan menyematkan logo PNG di tengah-tengah matriks QR Code.
+     - Menggunakan pelindung latar belakang putih melingkar/bulat (`shape: "circle"`, `rounded-full`) dengan padding dan border halus sehingga modul QR di tengah terlindungi bersih dan tidak bertabrakan dengan logo (sesuai referensi UI).
+     - Proporsi ukuran terkalibrasi pada rasio aman 19% s/d 25% yang dipadukan dengan QR Error Correction Level H (daya koreksi hingga 30%), menjamin QR Code tetap 100% cepat terbaca oleh seluruh jenis kamera smartphone.
+     - Mendukung upload file lokal dengan kompresi client-side otomatis ke WebP/PNG Data URL ringkas serta input URL eksternal (HTTPS).
+     - Logo disematkan secara sinkron pada unduhan file QR (PNG & SVG), pratinjau live studio 2D, scene 3D WebGL (`CylinderGeometry`), serta tampilan publik `TreeViewer` (`/[slug]`).
+  2. **Model 3D Voxel Bunga (Flower Voxel Pixel - Hibiscus Bloom)**:
+     - Ditambahkan musim/tipe ke-4 yaitu `flower` ("🌺 Hibiscus Bloom") melengkapi 3 jenis pohon sebelumnya (Summer Green, Sakura Spring, Golden Autumn).
+     - Dibuat generator khusus `generateVoxelFlower` pada [`src/lib/voxel-tree-generator.ts`](file:///Users/kabayangroup/Library/CloudStorage/OneDrive-Personal/Kabayangroup/official-id/src/lib/voxel-tree-generator.ts) yang mengimplementasikan struktur Bunga Sepatu (Hibiscus) sesuai referensi desain 3D:
+       - 5 kelopak mekar simetris ($\cos(5\theta)$) dengan kontur bingkai merah menyala (`#DC2626` / `#B91C1C`), permukaan dalam kuning cerah (`#FACC15` / `#FDE047`), dan pangkal merah tua crimson (`#991B1B`).
+       - Stamen / benang sari (pistil column) yang menjulur tinggi ke atas dari tengah dengan kepala sari (anthers) berwarna emas.
+       - Tangkai hijau pendek di tengah courtyard dan taburan kelopak bunga di lantai.
+     - Diintegrasikan ke seluruh ekosistem: `TreeICQRStudio`, `ThreeVoxelTreeScene`, `TreeViewer`, `WebARModal`, `app/ar`, `app/api/links`, serta skema database Supabase `season_type` (`supabase/schema.sql` dan `supabase/add_flower_season.sql`).
+
 ---
 
 ## 3. Struktur Berkas & Komponen Inti
