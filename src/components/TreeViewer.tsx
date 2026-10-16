@@ -228,7 +228,11 @@ export default function TreeViewer({
         fromPos: camera.position.clone(),
         fromTarget: controls.target.clone(),
         toPos: toQr ? TOP_POS : ISO_POS,
-        toTarget: toQr ? TOP_TARGET : ISO_TARGET,
+        toTarget: toQr
+          ? TOP_TARGET
+          : season === "building"
+          ? new THREE.Vector3(0, 4.2, 0)
+          : ISO_TARGET,
       };
       controls.enabled = false;
       controls.autoRotate = false;

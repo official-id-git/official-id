@@ -31,6 +31,7 @@ interface ThreeVoxelTreeSceneProps {
 // Camera constants (static references for zero garbage collection & stable hooks)
 const POS_3D = new THREE.Vector3(50, 42, 50);
 const TARGET_3D = new THREE.Vector3(0, 8, 0);
+const TARGET_3D_BUILDING = new THREE.Vector3(0, 4.0, 0);
 const UP_3D = new THREE.Vector3(0, 1, 0);
 
 // Top-Down QR Code Scan View: looking straight down at (0, 0, 0)
@@ -143,9 +144,11 @@ export default function ThreeVoxelTreeScene({
       500
     );
 
+    const target3D = season === "building" ? TARGET_3D_BUILDING : TARGET_3D;
+
     camera.position.copy(viewMode === "3d" ? POS_3D : POS_QR);
     camera.up.copy(viewMode === "3d" ? UP_3D : UP_QR);
-    camera.lookAt(viewMode === "3d" ? TARGET_3D : TARGET_QR);
+    camera.lookAt(viewMode === "3d" ? target3D : TARGET_QR);
     camera.zoom = viewMode === "qr" ? 1.18 : 1.12;
     camera.updateProjectionMatrix();
     cameraRef.current = camera;
@@ -176,7 +179,7 @@ export default function ThreeVoxelTreeScene({
     controls.maxPolarAngle = Math.PI / 2.05; // Keep above ground terrace
     controls.minZoom = 0.4;
     controls.maxZoom = 3.5;
-    controls.target.copy(viewMode === "3d" ? TARGET_3D : TARGET_QR);
+    controls.target.copy(viewMode === "3d" ? target3D : TARGET_QR);
     controls.enabled = viewMode === "3d";
     controlsRef.current = controls;
 
@@ -847,7 +850,7 @@ export default function ThreeVoxelTreeScene({
       if (!cameraRef.current || !controlsRef.current) return;
 
       const targetPos = mode === "3d" ? POS_3D : POS_QR;
-      const targetLook = mode === "3d" ? TARGET_3D : TARGET_QR;
+      const targetLook = mode === "3d" ? (season === "building" ? TARGET_3D_BUILDING : TARGET_3D) : TARGET_QR;
       const targetUp = mode === "3d" ? UP_3D : UP_QR;
 
       startCamPosRef.current.copy(cameraRef.current.position);
@@ -884,7 +887,7 @@ export default function ThreeVoxelTreeScene({
         cameraRef.current.updateProjectionMatrix();
       }
     },
-    []
+    [season]
   );
 
   useEffect(() => {

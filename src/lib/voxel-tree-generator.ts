@@ -1281,37 +1281,62 @@ export function generateVoxelBuilding(
   const theme = SEASONS[season] ?? SEASONS.building;
   const voxels: VoxelItem[] = [];
   const center = (size - 1) / 2;
+  const quietZone = 5;
 
-  // 1. LANTAI COURTYARD & MODUL QR
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
+  // 1. LANTAI COURTYARD & PERIMETER (Identik persis dengan varian pohon & bunga)
+  for (let r = -quietZone; r < size + quietZone; r++) {
+    for (let c = -quietZone; c < size + quietZone; c++) {
       const x = c - center;
       const z = r - center;
       const h = coordHash(x, z, 101);
 
-      if (matrix[r][c] === 0) {
-        const isBorder = r === 0 || r === size - 1 || c === 0 || c === size - 1;
+      const isInsideQr = r >= 0 && r < size && c >= 0 && c < size;
+      const isPerimeter =
+        r === -quietZone ||
+        r === size + quietZone - 1 ||
+        c === -quietZone ||
+        c === size + quietZone - 1;
+
+      voxels.push({
+        x,
+        y: 0,
+        z,
+        size: 1.0,
+        color: isPerimeter ? theme.stoneBorder : pickRandom(theme.stonePaver, h),
+        role: isPerimeter ? "border" : "stone",
+        isQrDark: false,
+        part: -99,
+        u: 0,
+        ang: 0,
+        phase: 0,
+      });
+
+      if (isPerimeter) {
         voxels.push({
           x,
-          y: isBorder ? 0.02 : 0.04,
+          y: 0.35,
           z,
           size: 1.0,
-          color: isBorder ? theme.stoneBorder : pickRandom(theme.stonePaver, h),
-          role: isBorder ? "border" : "stone",
-          isQrDark: false,
+          color: theme.stoneBorder,
+          role: "border",
           part: -99,
           u: 0,
           ang: 0,
           phase: 0,
         });
-      } else if (!isFinderPattern(r, c, size)) {
+      }
+
+      if (isInsideQr && matrix[r][c] === 1) {
+        const floorDarkColor = isFinderPattern(r, c, size)
+          ? theme.finderOuter[0]
+          : pickRandom(theme.qrDark, h);
         voxels.push({
           x,
-          y: 0.45,
+          y: 0.04,
           z,
           size: 1.0,
-          color: pickRandom(theme.qrDark, h),
-          role: "stone",
+          color: floorDarkColor,
+          role: "leaf",
           isQrDark: true,
           part: -99,
           u: 0,
@@ -1379,13 +1404,14 @@ export function generateVoxelBuilding(
 
   // 3. MODEL GEDUNG VOXEL 3D DENGAN BENDERA BERKIBAR
   const rawList = buildGedungVoxelsRaw();
-  const scale = 0.24;
-  const vSize = 0.25;
+  const scale = 0.22;
+  const vSize = 0.23;
+  const yBase = 0.35;
 
   for (let i = 0; i < rawList.length; i++) {
     const rv = rawList[i];
     const wx = +(rv.x * scale).toFixed(3);
-    const wy = +(1.0 + rv.y * scale).toFixed(3);
+    const wy = +(yBase + rv.y * scale).toFixed(3);
     const wz = +(rv.z * scale).toFixed(3);
 
     const isFlag = rv.part === 1;
@@ -1410,7 +1436,7 @@ export function generateVoxelBuilding(
       if (matrix[r][c] !== 1 || isFinderPattern(r, c, size)) continue;
       const x = c - center;
       const z = r - center;
-      if (Math.abs(x) > 13.5 || Math.abs(z) > 6.5) {
+      if (Math.abs(x) > 12.0 || Math.abs(z) > 6.0) {
         const h = coordHash(x, z, 777);
         if (h > 0.68) {
           voxels.push({

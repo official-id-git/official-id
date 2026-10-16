@@ -86,6 +86,46 @@ function drawVideoCover(ctx: CanvasRenderingContext2D, video: HTMLVideoElement, 
 // Wind & living shader functions imported from @/lib/voxel-three
 // -----------------------------------------------------------------------------
 
+interface SeasonViewConfig {
+  targetY: number;
+  cameraPos: [number, number, number];
+  defaultScaleMobile: number;
+  defaultScaleDesktop: number;
+}
+
+const SEASON_VIEW_CONFIGS: Record<SeasonType, SeasonViewConfig> = {
+  summer: {
+    targetY: 6.0,
+    cameraPos: [0, 18, 33],
+    defaultScaleMobile: 0.31,
+    defaultScaleDesktop: 0.36,
+  },
+  spring: {
+    targetY: 6.0,
+    cameraPos: [0, 18, 33],
+    defaultScaleMobile: 0.31,
+    defaultScaleDesktop: 0.36,
+  },
+  autumn: {
+    targetY: 6.0,
+    cameraPos: [0, 18, 33],
+    defaultScaleMobile: 0.31,
+    defaultScaleDesktop: 0.36,
+  },
+  flower: {
+    targetY: 5.2,
+    cameraPos: [0, 17, 32],
+    defaultScaleMobile: 0.31,
+    defaultScaleDesktop: 0.36,
+  },
+  building: {
+    targetY: 1.8,
+    cameraPos: [0, 14.0, 28.5],
+    defaultScaleMobile: 0.42,
+    defaultScaleDesktop: 0.48,
+  },
+};
+
 export default function WebARModal({
   url,
   qrText,
@@ -107,7 +147,11 @@ export default function WebARModal({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [sceneReady, setSceneReady] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const [treeScale, setTreeScale] = useState(isMobileUA() ? 0.31 : 0.36);
+  const [treeScale, setTreeScale] = useState(() => {
+    const isMobile = isMobileUA();
+    const config = SEASON_VIEW_CONFIGS[initialSeason] ?? SEASON_VIEW_CONFIGS.summer;
+    return isMobile ? config.defaultScaleMobile : config.defaultScaleDesktop;
+  });
   const [isCardCollapsed, setIsCardCollapsed] = useState(false);
   const [isQrLocked, setIsQrLocked] = useState(false);
 
@@ -122,6 +166,7 @@ export default function WebARModal({
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
   const treeGroupRef = useRef<THREE.Group | null>(null);
   const treeMeshRef = useRef<THREE.InstancedMesh | null>(null);
   const remainingRef = useRef(REDIRECT_MS);
@@ -403,8 +448,9 @@ export default function WebARModal({
     } else {
       camera.fov = 45;
     }
-    camera.position.set(0, 18, 33);
-    camera.lookAt(0, 6.0, 0);
+    const config = SEASON_VIEW_CONFIGS[season] ?? SEASON_VIEW_CONFIGS.summer;
+    camera.position.set(config.cameraPos[0], config.cameraPos[1], config.cameraPos[2]);
+    camera.lookAt(0, config.targetY, 0);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
@@ -426,11 +472,12 @@ export default function WebARModal({
     controls.maxPolarAngle = Math.PI / 2 + 0.05;
     controls.minDistance = 6;
     controls.maxDistance = 75;
-    controls.target.set(0, 6.0, 0);
+    controls.target.set(0, config.targetY, 0);
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.5;
     const stopAutoRotate = () => (controls.autoRotate = false);
     controls.addEventListener("start", stopAutoRotate);
+    controlsRef.current = controls;
 
     scene.add(new THREE.AmbientLight(0xffffff, 1.6));
     const sunLight = new THREE.DirectionalLight(0xfff7ea, 2.0);
@@ -562,6 +609,7 @@ export default function WebARModal({
       ro.disconnect();
       controls.removeEventListener("start", stopAutoRotate);
       controls.dispose();
+      controlsRef.current = null;
       disposeObject(scene);
       renderer.dispose();
       renderer.forceContextLoss(); // lepas WebGL context (batas context di mobile kecil)
@@ -667,6 +715,23 @@ export default function WebARModal({
   useEffect(() => {
     treeGroupRef.current?.scale.setScalar(treeScale);
   }, [treeScale]);
+
+  // Sesuaikan posisi kamera, pusat target, dan skala default saat musim/varian berubah
+  useEffect(() => {
+    if (!isOpen) return;
+    const isMobile = isMobileUA();
+    const config = SEASON_VIEW_CONFIGS[season] ?? SEASON_VIEW_CONFIGS.summer;
+    setTreeScale(isMobile ? config.defaultScaleMobile : config.defaultScaleDesktop);
+
+    if (controlsRef.current && cameraRef.current) {
+      const controls = controlsRef.current;
+      const camera = cameraRef.current;
+      controls.target.set(0, config.targetY, 0);
+      camera.position.set(config.cameraPos[0], config.cameraPos[1], config.cameraPos[2]);
+      camera.lookAt(0, config.targetY, 0);
+      controls.update();
+    }
+  }, [season, isOpen]);
 
   // ---------------------------------------------------------------------------
   // Aksi
