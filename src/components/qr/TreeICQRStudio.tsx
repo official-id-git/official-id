@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import QRCode from "qrcode";
 import {
@@ -98,6 +98,44 @@ import {
 import ThreeVoxelTreeScene from "@/components/qr/ThreeVoxelTreeScene";
 import WebARModal from "@/components/qr/WebARModal";
 
+function QrSvg({
+  matrix,
+  size,
+  dark,
+  light,
+}: {
+  matrix: number[][];
+  size: number;
+  dark: string;
+  light: string;
+}) {
+  const qz = 4;
+  const total = size + qz * 2;
+  const d = useMemo(() => {
+    let p = "";
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (matrix[r][c]) {
+          p += `M${c + qz} ${r + qz}h1v1h-1z`;
+        }
+      }
+    }
+    return p;
+  }, [matrix, size]);
+  return (
+    <svg
+      viewBox={`0 0 ${total} ${total}`}
+      shapeRendering="crispEdges"
+      className="h-full w-full select-none"
+      role="img"
+      aria-label="QR code"
+    >
+      <rect width={total} height={total} fill={light} />
+      <path d={d} fill={dark} />
+    </svg>
+  );
+}
+
 export default function TreeICQRStudio() {
   const [destinationUrl, setDestinationUrl] = useState("");
   const [slug, setSlug] = useState("");
@@ -171,6 +209,7 @@ export default function TreeICQRStudio() {
   // Sebelum diisi oleh pengguna, default QR Code mengarah ke official.id
   const activeSlug = slug || customSlugInput.trim().toLowerCase();
   const qrText = slug ? `${shortlinkBase}/${slug}/q` : "https://official.id";
+  const qrMatrixData = useMemo(() => generateQrMatrix(qrText), [qrText]);
   // 2. Link share untuk dibagikan di medsos / bio: /[slug]
   const shareLink = slug
     ? `${shortlinkBase}/${slug}`
@@ -549,33 +588,60 @@ export default function TreeICQRStudio() {
             />
           )}
 
-          {/* Live Overlay Logo di Bagian Tengah QR Code saat Mode Scan QR - LINGKARAN SEMPURNA */}
-          {viewMode === "qr" && activeLogo && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 animate-in fade-in zoom-in-95 duration-300">
-              <div
-                className={`bg-white p-1.5 sm:p-2 shadow-2xl border border-stone-200/90 flex items-center justify-center transition-all aspect-square shrink-0 ${
-                  logoShape === "circle"
-                    ? "rounded-full"
-                    : logoShape === "square"
-                    ? "rounded-md"
-                    : "rounded-2xl"
-                }`}
-                style={{
-                  width: `${logoSizePercent}%`,
-                  height: `${logoSizePercent}%`,
-                  aspectRatio: "1 / 1",
-                }}
-              >
-                <img
-                  src={activeLogo}
-                  alt="Logo Tengah QR"
-                  className={`w-full h-full object-contain pointer-events-none select-none ${
-                    logoShape === "circle" ? "rounded-full" : ""
-                  }`}
-                />
-              </div>
+          {/* QR 2D Vector Overlay - 100% INSTANTLY SCANNABLE OLEH SEMUA HP & SCANNER */}
+          <div
+            onClick={() => setViewMode("3d")}
+            className={`absolute inset-0 z-20 flex items-center justify-center p-5 sm:p-7 transition-all duration-300 cursor-pointer ${
+              viewMode === "qr"
+                ? "opacity-100 scale-100 pointer-events-auto"
+                : "opacity-0 scale-95 pointer-events-none"
+            }`}
+            style={{ backgroundColor: currentTheme.paperColor }}
+            title="Klik untuk kembali ke model 3D"
+          >
+            <div className="relative w-full h-full flex items-center justify-center">
+              <QrSvg
+                matrix={qrMatrixData.matrix}
+                size={qrMatrixData.size}
+                dark={currentTheme.qrDark[0]}
+                light={currentTheme.paperColor}
+              />
+
+              {/* Logo di Tengah QR Code (Ukuran aman, True Circle Lingkaran Sempurna) */}
+              {activeLogo && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div
+                    className={`bg-white p-1.5 sm:p-2 shadow-xl border border-stone-200/90 flex items-center justify-center aspect-square shrink-0 ${
+                      logoShape === "circle"
+                        ? "rounded-full"
+                        : logoShape === "square"
+                        ? "rounded-md"
+                        : "rounded-2xl"
+                    }`}
+                    style={{
+                      width: `${logoSizePercent}%`,
+                      height: `${logoSizePercent}%`,
+                      aspectRatio: "1 / 1",
+                    }}
+                  >
+                    <img
+                      src={activeLogo}
+                      alt="Logo Tengah QR"
+                      className={`w-full h-full object-contain pointer-events-none select-none ${
+                        logoShape === "circle" ? "rounded-full" : ""
+                      }`}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Hint kembali ke 3D */}
+            <div className="absolute bottom-3 right-3 pointer-events-none flex items-center gap-1.5 text-[10px] sm:text-xs font-mono text-stone-500 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full shadow-sm border border-stone-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Ketuk untuk melihat 3D
+            </div>
+          </div>
         </div>
       </main>
 

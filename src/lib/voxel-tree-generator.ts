@@ -911,7 +911,7 @@ export function generateVoxelFlower(
           size: 0.45 + h * 0.2,
           color: pickRandom(theme.petalFloor, h),
           role: "petal",
-          isQrDark: true,
+          isQrDark: false,
         });
       }
     }

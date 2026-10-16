@@ -512,11 +512,13 @@ export default function ThreeVoxelTreeScene({
     // 3. Create InstancedMesh with Wind Sway & QR Mode Flattening Shader
     const voxelGeo = new THREE.BoxGeometry(1.0, 1.0, 1.0);
 
-    // Pass per-instance wind weight attribute & isQrDark attribute
+    // Pass per-instance wind weight attribute, isQrDark attribute, and isDecorative attribute
     const windWeights = new Float32Array(treeVoxels.length);
     const isQrDarks = new Float32Array(treeVoxels.length);
+    const isDecoratives = new Float32Array(treeVoxels.length);
     for (let i = 0; i < treeVoxels.length; i++) {
-      const r = treeVoxels[i].role;
+      const v = treeVoxels[i];
+      const r = v.role;
       if (r === "leaf") {
         windWeights[i] = 1.0;
       } else if (r === "petal") {
@@ -532,10 +534,16 @@ export default function ThreeVoxelTreeScene({
       } else {
         windWeights[i] = 0.0;
       }
-      isQrDarks[i] = treeVoxels[i].isQrDark ? 1.0 : 0.0;
+      isQrDarks[i] = v.isQrDark ? 1.0 : 0.0;
+      // Pure floor background (stone / border) is non-decorative.
+      // QR dark modules are non-decorative (they form the QR code).
+      // Any elevated decorative element (petals, stamens, leaves, trunk, branch) is decorative and MUST be removed in QR mode.
+      const isFloor = r === "stone" || r === "border";
+      isDecoratives[i] = (!isFloor && !v.isQrDark) ? 1.0 : 0.0;
     }
     voxelGeo.setAttribute("aWindWeight", new THREE.InstancedBufferAttribute(windWeights, 1));
     voxelGeo.setAttribute("aIsQrDark", new THREE.InstancedBufferAttribute(isQrDarks, 1));
+    voxelGeo.setAttribute("aIsDecorative", new THREE.InstancedBufferAttribute(isDecoratives, 1));
 
     const voxelMat = new THREE.MeshStandardMaterial({
       roughness: 0.82,
@@ -552,6 +560,7 @@ export default function ThreeVoxelTreeScene({
       shader.vertexShader = `
         attribute float aWindWeight;
         attribute float aIsQrDark;
+        attribute float aIsDecorative;
         uniform float uTime;
         uniform float uWind;
         uniform float uQrMode;
@@ -596,19 +605,26 @@ export default function ThreeVoxelTreeScene({
           }
 
           // 2. In QR Mode:
-          // QR dark modules flatten smoothly to ground floor (Y -> 0.04)
-          // 3D decorative voxels submerge cleanly below the floor (Y -> -14.0) so QR is 100% crisp & scannable
-          if (uQrMode > 0.001 && mvPosition.y > 0.5) {
-            if (aIsQrDark > 0.5) {
-              mvPosition.y = mix(mvPosition.y, 0.04, uQrMode);
-            } else {
-              mvPosition.y = mix(mvPosition.y, -14.0, uQrMode);
-            }
+          // Sembunyikan & ciutkan semua voxel 3D dekoratif (kelopak, sari, daun, batang) agar QR 100% bersih tanpa halangan
+          if (aIsDecorative > 0.5 && uQrMode > 0.001) {
+            mvPosition.xyz = mix(mvPosition.xyz, vec3(0.0, -100.0, 0.0), uQrMode);
+          }
+
+          // Modul hitam QR merata sejajar lantai (Y -> 0.04)
+          if (aIsQrDark > 0.5 && uQrMode > 0.001 && mvPosition.y > 0.1) {
+            mvPosition.y = mix(mvPosition.y, 0.04, uQrMode);
           }
         #endif
         mvPosition = modelViewMatrix * mvPosition;
         vIsQrDark = aIsQrDark;
         gl_Position = projectionMatrix * mvPosition;
+
+        #ifdef USE_INSTANCING
+          // Hardware clipping: buang voxel 3D dekoratif sepenuhnya saat mode QR
+          if (aIsDecorative > 0.5 && uQrMode > 0.85) {
+            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+          }
+        #endif
         `
       );
 
