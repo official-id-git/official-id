@@ -20,7 +20,7 @@ import {
 import { buildTreeMesh, createWindUniforms, disposeTreeMesh } from "@/lib/voxel-three";
 import { track } from "@/lib/track";
 import { BASE_URL } from "@/lib/slug";
-import { ArrowUpRightFromSquare } from "flowbite-react-icons/outline";
+import { ArrowUpRightFromSquare, QrCode, Layers, Link, Check } from "flowbite-react-icons/outline";
 
 export interface ViewerBrand {
   name?: string | null;
@@ -524,7 +524,7 @@ export default function TreeViewer({
             }`}
             title="Tampilkan Mode QR Code"
           >
-            <span className="text-sm">📱</span>
+            <QrCode className="w-4 h-4" />
             <span>QR Code</span>
           </button>
           <button
@@ -535,10 +535,10 @@ export default function TreeViewer({
                 ? "bg-stone-900 text-white shadow-md scale-[1.02]"
                 : "text-stone-600 hover:text-stone-900 hover:bg-stone-100/60"
             }`}
-            title="Lihat Mode Pohon Animasi 3D"
+            title="Lihat Mode Animasi 3D"
           >
-            <span className="text-sm">🌳</span>
-            <span>Animate Tree</span>
+            <Layers className="w-4 h-4" />
+            <span>Animate 3D</span>
           </button>
         </div>
 
@@ -570,7 +570,7 @@ export default function TreeViewer({
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/85 backdrop-blur-xs border border-stone-200/90 text-xs font-mono text-stone-800 hover:text-emerald-700 hover:border-emerald-300 transition shadow-2xs max-w-full group"
             title={`Buka langsung: ${destination}`}
           >
-            <span className="text-emerald-600">🔗</span>
+            <Link className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
             <span className="truncate max-w-[280px] sm:max-w-[340px]">{destination}</span>
             <ArrowUpRightFromSquare className="w-3 h-3 text-stone-400 group-hover:text-emerald-600 shrink-0" />
           </a>
@@ -603,9 +603,16 @@ export default function TreeViewer({
       <button
         type="button"
         onClick={handleShare}
-        className="mt-3 rounded-full px-5 py-2 text-xs font-medium text-stone-600 transition hover:bg-black/5"
+        className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-2 text-xs font-medium text-stone-600 transition hover:bg-black/5"
       >
-        {copied ? "Link tersalin ✓" : "Bagikan"}
+        {copied ? (
+          <>
+            <Check className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Link tersalin</span>
+          </>
+        ) : (
+          "Bagikan"
+        )}
       </button>
 
       {showBadge && (

@@ -17,6 +17,7 @@ interface ThreeVoxelTreeSceneProps {
   qrText?: string;
   logoUrl?: string | null;
   logoShape?: "rounded" | "circle" | "square";
+  logoSizePercent?: number;
   season: SeasonType;
   viewMode: "3d" | "qr";
   onViewModeToggle: () => void;
@@ -47,6 +48,7 @@ export default function ThreeVoxelTreeScene({
   qrText,
   logoUrl,
   logoShape = "circle",
+  logoSizePercent = 19,
   season,
   viewMode,
   onViewModeToggle,
@@ -517,10 +519,16 @@ export default function ThreeVoxelTreeScene({
       const r = treeVoxels[i].role;
       if (r === "leaf") {
         windWeights[i] = 1.0;
+      } else if (r === "petal") {
+        windWeights[i] = 1.35;
+      } else if (r === "stamen") {
+        windWeights[i] = 1.85;
       } else if (r === "hedge") {
         windWeights[i] = 0.20;
       } else if (r === "branch") {
         windWeights[i] = 0.35;
+      } else if (r === "trunk") {
+        windWeights[i] = 0.15;
       } else {
         windWeights[i] = 0.0;
       }
@@ -560,22 +568,42 @@ export default function ThreeVoxelTreeScene({
         #ifdef USE_INSTANCING
           mvPosition = instanceMatrix * mvPosition;
 
-          // 1. In 3D: natural wind sway. In QR mode (uQrMode -> 1.0): strictly stationary
+          // 1. In 3D: Natural wind sway & ORGANIC LIVING FLOWER MOTION (kelopak bergerak hidup)
           if (aWindWeight > 0.01 && uWind > 0.001 && uQrMode < 0.15) {
-            float hFactor = clamp((mvPosition.y - 10.0) / 16.0, 0.0, 1.3);
-            float sway1 = sin(uTime * 2.2 + mvPosition.x * 0.28 + mvPosition.z * 0.28) * 0.46;
-            float sway2 = cos(uTime * 2.8 + mvPosition.z * 0.30 + mvPosition.y * 0.12) * 0.32;
-            float flutter = sin(uTime * 5.4 + mvPosition.x * 1.2 + mvPosition.z * 1.2) * 0.16;
+            float hFactor = clamp((mvPosition.y - 2.0) / 16.0, 0.0, 1.4);
             float effectiveWind = uWind * (1.0 - uQrMode);
-            mvPosition.x += (sway1 + flutter) * hFactor * aWindWeight * effectiveWind;
-            mvPosition.z += (sway2 + flutter * 0.8) * hFactor * aWindWeight * effectiveWind;
-            mvPosition.y += sin(uTime * 3.6 + mvPosition.x * 0.4 + mvPosition.z * 0.4) * 0.05 * hFactor * aWindWeight * effectiveWind;
+
+            // Living breathing pulse: kelopak mengembang-mengempis perlahan seperti bernapas
+            float breathe = sin(uTime * 2.2) * 0.28;
+            
+            // Ripple wave through flower petals traveling from center outward
+            float radialDist = length(mvPosition.xz);
+            float wave = sin(uTime * 3.4 - radialDist * 0.45) * 0.38;
+            
+            // Living flutter at petal edges and stamen tips
+            float flutter = sin(uTime * 6.2 + mvPosition.x * 1.3 + mvPosition.z * 1.3) * 0.22;
+            
+            // Standard wind sway
+            float sway1 = sin(uTime * 2.0 + mvPosition.x * 0.25 + mvPosition.z * 0.25) * 0.42;
+            float sway2 = cos(uTime * 2.6 + mvPosition.z * 0.28 + mvPosition.y * 0.12) * 0.30;
+            
+            vec2 radDir = (radialDist > 0.1) ? normalize(mvPosition.xz) : vec2(0.707, 0.707);
+            
+            // Displace in 3D: combines radial breathing + petal ripple + wind sway
+            mvPosition.x += (sway1 + flutter) * hFactor * aWindWeight * effectiveWind + radDir.x * breathe * aWindWeight * 0.4;
+            mvPosition.z += (sway2 + flutter * 0.8) * hFactor * aWindWeight * effectiveWind + radDir.y * breathe * aWindWeight * 0.4;
+            mvPosition.y += (wave + sin(uTime * 3.2 + mvPosition.x * 0.3) * 0.15) * hFactor * aWindWeight * effectiveWind;
           }
 
-          // 2. In QR Mode: smooth collapse of canopy foliage down onto the ground floor (Y -> 0.04)
-          // creating a 100% crisp, razor-sharp 2D QR Code tile surface with zero occlusions or gaps!
+          // 2. In QR Mode:
+          // QR dark modules flatten smoothly to ground floor (Y -> 0.04)
+          // 3D decorative voxels submerge cleanly below the floor (Y -> -14.0) so QR is 100% crisp & scannable
           if (uQrMode > 0.001 && mvPosition.y > 0.5) {
-            mvPosition.y = mix(mvPosition.y, 0.04, uQrMode);
+            if (aIsQrDark > 0.5) {
+              mvPosition.y = mix(mvPosition.y, 0.04, uQrMode);
+            } else {
+              mvPosition.y = mix(mvPosition.y, -14.0, uQrMode);
+            }
           }
         #endif
         mvPosition = modelViewMatrix * mvPosition;
@@ -670,13 +698,13 @@ export default function ThreeVoxelTreeScene({
     const group = new THREE.Group();
     const textToEncode = qrText || url;
     const { size } = generateQrMatrix(textToEncode);
-    const badgeW = size * 0.22;
+    const badgeW = size * ((logoSizePercent || 19) / 100);
     const innerW = badgeW * 0.78;
 
-    // White backing badge
+    // White backing badge (Circle cylinder for 100% roundness)
     const badgeGeo =
       logoShape === "circle"
-        ? new THREE.CylinderGeometry(badgeW / 2, badgeW / 2, 0.08, 32)
+        ? new THREE.CylinderGeometry(badgeW / 2, badgeW / 2, 0.08, 48)
         : new THREE.BoxGeometry(badgeW, 0.08, badgeW);
 
     const badgeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -726,7 +754,7 @@ export default function ThreeVoxelTreeScene({
         centerLogoRef.current = null;
       }
     };
-  }, [logoUrl, logoShape, qrText, url]);
+  }, [logoUrl, logoShape, logoSizePercent, qrText, url]);
 
   // Trigger Smooth Camera Transition ("3d" <-> "qr")
   const triggerCameraTransition = useCallback(

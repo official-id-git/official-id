@@ -75,6 +75,18 @@ import {
   Upload,
   TrashBin,
   FileImage,
+  Lightbulb,
+  Image,
+  ChevronUp,
+  ChevronDown,
+  ShieldCheck,
+  ExclamationCircle,
+  Printer,
+  Palette,
+  FileCode,
+  FileCsv,
+  Users,
+  Messages,
 } from "flowbite-react-icons/outline";
 
 import {
@@ -98,7 +110,7 @@ export default function TreeICQRStudio() {
   const [logoDataUrl, setLogoDataUrl] = useState<string>("");
   const [logoFileName, setLogoFileName] = useState<string>("");
   const [logoShape, setLogoShape] = useState<LogoShape>("circle");
-  const [logoSizePercent, setLogoSizePercent] = useState<number>(22);
+  const [logoSizePercent, setLogoSizePercent] = useState<number>(19);
   const [isProcessingLogo, setIsProcessingLogo] = useState(false);
   const [logoError, setLogoError] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
@@ -343,7 +355,7 @@ export default function TreeICQRStudio() {
         "position:relative;width:100%;max-width:440px;height:620px;max-height:92vh;border-radius:24px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.35);background:#fff;";
 
       const closeBtn = document.createElement("button");
-      closeBtn.innerHTML = "✕";
+      closeBtn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>';
       closeBtn.style.cssText =
         "position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:#f1f5f9;color:#334155;border:none;cursor:pointer;font-weight:bold;z-index:20;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,0.15);";
       closeBtn.onclick = () => {
@@ -518,14 +530,15 @@ export default function TreeICQRStudio() {
 
       {/* Main 3D Canvas Studio Area */}
       <main className="w-full flex-1 flex flex-col items-center justify-center relative px-4 py-2 z-10">
-        {/* 3D Scene Viewport Container */}
-        <div className="w-full max-w-[560px] aspect-square max-h-[62vh] relative rounded-3xl overflow-hidden shadow-2xl shadow-stone-900/10 border border-stone-300/40">
+        {/* 3D Scene Viewport Container - STRICT 1:1 SQUARE */}
+        <div className="w-full max-w-[min(560px,58vh)] aspect-square relative rounded-3xl overflow-hidden shadow-2xl shadow-stone-900/10 border border-stone-300/40 mx-auto">
           {isMounted && (
             <ThreeVoxelTreeScene
               url={destinationUrl}
               qrText={qrText}
               logoUrl={activeLogo}
               logoShape={logoShape}
+              logoSizePercent={logoSizePercent}
               season={season}
               viewMode={viewMode}
               onViewModeToggle={() => setViewMode(viewMode === "3d" ? "qr" : "3d")}
@@ -536,11 +549,11 @@ export default function TreeICQRStudio() {
             />
           )}
 
-          {/* Live Overlay Logo di Bagian Tengah QR Code saat Mode Scan QR */}
+          {/* Live Overlay Logo di Bagian Tengah QR Code saat Mode Scan QR - LINGKARAN SEMPURNA */}
           {viewMode === "qr" && activeLogo && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 animate-in fade-in zoom-in-95 duration-300">
               <div
-                className={`bg-white p-2 sm:p-2.5 shadow-2xl border border-stone-200/90 flex items-center justify-center transition-all ${
+                className={`bg-white p-1.5 sm:p-2 shadow-2xl border border-stone-200/90 flex items-center justify-center transition-all aspect-square shrink-0 ${
                   logoShape === "circle"
                     ? "rounded-full"
                     : logoShape === "square"
@@ -550,12 +563,15 @@ export default function TreeICQRStudio() {
                 style={{
                   width: `${logoSizePercent}%`,
                   height: `${logoSizePercent}%`,
+                  aspectRatio: "1 / 1",
                 }}
               >
                 <img
                   src={activeLogo}
                   alt="Logo Tengah QR"
-                  className="w-full h-full object-contain pointer-events-none select-none"
+                  className={`w-full h-full object-contain pointer-events-none select-none ${
+                    logoShape === "circle" ? "rounded-full" : ""
+                  }`}
                 />
               </div>
             </div>
@@ -668,13 +684,15 @@ export default function TreeICQRStudio() {
                   </span>
                 )}
                 {slugCheckStatus === "available" && (
-                  <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full font-semibold">
-                    ✓ Tersedia
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full font-semibold">
+                    <Check className="w-2.5 h-2.5" />
+                    <span>Tersedia</span>
                   </span>
                 )}
                 {slugCheckStatus === "taken" && (
-                  <span className="text-[10px] bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded-full font-semibold">
-                    ✕ Sudah dipakai
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded-full font-semibold">
+                    <Close className="w-2.5 h-2.5" />
+                    <span>Sudah dipakai</span>
                   </span>
                 )}
                 {slugCheckStatus === "invalid" && (
@@ -724,7 +742,7 @@ export default function TreeICQRStudio() {
 
           {/* Catatan UX Ramah: Peringatan Tautan Permanen (Bahasa Inggris Santai & Tepat Grammar) */}
           <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-amber-50/85 border border-amber-200/80 text-[11px] text-amber-900 leading-snug">
-            <span className="text-amber-600 text-xs shrink-0 mt-0.5 select-none">💡</span>
+            <Lightbulb className="w-4 h-4 text-amber-600 shrink-0 mt-0.5 select-none" />
             <p>
               <strong className="font-semibold text-amber-950">Heads up:</strong> Links can&apos;t be edited once created—make sure everything looks good before saving!
             </p>
@@ -738,7 +756,7 @@ export default function TreeICQRStudio() {
               className="text-[11px] text-stone-600 hover:text-stone-900 flex items-center justify-between w-full font-semibold py-1 transition group"
             >
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-base group-hover:scale-110 transition-transform">🖼️</span>
+                <Image className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
                 <span className="text-stone-700 font-bold">Logo PNG di Tengah QR & Brand</span>
                 {activeLogo ? (
                   <span className="text-[9px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -751,8 +769,18 @@ export default function TreeICQRStudio() {
                   </span>
                 )}
               </div>
-              <span className="text-[10px] text-stone-400 group-hover:text-stone-600 font-medium">
-                {showBrandConfig ? "▲ Sembunyikan" : "▼ Sesuaikan Logo"}
+              <span className="inline-flex items-center gap-1 text-[10px] text-stone-400 group-hover:text-stone-600 font-medium">
+                {showBrandConfig ? (
+                  <>
+                    <ChevronUp className="w-3.5 h-3.5" />
+                    <span>Sembunyikan</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    <span>Sesuaikan Logo</span>
+                  </>
+                )}
               </span>
             </button>
 
@@ -760,7 +788,7 @@ export default function TreeICQRStudio() {
               <div className="mt-2.5 p-3 sm:p-4 bg-stone-50/90 rounded-2xl border border-stone-200/90 flex flex-col gap-3.5 animate-in fade-in duration-200 shadow-inner">
                 {/* Penjelasan Singkat Keamanan Scan */}
                 <div className="flex items-start gap-2 text-[10px] text-stone-500 bg-white/80 p-2.5 rounded-xl border border-stone-200/60 leading-relaxed">
-                  <span className="text-emerald-600 font-bold text-xs shrink-0 select-none">🛡️</span>
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 select-none mt-0.5" />
                   <p>
                     <strong className="text-stone-800 font-semibold">Koreksi Kesalahan QR Level H (30%):</strong>{" "}
                     Logo diletakkan persis di tengah QR Code dengan bantalan pelindung putih, menjamin QR tetap 100% cepat terbaca oleh semua jenis kamera HP.
@@ -891,53 +919,61 @@ export default function TreeICQRStudio() {
                   )}
 
                   {logoError && (
-                    <p className="text-[10px] text-rose-600 font-medium">⚠️ {logoError}</p>
+                    <p className="inline-flex items-center gap-1 text-[10px] text-rose-600 font-medium">
+                      <ExclamationCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{logoError}</span>
+                    </p>
                   )}
                 </div>
 
                 {/* Pengaturan Gaya Logo (Hanya tampil jika ada logo aktif) */}
                 {activeLogo && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-stone-200/60">
-                    {/* Pilihan Bentuk Badge */}
+                  <div className="flex flex-col gap-3.5 pt-2 border-t border-stone-200/60">
+                    {/* Pilihan Bentuk Badge Pelindung */}
                     <div className="flex flex-col gap-1.5">
-                      <span className="text-[10px] font-bold text-stone-600">
-                        Bentuk Pelindung Logo
-                      </span>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-stone-700">
+                          Bentuk Pelindung Logo
+                        </span>
+                        <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          Lingkaran Direkomendasikan
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
                         <button
                           type="button"
                           onClick={() => setLogoShape("circle")}
-                          className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 border ${
+                          className={`py-2 px-2 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5 border ${
                             logoShape === "circle"
-                              ? "bg-stone-900 text-white border-stone-900 shadow-xs"
+                              ? "bg-stone-900 text-white border-stone-900 shadow-sm"
                               : "bg-white text-stone-600 border-stone-200 hover:bg-stone-100"
                           }`}
                         >
-                          <span>⚪</span>
-                          <span>Bulat (Rekomendasi)</span>
+                          <span className="w-2.5 h-2.5 rounded-full border-2 border-current shrink-0" />
+                          <span>Bulat (Lingkaran)</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setLogoShape("rounded")}
-                          className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 border ${
+                          className={`py-2 px-2 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5 border ${
                             logoShape === "rounded"
-                              ? "bg-stone-900 text-white border-stone-900 shadow-xs"
+                              ? "bg-stone-900 text-white border-stone-900 shadow-sm"
                               : "bg-white text-stone-600 border-stone-200 hover:bg-stone-100"
                           }`}
                         >
-                          <span>⬛</span>
-                          <span>Melengkung</span>
+                          <span className="w-2.5 h-2.5 rounded-xs border-2 border-current shrink-0" />
+                          <span>Lengkung</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setLogoShape("square")}
-                          className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 border ${
+                          className={`py-2 px-2 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5 border ${
                             logoShape === "square"
-                              ? "bg-stone-900 text-white border-stone-900 shadow-xs"
+                              ? "bg-stone-900 text-white border-stone-900 shadow-sm"
                               : "bg-white text-stone-600 border-stone-200 hover:bg-stone-100"
                           }`}
                         >
-                          <span>◼️</span>
+                          <span className="w-2.5 h-2.5 rounded-none border-2 border-current shrink-0" />
                           <span>Kotak</span>
                         </button>
                       </div>
@@ -946,46 +982,46 @@ export default function TreeICQRStudio() {
                     {/* Pilihan Ukuran Logo */}
                     <div className="flex flex-col gap-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold text-stone-600">
-                          Proporsi Ukuran di QR
+                        <span className="text-[11px] font-bold text-stone-700">
+                          Proporsi Ukuran di QR (Diameter)
                         </span>
-                        <span className="text-[10px] font-mono text-emerald-800 font-bold">
-                          {logoSizePercent}%
+                        <span className="text-[10px] font-mono text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          {logoSizePercent}% • QR 100% Terbaca
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5">
+                      <div className="grid grid-cols-3 gap-2">
                         <button
                           type="button"
                           onClick={() => setLogoSizePercent(19)}
-                          className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition border ${
+                          className={`py-2 px-2 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1 border ${
                             logoSizePercent === 19
-                              ? "bg-stone-900 text-white border-stone-900 shadow-xs"
+                              ? "bg-stone-900 text-white border-stone-900 shadow-sm"
                               : "bg-white text-stone-600 border-stone-200 hover:bg-stone-100"
                           }`}
                         >
-                          Standar (19%)
+                          <span>Standar (19%)</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setLogoSizePercent(22)}
-                          className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition border ${
+                          className={`py-2 px-2 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1 border ${
                             logoSizePercent === 22
-                              ? "bg-stone-900 text-white border-stone-900 shadow-xs"
+                              ? "bg-stone-900 text-white border-stone-900 shadow-sm"
                               : "bg-white text-stone-600 border-stone-200 hover:bg-stone-100"
                           }`}
                         >
-                          Ideal (22%)
+                          <span>Ideal (22%)</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setLogoSizePercent(25)}
-                          className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition border ${
+                          className={`py-2 px-2 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1 border ${
                             logoSizePercent === 25
                               ? "bg-stone-900 text-white border-stone-900 shadow-xs"
                               : "bg-white text-stone-600 border-stone-200 hover:bg-stone-100"
                           }`}
                         >
-                          Besar (25%)
+                          <span>Maks (25%)</span>
                         </button>
                       </div>
                     </div>
@@ -1050,7 +1086,7 @@ export default function TreeICQRStudio() {
             ) : saveStatus === "saved" ? (
               <>
                 <Check className="w-4 h-4 text-white" />
-                <span>Tersimpan! QR Code Berhasil Dibuat ✓</span>
+                <span>Tersimpan! QR Code Berhasil Dibuat</span>
               </>
             ) : saveStatus === "error" ? (
               <span>{errorMessage || "Isi URL Tujuan Terlebih Dahulu!"}</span>
@@ -1064,15 +1100,19 @@ export default function TreeICQRStudio() {
 
           {/* Notifikasi Pesan Kesalahan Eksplisit */}
           {saveStatus === "error" && errorMessage && (
-            <p className="text-[11px] text-rose-600 font-semibold text-center -mt-1">
-              ⚠️ {errorMessage}
+            <p className="inline-flex items-center justify-center gap-1.5 text-[11px] text-rose-600 font-semibold text-center -mt-1 w-full">
+              <ExclamationCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>{errorMessage}</span>
             </p>
           )}
 
           {/* Notifikasi Sukses */}
           {saveStatus === "saved" && slug && (
-            <p className="text-[11px] text-emerald-700 font-semibold text-center -mt-1">
-              🎉 QR Code & Shortlink aktif: <span className="font-mono font-bold">official.id/{slug}</span>
+            <p className="inline-flex items-center justify-center gap-1.5 text-[11px] text-emerald-700 font-semibold text-center -mt-1 w-full">
+              <WandMagicSparkles className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+              <span>
+                QR Code &amp; Shortlink aktif: <span className="font-mono font-bold">official.id/{slug}</span>
+              </span>
             </p>
           )}
         </form>
@@ -1184,10 +1224,20 @@ export default function TreeICQRStudio() {
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="px-2 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-[10px] font-semibold transition border border-stone-200"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-[10px] font-semibold transition border border-stone-200"
                 title="Salin URL Share"
               >
-                {isCopied ? "Tersalin ✓" : "Copy"}
+                {isCopied ? (
+                  <>
+                    <Check className="w-3 h-3 text-emerald-600" />
+                    <span>Tersalin</span>
+                  </>
+                ) : (
+                  <>
+                    <FileCopyAlt className="w-3 h-3 text-stone-500" />
+                    <span>Copy</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1398,7 +1448,8 @@ export default function TreeICQRStudio() {
               {/* Partnerships & Feedback Card in English */}
               <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/90 space-y-2.5">
                 <h4 className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
-                  <span>🤝 Partnerships & Feedback</span>
+                  <Users className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span>Partnerships & Feedback</span>
                 </h4>
                 <p className="text-stone-600 text-xs">
                   For collaborations, business partnerships, ideas, or feedback, please contact <strong>Harizal</strong> directly:
@@ -1410,7 +1461,8 @@ export default function TreeICQRStudio() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-semibold text-xs shadow-xs transition active:scale-95"
                   >
-                    <span>💬 WhatsApp (+62 812-8383-5553)</span>
+                    <Messages className="w-3.5 h-3.5 shrink-0" />
+                    <span>WhatsApp (+62 812-8383-5553)</span>
                     <ArrowUpRightFromSquare className="w-3 h-3" />
                   </a>
                   <a
@@ -1419,7 +1471,8 @@ export default function TreeICQRStudio() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-semibold text-xs shadow-xs transition active:scale-95"
                   >
-                    <span>📸 Instagram (@harizal.official)</span>
+                    <CameraPhoto className="w-3.5 h-3.5 shrink-0" />
+                    <span>Instagram (@harizal.official)</span>
                     <ArrowUpRightFromSquare className="w-3 h-3" />
                   </a>
                 </div>
@@ -1469,7 +1522,8 @@ export default function TreeICQRStudio() {
               >
                 <div>
                   <p className="font-bold text-xs text-emerald-950 flex items-center gap-1.5">
-                    <span>🖨️ Download Scannable QR Code (PNG)</span>
+                    <Printer className="w-4 h-4 text-emerald-700 shrink-0" />
+                    <span>Download Scannable QR Code (PNG)</span>
                     <span className="px-1.5 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] font-bold">100% SCAN READY</span>
                   </p>
                   <p className="text-[11px] text-stone-600 mt-0.5">
@@ -1484,10 +1538,11 @@ export default function TreeICQRStudio() {
                 className="w-full flex items-center justify-between p-3 rounded-2xl border border-stone-200 hover:border-stone-400 bg-stone-50/50 hover:bg-stone-100/50 text-left transition group"
               >
                 <div>
-                  <p className="font-bold text-xs text-stone-800">
-                    🎨 Download Wallpaper Pohon 3D (Artwork)
+                  <p className="font-bold text-xs text-stone-800 flex items-center gap-1.5">
+                    <Palette className="w-4 h-4 text-stone-600 shrink-0" />
+                    <span>Download Wallpaper Pohon 3D (Artwork)</span>
                   </p>
-                  <p className="text-[11px] text-stone-500">
+                  <p className="text-[11px] text-stone-500 mt-0.5">
                     Ilustrasi seni sudut pandang 3D pohon voxel untuk wallpaper & medsos (bukan untuk discan)
                   </p>
                 </div>
@@ -1499,10 +1554,11 @@ export default function TreeICQRStudio() {
                 className="w-full flex items-center justify-between p-3 rounded-2xl border border-stone-200 hover:border-emerald-500 bg-stone-50/50 hover:bg-emerald-50/30 text-left transition group"
               >
                 <div>
-                  <p className="font-bold text-xs text-stone-800 group-hover:text-emerald-900">
-                    📦 Export Goxel JSON (.json)
+                  <p className="font-bold text-xs text-stone-800 group-hover:text-emerald-900 flex items-center gap-1.5">
+                    <FileCode className="w-4 h-4 text-stone-600 group-hover:text-emerald-600 shrink-0" />
+                    <span>Export Goxel JSON (.json)</span>
                   </p>
-                  <p className="text-[11px] text-stone-500">
+                  <p className="text-[11px] text-stone-500 mt-0.5">
                     Format voxel universal kompatibel dengan Goxel & MagicaVoxel
                   </p>
                 </div>
@@ -1514,10 +1570,11 @@ export default function TreeICQRStudio() {
                 className="w-full flex items-center justify-between p-3 rounded-2xl border border-stone-200 hover:border-emerald-500 bg-stone-50/50 hover:bg-emerald-50/30 text-left transition group"
               >
                 <div>
-                  <p className="font-bold text-xs text-stone-800 group-hover:text-emerald-900">
-                    📄 Export Voxel Coordinates (.csv)
+                  <p className="font-bold text-xs text-stone-800 group-hover:text-emerald-900 flex items-center gap-1.5">
+                    <FileCsv className="w-4 h-4 text-stone-600 group-hover:text-emerald-600 shrink-0" />
+                    <span>Export Voxel Coordinates (.csv)</span>
                   </p>
-                  <p className="text-[11px] text-stone-500">
+                  <p className="text-[11px] text-stone-500 mt-0.5">
                     Daftar koordinat (X, Y, Z) dan kode warna hex per voxel
                   </p>
                 </div>

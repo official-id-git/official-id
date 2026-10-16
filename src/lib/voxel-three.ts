@@ -103,8 +103,8 @@ export function buildWindAttributes(voxels: VoxelItem[]) {
 
     if (v.role === "stone" || v.role === "border" || v.y < 1) {
       growDelay[i] = 0.0;
-    } else if (v.role === "flower") {
-      growDelay[i] = 0.08;
+    } else if (v.role === "flower" || v.role === "petal" || v.role === "stamen") {
+      growDelay[i] = 0.08 + distXZ * 0.08;
     } else if (v.role === "trunk" || v.role === "branch") {
       const normY = Math.min(1, Math.max(0, (v.y - 1) / (maxY - 1)));
       growDelay[i] = 0.05 + normY * 0.20;
@@ -117,15 +117,17 @@ export function buildWindAttributes(voxels: VoxelItem[]) {
       growDelay[i] = 0.10;
     }
 
-    const movable = v.y >= 1 && (v.role === "leaf" || v.role === "trunk" || v.role === "branch");
+    const movable = v.y >= 1 && (v.role === "leaf" || v.role === "trunk" || v.role === "branch" || v.role === "petal" || v.role === "stamen" || v.role === "flower");
     if (!movable) continue;
 
     const normY = Math.min(1, Math.max(0, (v.y - rootY) / (maxY - rootY)));
     sway[i] = Math.pow(normY, 1.4);
     phase[i] = (v.x * 12.9898 + v.z * 78.233 + v.y * 37.719) % 6.283185;
 
-    if (v.role === "leaf") {
-      leaf[i] = 0.4 + 0.6 * (Math.sin(phase[i]) * 0.5 + 0.5);
+    if (v.role === "leaf" || v.role === "petal") {
+      leaf[i] = 0.6 + 0.4 * (Math.sin(phase[i]) * 0.5 + 0.5);
+    } else if (v.role === "stamen") {
+      leaf[i] = 1.0;
     }
   }
 
