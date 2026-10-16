@@ -59,7 +59,7 @@ export function loadLogoImage(src: string): Promise<HTMLImageElement> {
       img.crossOrigin = "anonymous";
     }
     img.onload = () => resolve(img);
-    img.onerror = (e) => reject(new Error("Gagal memuat logo: " + String(e)));
+    img.onerror = (e) => reject(new Error("Failed to load logo: " + String(e)));
     img.src = src;
   });
 }
@@ -148,20 +148,20 @@ export async function drawLogoOnQrCanvas(
 
     ctx.restore();
   } catch (err) {
-    console.warn("Gagal menggambar logo pada QR canvas:", err);
+    console.warn("Failed to draw logo on QR canvas:", err);
   }
 }
 
 /**
- * Mengoptimalkan file gambar lokal menjadi Data URL PNG ringkas (maks 256x256)
- * dengan mempertahankan transparansi PNG asli.
- */
+  * Optimizes a local image file into a compact PNG Data URL (max 256x256)
+  * preserving original transparency.
+  */
 export async function optimizeLogoFile(
   file: File,
   maxDimension = 256
 ): Promise<{ dataUrl: string; width: number; height: number; name: string; size: number }> {
   if (!file.type.startsWith("image/")) {
-    throw new Error("File harus berupa gambar (PNG, WebP, SVG, atau JPG).");
+    throw new Error("File must be an image (PNG, WebP, SVG, or JPG).");
   }
 
   return new Promise((resolve, reject) => {
@@ -169,7 +169,7 @@ export async function optimizeLogoFile(
     reader.onload = (e) => {
       const src = e.target?.result;
       if (typeof src !== "string") {
-        reject(new Error("Gagal membaca file gambar."));
+        reject(new Error("Failed to read image file."));
         return;
       }
 
@@ -216,10 +216,10 @@ export async function optimizeLogoFile(
           size: Math.round((dataUrl.length * 3) / 4),
         });
       };
-      img.onerror = () => reject(new Error("File gambar rusak atau format tidak didukung."));
+      img.onerror = () => reject(new Error("Corrupt image file or unsupported format."));
       img.src = src;
     };
-    reader.onerror = () => reject(new Error("Gagal membuka file dari perangkat."));
+    reader.onerror = () => reject(new Error("Failed to open file from device."));
     reader.readAsDataURL(file);
   });
 }

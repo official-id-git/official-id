@@ -12,7 +12,7 @@ const WebARModal = dynamic(() => import("@/components/qr/WebARModal"), {
     <div className="fixed inset-0 flex items-center justify-center bg-stone-950 text-stone-300 text-sm">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs font-medium tracking-wide">Menyiapkan AR…</p>
+        <p className="text-xs font-medium tracking-wide">Preparing AR…</p>
       </div>
     </div>
   ),

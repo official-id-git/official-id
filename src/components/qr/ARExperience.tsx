@@ -9,7 +9,7 @@ const WebARModal = dynamic(() => import("@/components/qr/WebARModal"), {
   loading: () => (
     <div className="fixed inset-0 bg-stone-950 flex flex-col items-center justify-center text-white z-10">
       <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3" />
-      <p className="text-xs text-stone-300 font-medium tracking-wide">Membuka WebAR Magic Portal...</p>
+      <p className="text-xs text-stone-300 font-medium tracking-wide">Launching WebAR Magic Portal...</p>
     </div>
   ),
 });

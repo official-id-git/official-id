@@ -142,19 +142,19 @@ export function isSafeDestinationUrl(rawUrl: string): { ok: boolean; error?: str
   try {
     const parsed = new URL(rawUrl);
 
-    // Hanya izinkan HTTP dan HTTPS
+    // Only allow HTTP and HTTPS
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-      return { ok: false, error: "Hanya protokol HTTP atau HTTPS yang diizinkan." };
+      return { ok: false, error: "Only HTTP or HTTPS protocols are allowed." };
     }
 
     const hostname = parsed.hostname.toLowerCase();
 
-    // Blokir host lokal / loopback / cloud metadata
+    // Block local hosts / loopback / cloud metadata
     if (BLOCKED_HOSTS.has(hostname)) {
-      return { ok: false, error: "Alamat jaringan internal / localhost tidak diizinkan." };
+      return { ok: false, error: "Internal network / localhost addresses are not allowed." };
     }
 
-    // Blokir IP privat RFC 1918 & link-local
+    // Block RFC 1918 private IPs & link-local
     if (
       /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
       /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
@@ -163,33 +163,33 @@ export function isSafeDestinationUrl(rawUrl: string): { ok: boolean; error?: str
       hostname.endsWith(".local") ||
       hostname.endsWith(".internal")
     ) {
-      return { ok: false, error: "Alamat IP privat / lokal tidak diizinkan." };
+      return { ok: false, error: "Private / local IP addresses are not allowed." };
     }
 
     return { ok: true };
   } catch {
-    return { ok: false, error: "Format URL tujuan tidak valid." };
+    return { ok: false, error: "Invalid destination URL format." };
   }
 }
 
 // -----------------------------------------------------------------------------
-// 4. Verifikasi Honeypot & Human Timing
+// 4. Honeypot & Human Timing Verification
 // -----------------------------------------------------------------------------
 export function verifyHumanSubmission(body: Record<string, unknown>): {
   ok: boolean;
   isBotTrap: boolean;
   error?: string;
 } {
-  // 1. Honeypot check: jika field honeypot terisi, pasti bot
+  // 1. Honeypot check: if honeypot field filled, flag as bot
   if (body._hp_company || body.company_website_hp || body.honeypot) {
     return { ok: false, isBotTrap: true, error: "Spam detected." };
   }
 
-  // 2. Submission speed check: jika submit di bawah 800ms dari render form
+  // 2. Submission speed check: if submitted under 800ms from form render
   if (typeof body._render_t === "number") {
     const timeSpentMs = Date.now() - body._render_t;
     if (timeSpentMs < 800) {
-      return { ok: false, isBotTrap: true, error: "Pengiriman terlalu cepat (Bot detected)." };
+      return { ok: false, isBotTrap: true, error: "Submission too fast (Bot detected)." };
     }
   }
 

@@ -198,8 +198,8 @@ export async function saveMagicLink(
       }
 
       if (res.error) {
-        console.error("Gagal menyimpan ke Supabase magic_links:", res.error);
-        throw new Error(res.error.message || "Gagal menyimpan ke database Supabase");
+        console.error("Failed to save to Supabase magic_links:", res.error);
+        throw new Error(res.error.message || "Failed to save to Supabase database");
       }
     } catch (err) {
       console.error("Error connecting to Supabase in saveMagicLink:", err);

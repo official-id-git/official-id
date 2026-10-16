@@ -11,7 +11,7 @@ function ARContent() {
 
   const toUrl = searchParams.get("to") || "https://official.id";
   const seasonParam = (searchParams.get("season") || "summer") as SeasonType;
-  const initialSeason: SeasonType = ["summer", "spring", "autumn", "flower", "building"].includes(seasonParam)
+  const initialSeason: SeasonType = ["summer", "spring", "autumn", "flower", "building", "hero"].includes(seasonParam)
     ? seasonParam
     : "summer";
 
@@ -39,7 +39,7 @@ export default function ARPage() {
       fallback={
         <div className="fixed inset-0 bg-stone-950 flex flex-col items-center justify-center text-white">
           <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-sm font-medium tracking-wide">Membuka WebAR Magic Tree...</p>
+          <p className="text-sm font-medium tracking-wide">Launching WebAR Magic Tree...</p>
         </div>
       }
     >

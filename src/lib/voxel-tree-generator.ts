@@ -1,6 +1,6 @@
 import QRCode from "qrcode";
 
-export type SeasonType = "summer" | "spring" | "autumn" | "flower" | "building";
+export type SeasonType = "summer" | "spring" | "autumn" | "flower" | "building" | "hero";
 
 export interface VoxelItem {
   x: number;
@@ -124,8 +124,8 @@ export const SEASONS: Record<SeasonType, SeasonTheme> = {
     accentColor: "#D8261D",
   },
   building: {
-    name: "Gedung Voxel",
-    badge: "🏛️ Gedung Voxel",
+    name: "Heritage Landmark",
+    badge: "🏛️ Heritage Landmark",
     bgColor: "#EEF0F2",
     paperColor: "#E2E5E8",
     leafPrimary: ["#EFEFEC", "#E2E3E0", "#D5D7D4", "#C6C8C6"],
@@ -141,6 +141,25 @@ export const SEASONS: Record<SeasonType, SeasonTheme> = {
     petalFloor: ["#CE1126", "#F6F6F4", "#F2C418"],
     particleColors: ["#CE1126", "#F6F6F4", "#F2C418", "#EFEFEC"],
     accentColor: "#CE1126",
+  },
+  hero: {
+    name: "Mythic Hero",
+    badge: "🛡️ Mythic Hero",
+    bgColor: "#F8F6F0",
+    paperColor: "#EFEBE1",
+    leafPrimary: ["#1D1D22", "#D9A63A", "#B3192A", "#F0C75A"],
+    leafHighlight: ["#F0C75A", "#D9A63A", "#FFFFFF", "#F5E0A3"],
+    leafShadow: ["#131317", "#0D0D10", "#7A0E1D", "#9C6E1C"],
+    trunkPrimary: ["#9C6E1C", "#D9A63A", "#6D4C12", "#52380B"],
+    hedgeColor: ["#D9A63A", "#B8860B", "#1D1D22"],
+    stonePaver: ["#FFFFFF", "#FAF8F5", "#F7F3EB", "#F4ECE0"],
+    stoneBorder: "#D9A63A",
+    qrDark: ["#121217", "#1D1D22", "#131317", "#241E14"],
+    finderOuter: ["#D9A63A", "#C59328", "#F0C75A"],
+    finderInner: ["#121217", "#1D1D22", "#0D0D10"],
+    petalFloor: ["#D9A63A", "#F0C75A", "#B3192A", "#FFFFFF"],
+    particleColors: ["#D9A63A", "#F0C75A", "#B3192A", "#FFF3E0", "#E8B82A"],
+    accentColor: "#D9A63A",
   },
 };
 
@@ -1454,6 +1473,735 @@ export function generateVoxelBuilding(
           });
         }
       }
+    }
+  }
+
+  return voxels;
+}
+
+/* ==================================================================
+   HERO VOXEL MODEL (Ksatria Voxel / Mythic Hero)
+================================================================== */
+export const HERO_COLORS = {
+  skin: 0xdba070,
+  skinSh: 0xc4865a,
+  skinLt: 0xe8b388,
+  black: 0x1d1d22,
+  blackLt: 0x2a2a31,
+  blackDk: 0x131317,
+  gold: 0xd9a63a,
+  goldDk: 0x9c6e1c,
+  goldLt: 0xf0c75a,
+  red: 0xa8162a,
+  redDk: 0x7a0e1d,
+  ruby: 0xd0102e,
+  hair: 0x121212,
+  eye: 0xf4f1ea,
+  mouth: 0x6a2622,
+  sashTip: 0xe8b82a,
+  cloud: 0xe1e2e4,
+  cloudMid: 0xc9cbce,
+  cloudSh: 0xa9acb0,
+};
+export const HERO_METAL = new Set([
+  HERO_COLORS.gold,
+  HERO_COLORS.goldDk,
+  HERO_COLORS.goldLt,
+  HERO_COLORS.sashTip,
+]);
+
+export const HERO_RIG: Record<
+  string,
+  { parent: string | null; pos: [number, number, number] }
+> = {
+  hips: { parent: null, pos: [0, 34, 0] },
+  torso: { parent: "hips", pos: [0, 1, 0] },
+  head: { parent: "torso", pos: [0, 20, 0] },
+  wingL: { parent: "torso", pos: [3, 14, -5] },
+  wingR: { parent: "torso", pos: [-3, 14, -5] },
+  armL: { parent: "torso", pos: [12.5, 16.5, 0] },
+  foreL: { parent: "armL", pos: [0.5, -12, 0] },
+  armR: { parent: "torso", pos: [-12.5, 16.5, 0] },
+  foreR: { parent: "armR", pos: [-0.5, -12, 0] },
+  legL: { parent: "hips", pos: [5, -2, 0] },
+  shinL: { parent: "legL", pos: [0.5, -14, 0.5] },
+  legR: { parent: "hips", pos: [-5, -2, 0] },
+  shinR: { parent: "legR", pos: [-0.5, -14, 0.5] },
+  sash: { parent: "hips", pos: [8.5, -3, 2] },
+};
+
+export const HERO_JOINTS = Object.keys(HERO_RIG);
+
+export const HERO_POSES: Record<
+  string,
+  { label: string; hipsY: number; [joint: string]: any }
+> = {
+  kuda: {
+    label: "Stance (Kuda-kuda)",
+    hipsY: -3,
+    hips: [0, 0.15, 0],
+    torso: [0.08, -0.15, 0],
+    head: [0, 0.12, 0],
+    armL: [-0.7, 0, 0.45],
+    foreL: [-1.7, 0, 0],
+    armR: [-0.35, 0, -0.55],
+    foreR: [-1.9, 0, 0],
+    legL: [-0.55, 0, 0.32],
+    shinL: [0.75, 0, 0],
+    legR: [0.4, 0, -0.35],
+    shinR: [0.35, 0, 0],
+    wingL: [0, 0, 0],
+    wingR: [0, 0, 0],
+    sash: [0, 0, 0],
+  },
+  pukulKanan: {
+    label: "Right Strike",
+    hipsY: -3.5,
+    hips: [0, 0.25, 0],
+    torso: [0.12, 0.45, 0],
+    head: [0, -0.35, 0],
+    armL: [-0.4, 0, 0.5],
+    foreL: [-2.0, 0, 0],
+    armR: [-1.55, 0, -0.12],
+    foreR: [-0.08, 0, 0],
+    legL: [-0.65, 0, 0.32],
+    shinL: [0.85, 0, 0],
+    legR: [0.5, 0, -0.35],
+    shinR: [0.25, 0, 0],
+    wingL: [0, 0.1, 0],
+    wingR: [0, 0.1, 0],
+    sash: [0.2, 0, 0.15],
+  },
+  pukulKiri: {
+    label: "Left Strike",
+    hipsY: -3.5,
+    hips: [0, -0.15, 0],
+    torso: [0.12, -0.45, 0],
+    head: [0, 0.35, 0],
+    armL: [-1.55, 0, 0.12],
+    foreL: [-0.08, 0, 0],
+    armR: [-0.4, 0, -0.5],
+    foreR: [-2.0, 0, 0],
+    legL: [-0.55, 0, 0.32],
+    shinL: [0.75, 0, 0],
+    legR: [0.45, 0, -0.35],
+    shinR: [0.35, 0, 0],
+    wingL: [0, -0.1, 0],
+    wingR: [0, -0.1, 0],
+    sash: [-0.15, 0, -0.1],
+  },
+  terbang: {
+    label: "Flight (Ascend)",
+    hipsY: 9,
+    hips: [-0.05, 0, 0],
+    torso: [-0.1, 0, 0],
+    head: [-0.25, 0, 0],
+    armL: [0.15, 0, 0.65],
+    foreL: [-1.5, 0, 0],
+    armR: [-2.95, 0, -0.15],
+    foreR: [-0.15, 0, 0],
+    legL: [-1.35, 0, 0.15],
+    shinL: [1.7, 0, 0],
+    legR: [0.12, 0, -0.08],
+    shinR: [0.25, 0, 0],
+    wingL: [0, -0.35, 0],
+    wingR: [0, 0.35, 0],
+    sash: [0.5, 0, 0.3],
+  },
+};
+
+export const HERO_SEQ: [string, number, number][] = [
+  ["kuda", 0.7, 1.4],
+  ["pukulKanan", 0.2, 0.55],
+  ["kuda", 0.35, 0.45],
+  ["pukulKiri", 0.2, 0.55],
+  ["kuda", 0.35, 0.45],
+  ["pukulKanan", 0.18, 0.45],
+  ["kuda", 0.4, 1.0],
+  ["terbang", 0.95, 2.4],
+  ["kuda", 0.85, 1.2],
+];
+
+export function heroWorldPivot(name: string): [number, number, number] {
+  let p: [number, number, number] = [0, 0, 0];
+  let n: string | null = name;
+  while (n) {
+    const node: { parent: string | null; pos: [number, number, number] } | undefined = HERO_RIG[n];
+    if (!node) break;
+    p = [p[0] + node.pos[0], p[1] + node.pos[1], p[2] + node.pos[2]];
+    n = node.parent;
+  }
+  return p;
+}
+
+export interface HeroCell {
+  x: number;
+  y: number;
+  z: number;
+  c: number;
+}
+
+export interface HeroCharacterData {
+  parts: Record<string, HeroCell[]>;
+  cloud: HeroCell[];
+}
+
+let cachedHeroCharacter: HeroCharacterData | null = null;
+
+export function buildHeroCharacterRaw(): HeroCharacterData {
+  if (cachedHeroCharacter) return cachedHeroCharacter;
+
+  const C = HERO_COLORS;
+  let seed = 1337;
+  const rnd = () => {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+
+  const parts: Record<string, Map<string, HeroCell>> = {};
+  const P = (name: string) => (parts[name] ||= new Map());
+  const K = (x: number, y: number, z: number) => `${x},${y},${z}`;
+  const set = (m: Map<string, HeroCell>, x: number, y: number, z: number, c: number) =>
+    m.set(K(x, y, z), { x, y, z, c });
+  const has = (m: Map<string, HeroCell>, x: number, y: number, z: number) => m.has(K(x, y, z));
+  const paint = (m: Map<string, HeroCell>, x: number, y: number, z: number, c: number) => {
+    const v = m.get(K(x, y, z));
+    if (v) v.c = c;
+  };
+
+  function ell(
+    m: Map<string, HeroCell>,
+    cx: number,
+    cy: number,
+    cz: number,
+    rx: number,
+    ry: number,
+    rz: number,
+    col: number | ((x: number, y: number, z: number) => number)
+  ) {
+    for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
+      for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) {
+        for (let z = Math.floor(cz - rz); z <= Math.ceil(cz + rz); z++) {
+          const d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 + ((z - cz) / rz) ** 2;
+          if (d <= 1) set(m, x, y, z, typeof col === "function" ? col(x, y, z) : col);
+        }
+      }
+    }
+  }
+
+  function cap(
+    m: Map<string, HeroCell>,
+    a: [number, number, number],
+    b: [number, number, number],
+    r0: number,
+    r1: number,
+    col: number | ((x: number, y: number, z: number, t: number) => number)
+  ) {
+    const L = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+    const steps = Math.ceil(L * 3);
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const r = r0 + (r1 - r0) * t;
+      const cx = a[0] + (b[0] - a[0]) * t;
+      const cy = a[1] + (b[1] - a[1]) * t;
+      const cz = a[2] + (b[2] - a[2]) * t;
+      for (let x = Math.floor(cx - r); x <= Math.ceil(cx + r); x++) {
+        for (let y = Math.floor(cy - r); y <= Math.ceil(cy + r); y++) {
+          for (let z = Math.floor(cz - r); z <= Math.ceil(cz + r); z++) {
+            if (Math.hypot(x - cx, y - cy, z - cz) <= r && !has(m, x, y, z)) {
+              set(m, x, y, z, typeof col === "function" ? col(x, y, z, t) : col);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  function frontMap(m: Map<string, HeroCell>) {
+    const f = new Map<string, number>();
+    for (const v of m.values()) {
+      const k = `${v.x},${v.y}`;
+      if (!f.has(k) || (f.get(k) as number) < v.z) f.set(k, v.z);
+    }
+    return f;
+  }
+
+  const engrave = (x: number, y: number, z: number) =>
+    Math.sin(x * 1.3) + Math.sin(y * 1.1 + 0.5) + Math.sin(z * 1.25) > 1.55 ? C.goldDk : C.gold;
+
+  // 1. Torso
+  const T = P("torso");
+  for (let y = 35; y <= 54; y++) {
+    const ty = y - 35;
+    const rx = ty <= 15 ? 7.5 + 3.5 * Math.pow(ty / 15, 1.3) : 11 - (ty - 15) * 0.55;
+    const rz = 4.8 + 1.6 * (ty / 19);
+    for (let x = Math.floor(-rx); x <= Math.ceil(rx); x++) {
+      for (let z = Math.floor(-rz); z <= Math.ceil(rz); z++) {
+        if ((x / rx) ** 2 + (z / rz) ** 2 <= 1) set(T, x, y, z, C.black);
+      }
+    }
+  }
+  ell(T, 4.6, 48.5, 3.4, 4.6, 3.6, 3, C.black);
+  ell(T, -4.6, 48.5, 3.4, 4.6, 3.6, 3, C.black);
+  for (const v of T.values()) {
+    const d = Math.hypot(v.x, v.z * 1.15);
+    if (v.y >= 52 && d < 4.2) v.c = C.skin;
+    else if (v.y >= 52 && d < 7.2) v.c = C.gold;
+    else if (v.y >= 50 && v.z > 2 && Math.abs(v.x) < 7 && d > 4.5 && d < 6.6) v.c = C.gold;
+    else if (v.y >= 46 && Math.abs(v.x) >= 9.3) v.c = C.gold;
+    else if (v.z > 3 && v.y >= 37 && v.y <= 45 && (v.x === 0 || v.y === 40 || v.y === 43)) v.c = C.blackDk;
+    else if (rnd() < 0.08) v.c = C.blackLt;
+  }
+  {
+    const f = frontMap(T);
+    const sy = 46;
+    for (let x = -6; x <= 6; x++) {
+      for (let y = sy - 6; y <= sy + 6; y++) {
+        const dx = x;
+        const dy = y - sy;
+        const r = Math.hypot(dx, dy);
+        const th = Math.atan2(dy, dx);
+        const R = 1.9 + 3.6 * Math.pow(Math.abs(Math.cos(4 * th)), 5);
+        const fz = f.get(`${x},${y}`);
+        if (fz === undefined) continue;
+        if (r <= R) {
+          set(T, x, y, fz + 1, r < 2.2 ? C.goldLt : C.gold);
+          paint(T, x, y, fz, C.gold);
+        }
+        if (Math.abs(dx) + Math.abs(dy) <= 1.6) set(T, x, y, fz + 2, C.ruby);
+      }
+    }
+  }
+
+  // 2. Hips & Belt
+  const H = P("hips");
+  ell(H, 0, 31.5, 0, 8.2, 4.5, 5.6, C.black);
+  for (let y = 28; y <= 31; y++) {
+    for (let x = -9; x <= 9; x++) {
+      for (let z = -7; z <= 7; z++) {
+        if ((x / 9) ** 2 + (z / 6.8) ** 2 <= 1 && (x / 7.6) ** 2 + (z / 5.4) ** 2 > 1) {
+          set(H, x, y, z, C.red);
+        }
+      }
+    }
+  }
+  for (let y = 32; y <= 34; y++) {
+    for (let x = -9; x <= 9; x++) {
+      for (let z = -7; z <= 7; z++) {
+        if ((x / 8.8) ** 2 + (z / 6.4) ** 2 <= 1) set(H, x, y, z, y === 33 ? C.gold : C.goldDk);
+      }
+    }
+  }
+  for (let x = -2; x <= 2; x++) {
+    for (let y = 31; y <= 35; y++) {
+      const dx = x;
+      const dy = y - 33;
+      if (Math.abs(dx) + Math.abs(dy) <= 2) {
+        set(H, x, y, 7, Math.abs(dx) + Math.abs(dy) <= 0.5 ? C.ruby : C.goldLt);
+      }
+    }
+  }
+  for (let y = 31; y >= 17; y--) {
+    const k = 31 - y;
+    const w = 7.6 - k * 0.06 + 0.5 * Math.sin(k * 0.7);
+    const zc = Math.round(6 + k * 0.14);
+    for (let x = Math.floor(-w); x <= Math.ceil(w); x++) {
+      const edge = Math.abs(x) > w - 1.2 || k >= 13;
+      const fold = Math.sin(x * 1.1 + k * 0.35) > 0.72;
+      for (let z = zc; z <= zc + 1; z++) set(H, x, y, z, edge ? C.gold : fold ? C.redDk : C.red);
+    }
+  }
+  for (let y = 31; y >= 20; y--) {
+    const k = 31 - y;
+    const w = 8.2 - k * 0.1;
+    const zc = Math.round(-6 - k * 0.12);
+    for (let x = Math.floor(-w); x <= Math.ceil(w); x++) {
+      const edge = Math.abs(x) > w - 1.2 || k >= 10;
+      for (let z = zc - 1; z <= zc; z++) {
+        set(H, x, y, z, edge ? C.gold : Math.sin(x * 0.9 + k * 0.4) > 0.7 ? C.redDk : C.red);
+      }
+    }
+  }
+
+  // 3. Sash
+  const S = P("sash");
+  cap(S, [9, 30, 3], [13, 22, 6], 1.9, 1.5, C.red);
+  cap(S, [13, 22, 6], [15.5, 15, 7.5], 1.5, 1.2, (_x, _y, _z, t) => (t > 0.7 ? C.redDk : C.red));
+  ell(S, 16, 13, 7.6, 2.4, 2.8, 1.4, (_x, y) => (y < 13 ? C.sashTip : C.red));
+
+  // 4. Legs
+  for (const [s, L, Sh] of [
+    [1, "legL", "shinL"],
+    [-1, "legR", "shinR"],
+  ] as [number, string, string][]) {
+    const Lm = P(L);
+    const Sm = P(Sh);
+    cap(Lm, [5 * s, 32, 0], [5.5 * s, 18, 0.5], 4.5, 3.5, C.black);
+    ell(Lm, 5.2 * s, 26, 1.6, 4.1, 6, 3.6, C.black);
+    for (const v of Lm.values()) if (rnd() < 0.07) v.c = C.blackLt;
+    cap(Sm, [5.5 * s, 18, 0.5], [5.5 * s, 5, 0], 3.5, 2.8, (_x, y) =>
+      y >= 11 ? C.black : y === 10 ? C.goldLt : C.gold
+    );
+    ell(Sm, 5.5 * s, 14, -1, 3.1, 4, 3, C.black);
+    for (let x = Math.round(5.5 * s - 2.5); x <= Math.round(5.5 * s + 2.5); x++) {
+      for (let y = 2; y <= 5; y++) {
+        for (let z = -3; z <= 6; z++) {
+          if (!(y === 5 && z > 3)) set(Sm, x, y, z, z === 6 || y === 2 ? C.goldDk : C.gold);
+        }
+      }
+    }
+  }
+
+  // 5. Arms
+  for (const [s, A, F] of [
+    [1, "armL", "foreL"],
+    [-1, "armR", "foreR"],
+  ] as [number, string, string][]) {
+    const Am = P(A);
+    const Fm = P(F);
+    ell(Am, 12.8 * s, 52, 0, 5.6, 5.2, 5.6, (x, y, z) => (y <= 48 ? C.goldLt : engrave(x, y, z)));
+    for (const k of [...Am.keys()]) {
+      const v = Am.get(k)!;
+      if (v.y < 48) Am.delete(k);
+    }
+    cap(Am, [12.5 * s, 51.5, 0], [13 * s, 39.5, 0], 3.7, 3.1, C.skin);
+    ell(Am, 13 * s, 45.5, 1.4, 3.3, 4.3, 3.2, C.skin);
+    ell(Am, 13.4 * s, 45.5, -1.3, 3.1, 4.1, 3, C.skinSh);
+    for (const v of Am.values()) if (v.y >= 43 && v.y <= 44 && v.c !== C.gold) v.c = C.gold;
+    cap(Fm, [13 * s, 39.5, 0], [13 * s, 28.5, 0.6], 3.1, 2.5, C.skin);
+    ell(Fm, 13 * s, 36, 0.6, 3.3, 3.6, 3.1, C.skin);
+    for (const v of Fm.values()) {
+      if (v.y === 29 || v.y === 30 || v.y === 32) v.c = v.y === 30 ? C.goldDk : C.gold;
+      else if (rnd() < 0.1) v.c = C.skinSh;
+    }
+    ell(Fm, 13 * s, 25.8, 0.9, 2.9, 2.9, 3.1, (_x, y, z) =>
+      z >= 3 && y >= 26 ? C.skinSh : C.skin
+    );
+  }
+
+  // 6. Head
+  const Hd = P("head");
+  cap(Hd, [0, 54, 0], [0, 59, 0.3], 3.2, 3, C.skin);
+  ell(Hd, 0, 63, 0.5, 4.7, 5.6, 4.9, C.skin);
+  ell(Hd, 0, 59.5, 1, 4.4, 3, 3.9, C.skin);
+  ell(Hd, 4.8, 62.5, -0.5, 1, 1.6, 1.2, C.skinSh);
+  ell(Hd, -4.8, 62.5, -0.5, 1, 1.6, 1.2, C.skinSh);
+  for (const v of Hd.values()) {
+    if (v.y >= 67 || (v.z < -1 && v.y >= 61)) v.c = C.hair;
+    else if (Math.abs(v.x) >= 4 && v.y >= 59 && v.y <= 62 && v.z > -1) v.c = C.hair;
+    if (v.y >= 65 && v.y <= 66) v.c = v.y === 65 ? C.goldDk : C.gold;
+  }
+  {
+    const f = frontMap(Hd);
+    const face = (x: number, y: number, c: number, out = 0) => {
+      const fz = f.get(`${x},${y}`);
+      if (fz === undefined) return;
+      if (out) set(Hd, x, y, fz + out, c);
+      else paint(Hd, x, y, fz, c);
+    };
+    for (const s of [1, -1]) {
+      face(1 * s, 64, C.hair, 1);
+      face(2 * s, 64, C.hair, 1);
+      face(3 * s, 65, C.hair, 1);
+      face(4 * s, 65, C.hair, 1);
+      face(2 * s, 63, C.hair);
+      face(3 * s, 63, C.eye);
+      face(3 * s, 61, C.hair, 1);
+      face(4 * s, 62, C.hair, 1);
+    }
+    for (let x = -3; x <= 3; x++) face(x, 60, C.hair, 1);
+    face(0, 62, C.skinSh, 1);
+    face(0, 61, C.skinSh, 1);
+    for (let x = -1; x <= 1; x++) face(x, 59, x === 0 ? C.mouth : C.skinSh);
+    face(0, 57, C.hair, 1);
+    face(0, 56, C.hair, 1);
+    for (let y = 66; y <= 71; y++) {
+      for (let x = -3; x <= 3; x++) {
+        if (Math.abs(x) > 3.2 - (y - 66) * 0.62) continue;
+        const fz = f.get(`${x},${Math.min(y, 66)}`);
+        if (fz === undefined) continue;
+        set(Hd, x, y, fz + 1, x === 0 && y === 67 ? C.ruby : engrave(x, y, fz));
+      }
+    }
+  }
+  ell(Hd, 5, 64.5, -1, 1.2, 3, 2.5, engrave);
+  ell(Hd, -5, 64.5, -1, 1.2, 3, 2.5, engrave);
+  ell(Hd, 5.3, 67.5, -1.8, 1, 2.2, 2, C.gold);
+  ell(Hd, -5.3, 67.5, -1.8, 1, 2.2, 2, C.gold);
+  ell(Hd, 0, 69, -1.2, 2.7, 0.9, 2.7, C.gold);
+  ell(Hd, 0, 71.5, -1.4, 2.2, 3.2, 2.2, C.hair);
+
+  // 7. Golden Wings
+  for (const [s, W] of [
+    [1, "wingL"],
+    [-1, "wingR"],
+  ] as [number, string][]) {
+    const Wm = P(W);
+    for (let ax = 1; ax <= 24; ax++) {
+      for (let y = 40; y <= 82; y++) {
+        const inOuter = Math.hypot(ax - 6, y - 58) <= 16.5;
+        const inInner = Math.hypot(ax - 0.5, y - 65) <= 14;
+        if (!inOuter || inInner) continue;
+        const zc = Math.round(-6 - 0.2 * ax);
+        const rimO = Math.hypot(ax - 6, y - 58) > 15.3;
+        for (let z = zc - 1; z <= zc; z++) set(Wm, ax * s, y, z, rimO ? C.goldLt : engrave(ax, y, z));
+      }
+    }
+  }
+
+  // 8. Cloud Pedestal
+  const cloud = new Map<string, HeroCell>();
+  const cloudCol = (_x: number, y: number) => (y >= 8 ? C.cloud : y >= 5 ? C.cloudMid : C.cloudSh);
+  for (let i = 0; i < 34; i++) {
+    const a = rnd() * Math.PI * 2;
+    const r = Math.sqrt(rnd());
+    ell(
+      cloud,
+      Math.cos(a) * r * 22,
+      3 + rnd() * 5,
+      Math.sin(a) * r * 12,
+      4 + rnd() * 3,
+      3 + rnd() * 2.5,
+      4 + rnd() * 3,
+      cloudCol
+    );
+  }
+  for (const s of [1, -1]) {
+    for (let i = 0; i < 7; i++) {
+      const t = i / 6;
+      ell(
+        cloud,
+        s * (24 + t * 12),
+        7 + t * 6 + Math.sin(t * 6) * 1.5,
+        -3 + t * 2,
+        3.2 - t * 1.6,
+        2.6 - t * 1.2,
+        3 - t * 1.4,
+        cloudCol
+      );
+    }
+  }
+
+  const nb = [
+    [1, 0, 0],
+    [-1, 0, 0],
+    [0, 1, 0],
+    [0, -1, 0],
+    [0, 0, 1],
+    [0, 0, -1],
+  ];
+  const shell = (m: Map<string, HeroCell>) =>
+    [...m.values()].filter((v) => nb.some(([a, b, c]) => !m.has(K(v.x + a, v.y + b, v.z + c))));
+
+  const out: Record<string, HeroCell[]> = {};
+  for (const [name, m] of Object.entries(parts)) {
+    const p = heroWorldPivot(name);
+    out[name] = shell(m).map((v) => ({
+      x: v.x - p[0],
+      y: v.y - p[1],
+      z: v.z - p[2],
+      c: v.c,
+    }));
+  }
+
+  cachedHeroCharacter = {
+    parts: out,
+    cloud: shell(cloud),
+  };
+  return cachedHeroCharacter;
+}
+
+export function generateVoxelHero(
+  matrix: number[][],
+  size: number,
+  season: SeasonType = "hero",
+  _options?: TreeOptions
+): VoxelItem[] {
+  const theme = SEASONS[season] ?? SEASONS.hero;
+  const voxels: VoxelItem[] = [];
+  const center = (size - 1) / 2;
+  const quietZone = 5;
+
+  // 1. LANTAI COURTYARD & PERIMETER
+  for (let r = -quietZone; r < size + quietZone; r++) {
+    for (let c = -quietZone; c < size + quietZone; c++) {
+      const x = c - center;
+      const z = r - center;
+      const h = coordHash(x, z, 101);
+
+      const isInsideQr = r >= 0 && r < size && c >= 0 && c < size;
+      const isPerimeter =
+        r === -quietZone ||
+        r === size + quietZone - 1 ||
+        c === -quietZone ||
+        c === size + quietZone - 1;
+
+      voxels.push({
+        x,
+        y: 0,
+        z,
+        size: 1.0,
+        color: isPerimeter ? theme.stoneBorder : pickRandom(theme.stonePaver, h),
+        role: isPerimeter ? "border" : "stone",
+        isQrDark: false,
+        part: -99,
+        u: 0,
+        ang: 0,
+        phase: 0,
+      });
+
+      if (isPerimeter) {
+        voxels.push({
+          x,
+          y: 0.35,
+          z,
+          size: 1.0,
+          color: theme.stoneBorder,
+          role: "border",
+          part: -99,
+          u: 0,
+          ang: 0,
+          phase: 0,
+        });
+      }
+
+      if (isInsideQr && matrix[r][c] === 1) {
+        const floorDarkColor = isFinderPattern(r, c, size)
+          ? theme.finderOuter[0]
+          : pickRandom(theme.qrDark, h);
+        voxels.push({
+          x,
+          y: 0.04,
+          z,
+          size: 1.0,
+          color: floorDarkColor,
+          role: "leaf",
+          isQrDark: true,
+          part: -99,
+          u: 0,
+          ang: 0,
+          phase: 0,
+        });
+      }
+    }
+  }
+
+  // 2. MONUMEN FINDER PATTERN
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (matrix[r][c] === 1 && isFinderPattern(r, c, size)) {
+        const x = c - center;
+        const z = r - center;
+        const finderRole = getFinderRole(r, c, size);
+        const h = coordHash(x, z, 55);
+
+        if (finderRole === "hedge") {
+          voxels.push({
+            x,
+            y: 0.45,
+            z,
+            size: 1.0,
+            color: pickRandom(theme.finderOuter, h),
+            role: "hedge",
+            isQrDark: true,
+            part: -99,
+            u: 0,
+            ang: 0,
+            phase: 0,
+          });
+        } else if (finderRole === "flower") {
+          voxels.push({
+            x,
+            y: 0.45,
+            z,
+            size: 1.0,
+            color: theme.finderOuter[0],
+            role: "flower",
+            isQrDark: true,
+            part: -99,
+            u: 0,
+            ang: 0,
+            phase: 0,
+          });
+          voxels.push({
+            x,
+            y: 0.85,
+            z,
+            size: 1.0,
+            color: pickRandom(theme.finderInner, h),
+            role: "flower",
+            isQrDark: true,
+            part: -99,
+            u: 0,
+            ang: 0,
+            phase: 0,
+          });
+        }
+      }
+    }
+  }
+
+  // 3. GOLDEN CONFETTI / SPARKS ON COURTYARD FLOOR
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (matrix[r][c] !== 1 || isFinderPattern(r, c, size)) continue;
+      const x = c - center;
+      const z = r - center;
+      if (Math.abs(x) > 12.0 || Math.abs(z) > 6.0) {
+        const h = coordHash(x, z, 777);
+        if (h > 0.65) {
+          voxels.push({
+            x: x + (coordHash(x, z, 81) - 0.5) * 0.45,
+            y: 0.95,
+            z: z + (coordHash(x, z, 92) - 0.5) * 0.45,
+            size: 0.35 + h * 0.15,
+            color: pickRandom(theme.petalFloor, h),
+            role: "petal",
+            isQrDark: false,
+            part: -99,
+            u: 0,
+            ang: 0,
+            phase: 0,
+          });
+        }
+      }
+    }
+  }
+
+  // 4. MODEL HERO & CLOUD (untuk export JSON / CSV / count voxel)
+  const charData = buildHeroCharacterRaw();
+  const scale = 0.24;
+  const yBase = 0.35;
+
+  for (const cv of charData.cloud) {
+    voxels.push({
+      x: +(cv.x * scale).toFixed(3),
+      y: +(yBase + cv.y * scale).toFixed(3),
+      z: +(cv.z * scale).toFixed(3),
+      size: scale,
+      color: "#" + cv.c.toString(16).padStart(6, "0"),
+      role: "person",
+      isQrDark: false,
+      part: 31,
+    });
+  }
+
+  for (const [partName, cells] of Object.entries(charData.parts)) {
+    const p = heroWorldPivot(partName);
+    for (const v of cells) {
+      voxels.push({
+        x: +((v.x + p[0]) * scale).toFixed(3),
+        y: +(yBase + (v.y + p[1]) * scale).toFixed(3),
+        z: +((v.z + p[2]) * scale).toFixed(3),
+        size: scale,
+        color: "#" + v.c.toString(16).padStart(6, "0"),
+        role: "person",
+        isQrDark: false,
+        part: 30,
+      });
     }
   }
 

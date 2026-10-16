@@ -9,22 +9,22 @@ export async function GET(req: Request) {
   const clientIp = getClientIp(req);
   const userAgent = req.headers.get("user-agent");
 
-  // 1. Blokir Bot & Scraper Otomatis
+  // 1. Block Automated Bots & Scrapers
   if (isAutomatedScraper(userAgent)) {
     return NextResponse.json(
-      { ok: false, available: false, error: "Akses otomatis ditolak." },
+      { ok: false, available: false, error: "Automated access denied." },
       { status: 403 }
     );
   }
 
-  // 2. Rate Limiting: Maksimal 25 pemeriksaan slug per menit per IP
+  // 2. Rate Limiting: Max 25 slug checks per minute per IP
   const rateCheck = checkRateLimit(`slug_check_${clientIp}`, 25, 60_000);
   if (!rateCheck.allowed) {
     return NextResponse.json(
       {
         ok: false,
         available: false,
-        error: `Terlalu banyak permintaan. Silakan tunggu ${rateCheck.retryAfterSec} detik.`,
+        error: `Too many requests. Please wait ${rateCheck.retryAfterSec} seconds.`,
       },
       {
         status: 429,
@@ -38,7 +38,7 @@ export async function GET(req: Request) {
 
   if (!rawSlug || !rawSlug.trim()) {
     return NextResponse.json(
-      { ok: false, available: false, error: "Slug tidak boleh kosong." },
+      { ok: false, available: false, error: "Slug cannot be empty." },
       { status: 400 }
     );
   }
@@ -53,7 +53,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       ok: false,
       available: false,
-      error: "Slug sudah dipakai. Coba yang lain.",
+      error: "Slug already taken. Please choose another.",
     });
   }
 

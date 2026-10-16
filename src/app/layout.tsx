@@ -24,25 +24,23 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://official.id"),
   title: {
-    default: "official.id — QR CODE ANIMATE, Animasi QR Code & QR Code Generator Inovative",
-    template: "%s | official.id — QR Code Animate",
+    default: "official.id — Innovative 3D Animated QR Code & WebAR Studio",
+    template: "%s | official.id — 3D Animated QR Code",
   },
   description:
-    "official.id adalah platform QR Code Generator Inovative pertama di dunia untuk membuat QR Code Animate & Animasi QR Code 3D Voxel interaktif. Dilengkapi fitur QR cetak fisik siap scan, link share whitelabel, dan pengalaman WebAR langsung dari kamera smartphone.",
+    "official.id is the world's leading innovative platform for creating interactive 3D Voxel Animated QR Codes. Featuring 100% scan-ready printed QR codes, whitelabel shortlinks, and real-time WebAR experiences directly in mobile browsers.",
   keywords: [
     "QR CODE ANIMATE",
-    "ANIMASI QR CODE",
-    "QR CODE GENERATOR INOVATIVE",
-    "qr code animate",
-    "animasi qr code",
-    "qr code generator inovative",
-    "innovative qr code generator",
+    "ANIMATED QR CODE",
+    "INNOVATIVE QR CODE GENERATOR",
     "3d animated qr code",
-    "animated qr code generator",
-    "qr code bergerak",
-    "qr code pohon 3d",
-    "webar qr code generator",
-    "custom qr code whitelabel",
+    "3d voxel qr code",
+    "webar qr code",
+    "augmented reality qr code",
+    "whitelabel qr code generator",
+    "custom qr code studio",
+    "scannable 3d qr code",
+    "interactive qr code",
     "official.id",
   ],
   authors: [{ name: "Harizal", url: "https://instagram.com/harizal.official" }],
@@ -66,12 +64,12 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    locale: "id_ID",
+    locale: "en_US",
     url: "https://official.id",
     siteName: "official.id",
-    title: "official.id — QR CODE ANIMATE & Innovative 3D Animated QR Code Generator",
+    title: "official.id — Innovative 3D Animated QR Code Generator & WebAR Studio",
     description:
-      "Ubah URL apa pun menjadi Animasi QR Code 3D Voxel interaktif yang memukau dan 100% dapat discan kamera smartphone.",
+      "Transform any URL into a stunning interactive 3D Voxel Animated QR Code that is 100% scannable by smartphone cameras.",
     images: [
       {
         url: "https://official.id/og-image.png",
@@ -83,9 +81,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "official.id — QR CODE ANIMATE & Innovative 3D Animated QR Code Generator",
+    title: "official.id — Innovative 3D Animated QR Code Generator & WebAR Studio",
     description:
-      "Platform QR Code Generator Inovative: Buat Animasi QR Code 3D Voxel dengan WebAR interaktif.",
+      "Innovative QR Code Platform: Create interactive 3D Voxel Animated QR Codes with real-time WebAR.",
     images: ["https://official.id/og-image.png"],
     creator: "@harizal",
   },
@@ -97,17 +95,17 @@ const jsonLd = {
     {
       "@type": "WebApplication",
       "@id": "https://official.id/#webapp",
-      name: "official.id — QR Code Animate & Innovative QR Code Generator",
+      name: "official.id — Innovative 3D Animated QR Code Generator",
       url: "https://official.id",
       applicationCategory: "DesignApplication",
       operatingSystem: "All",
       browserRequirements: "Requires WebGL & WebRTC support",
       description:
-        "Generator inovatif untuk membuat QR Code Animate dan Animasi QR Code 3D Voxel interaktif yang dapat dicetak dan discan langsung.",
+        "Innovative platform for creating interactive 3D Voxel Animated QR Codes that are instantly scannable and print-ready.",
       offers: {
         "@type": "Offer",
         price: "0",
-        priceCurrency: "IDR",
+        priceCurrency: "USD",
       },
       creator: {
         "@type": "Person",
@@ -126,7 +124,7 @@ const jsonLd = {
         "@type": "ContactPoint",
         telephone: "+6281283835553",
         contactType: "customer service",
-        availableLanguage: ["Indonesian", "English"],
+        availableLanguage: ["English", "Indonesian"],
       },
     },
   ],
@@ -138,7 +136,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <head>
         <script
           type="application/ld+json"

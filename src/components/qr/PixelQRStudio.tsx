@@ -125,7 +125,7 @@ export default function PixelQRStudio() {
             height={1000}
             className="w-full h-full rounded-2xl object-contain shadow-inner cursor-pointer transition-transform duration-300 group-hover:scale-[1.01]"
             onClick={handlePlayMorph}
-            title="Klik untuk menganimasikan transisi QR Pixel!"
+            title="Click to animate Pixel QR transition!"
           />
 
           {/* Morph Floating Badge */}
@@ -150,7 +150,7 @@ export default function PixelQRStudio() {
             className="absolute bottom-6 right-6 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-slate-900/90 px-3.5 py-1.5 text-xs font-medium text-slate-200 shadow-xl backdrop-blur-md transition hover:bg-slate-800 hover:text-white active:scale-95 disabled:opacity-50"
           >
             <Play className={`h-3 w-3 ${isAnimating ? "animate-spin" : ""}`} />
-            <span>{morphValue > 0.5 ? "Flaten ke 2D" : "Morph ke 3D"}</span>
+            <span>{morphValue > 0.5 ? "Flatten to 2D" : "Morph to 3D"}</span>
           </button>
         </div>
 
@@ -159,7 +159,7 @@ export default function PixelQRStudio() {
           <div className="flex items-center justify-between text-xs font-medium text-slate-300 mb-2">
             <span className="flex items-center gap-1.5">
               <AdjustmentsHorizontal className="h-3.5 w-3.5 text-indigo-400" />
-              Tingkat Ekstrusi Voxel 3D
+              3D Voxel Extrusion Level
             </span>
             <span className="font-mono text-indigo-400">{Math.round(morphValue * 100)}%</span>
           </div>
@@ -205,7 +205,7 @@ export default function PixelQRStudio() {
           <div className="flex items-center justify-between">
             <label className="text-sm font-semibold text-slate-200 flex items-center gap-2">
               <WandMagicSparkles className="h-4 w-4 text-indigo-400" />
-              Link / Data QR Code
+              Link / QR Code Data
             </label>
             <span className="text-[11px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
               Reed-Solomon 30% Error Margin
@@ -217,13 +217,13 @@ export default function PixelQRStudio() {
               type="text"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="https://official.id/nama-anda"
+              placeholder="https://official.id/your-name"
               className="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <button
               onClick={handleCopyLink}
               className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 hover:bg-slate-700 hover:text-white transition"
-              title="Salin Link"
+              title="Copy Link"
             >
               {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <ShareNodes className="h-4 w-4" />}
             </button>
@@ -233,8 +233,8 @@ export default function PixelQRStudio() {
           <div className="flex flex-wrap gap-1.5 pt-1">
             {[
               { label: "harizal", val: "https://official.id/harizal" },
-              { label: "kartu-bisnis", val: "https://official.id/c/kartu-bisnis" },
-              { label: "organisasi", val: "https://official.id/o/komunitas-resmi" },
+              { label: "business-card", val: "https://official.id/c/business-card" },
+              { label: "community", val: "https://official.id/o/official-hub" },
             ].map((preset) => (
               <button
                 key={preset.label}
@@ -251,15 +251,15 @@ export default function PixelQRStudio() {
         <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
           <label className="text-sm font-semibold text-slate-200 flex items-center gap-2">
             <CubesStacked className="h-4 w-4 text-cyan-400" />
-            Bentuk Arsitektur 3D (Voxel Topology)
+            3D Architectural Shape (Voxel Topology)
           </label>
 
           <div className="grid grid-cols-2 gap-2.5">
             {[
-              { id: "tree", label: "Magic Tree (ICQR)", icon: Shapes, desc: "Kubah kanopi pohon bertingkat" },
-              { id: "city", label: "Skyline City", icon: Building, desc: "Gedung metropolis acak tinggi" },
-              { id: "pyramid", label: "Pyramid Dome", icon: Landmark, desc: "Piramida dari pusat ke luar" },
-              { id: "flat", label: "Uniform Block", icon: Layers, desc: "Tinggi balok seragam rata" },
+              { id: "tree", label: "Magic Tree (ICQR)", icon: Shapes, desc: "Tiered tree canopy dome" },
+              { id: "city", label: "Skyline City", icon: Building, desc: "Randomized high-rise metropolis" },
+              { id: "pyramid", label: "Pyramid Dome", icon: Landmark, desc: "Pyramid rising from center outward" },
+              { id: "flat", label: "Uniform Block", icon: Layers, desc: "Even uniform block height" },
             ].map((item) => {
               const Icon = item.icon;
               const isActive = shapeType === item.id;
@@ -288,7 +288,7 @@ export default function PixelQRStudio() {
         <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
           <label className="text-sm font-semibold text-slate-200 flex items-center gap-2">
             <WandMagicSparkles className="h-4 w-4 text-emerald-400" />
-            Palet Warna Pixel Art
+            Pixel Art Color Palette
           </label>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -337,7 +337,7 @@ export default function PixelQRStudio() {
               setShapeType("tree");
             }}
             className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3.5 text-slate-400 hover:bg-slate-800 hover:text-white transition"
-            title="Reset ke Default"
+            title="Reset to Default"
           >
             <Refresh className="h-4 w-4" />
           </button>

@@ -287,3 +287,277 @@ export function disposeTreeMesh(mesh: THREE.InstancedMesh | null) {
   }
   mesh.customDepthMaterial?.dispose();
 }
+
+import {
+  HERO_RIG,
+  HERO_JOINTS,
+  HERO_POSES,
+  HERO_SEQ,
+  HERO_METAL,
+  buildHeroCharacterRaw,
+  type HeroCell,
+} from "@/lib/voxel-tree-generator";
+
+export interface HeroRigPose {
+  label: string;
+  hipsY: number;
+  [joint: string]: any;
+}
+
+export interface HeroRigState {
+  rootGroup: THREE.Group;
+  characterGroup: THREE.Group;
+  cloudGroup: THREE.Group;
+  joints: Record<string, THREE.Group>;
+  matBase: THREE.MeshStandardMaterial;
+  matMetal: THREE.MeshStandardMaterial;
+  instancedMeshes: THREE.InstancedMesh[];
+  currentPose: HeroRigPose;
+  fromPose: HeroRigPose;
+  targetPose: HeroRigPose;
+  targetName: string;
+  transT: number;
+  transDur: number;
+  seqIndex: number;
+  holdLeft: number;
+  auto: boolean;
+  time: number;
+  scale: number;
+  yBase: number;
+  goTo: (name: string, dur?: number) => void;
+  toggleAuto: () => boolean;
+  dispose: () => void;
+}
+
+function cloneHeroPose(p: HeroRigPose): HeroRigPose {
+  const o: HeroRigPose = { label: p.label || "", hipsY: p.hipsY };
+  for (const j of HERO_JOINTS) {
+    o[j] = (p[j] || [0, 0, 0]).slice();
+  }
+  return o;
+}
+
+const easeHero = (k: number) =>
+  k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+
+export function createHeroRig(options?: {
+  scale?: number;
+  yBase?: number;
+  shadows?: boolean;
+}): HeroRigState {
+  const scale = options?.scale ?? 0.24;
+  const yBase = options?.yBase ?? 0.35;
+  const castShadow = options?.shadows !== false;
+
+  const rootGroup = new THREE.Group();
+  rootGroup.name = "HeroRigRoot";
+
+  const characterGroup = new THREE.Group();
+  characterGroup.name = "HeroCharacterGroup";
+  characterGroup.scale.setScalar(scale);
+  characterGroup.position.set(0, yBase, 0);
+  rootGroup.add(characterGroup);
+
+  const joints: Record<string, THREE.Group> = {};
+  for (const name of HERO_JOINTS) {
+    const g = new THREE.Group();
+    g.name = `Joint_${name}`;
+    g.position.fromArray(HERO_RIG[name].pos);
+    joints[name] = g;
+  }
+
+  for (const name of HERO_JOINTS) {
+    const parentName = HERO_RIG[name].parent;
+    if (parentName) {
+      joints[parentName].add(joints[name]);
+    } else {
+      characterGroup.add(joints[name]);
+    }
+  }
+
+  const cloudGroup = new THREE.Group();
+  cloudGroup.name = "HeroCloudGroup";
+  characterGroup.add(cloudGroup);
+
+  const matBase = new THREE.MeshStandardMaterial({
+    roughness: 0.62,
+    metalness: 0.0,
+    envMapIntensity: 0.6,
+  });
+  const matMetal = new THREE.MeshStandardMaterial({
+    roughness: 0.32,
+    metalness: 0.85,
+    envMapIntensity: 1.25,
+  });
+
+  const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+  const tmpM = new THREE.Matrix4();
+  const tmpC = new THREE.Color();
+  const instancedMeshes: THREE.InstancedMesh[] = [];
+
+  function makeVoxelInstancedMesh(cells: HeroCell[], material: THREE.Material): THREE.InstancedMesh {
+    const mesh = new THREE.InstancedMesh(boxGeo, material, cells.length);
+    mesh.castShadow = castShadow;
+    mesh.receiveShadow = castShadow;
+    for (let i = 0; i < cells.length; i++) {
+      const v = cells[i];
+      tmpM.makeTranslation(v.x, v.y, v.z);
+      mesh.setMatrixAt(i, tmpM);
+      tmpC.setHex(v.c);
+      const perturb =
+        (((((v.x * 73856093) ^ (v.y * 19349663) ^ (v.z * 83492791)) >>> 0) % 100) / 100) *
+          0.04 -
+        0.02;
+      tmpC.multiplyScalar(1 + perturb);
+      mesh.setColorAt(i, tmpC);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    instancedMeshes.push(mesh);
+    return mesh;
+  }
+
+  function addCellsToGroup(group: THREE.Group, cells: HeroCell[]) {
+    const metal = cells.filter((v) => HERO_METAL.has(v.c));
+    const base = cells.filter((v) => !HERO_METAL.has(v.c));
+    if (base.length > 0) group.add(makeVoxelInstancedMesh(base, matBase));
+    if (metal.length > 0) group.add(makeVoxelInstancedMesh(metal, matMetal));
+  }
+
+  const charData = buildHeroCharacterRaw();
+  for (const [name, cells] of Object.entries(charData.parts)) {
+    if (joints[name]) {
+      addCellsToGroup(joints[name], cells);
+    }
+  }
+  addCellsToGroup(cloudGroup, charData.cloud);
+
+  const initialPoseName = "kuda";
+  const initialPose = HERO_POSES[initialPoseName];
+
+  const state: HeroRigState = {
+    rootGroup,
+    characterGroup,
+    cloudGroup,
+    joints,
+    matBase,
+    matMetal,
+    instancedMeshes,
+    currentPose: cloneHeroPose(initialPose),
+    fromPose: cloneHeroPose(initialPose),
+    targetPose: initialPose,
+    targetName: initialPoseName,
+    transT: 1,
+    transDur: 0.6,
+    seqIndex: 0,
+    holdLeft: HERO_SEQ[0][2],
+    auto: true,
+    time: 0,
+    scale,
+    yBase,
+    goTo: (name: string, dur?: number) => {
+      const pose = HERO_POSES[name];
+      if (!pose) return;
+      state.fromPose = cloneHeroPose(state.currentPose);
+      state.targetPose = pose;
+      state.targetName = name;
+      state.transT = 0;
+      state.transDur = dur !== undefined ? dur : (name.startsWith("pukul") ? 0.22 : 0.65);
+    },
+    toggleAuto: () => {
+      state.auto = !state.auto;
+      if (state.auto) {
+        state.seqIndex = 0;
+        state.holdLeft = 0;
+        const [n, d] = HERO_SEQ[0];
+        state.goTo(n, d);
+      }
+      return state.auto;
+    },
+    dispose: () => {
+      rootGroup.removeFromParent();
+      for (const m of instancedMeshes) {
+        m.geometry.dispose();
+      }
+      matBase.dispose();
+      matMetal.dispose();
+      boxGeo.dispose();
+    },
+  };
+
+  return state;
+}
+
+export function updateHeroRig(state: HeroRigState, dt: number) {
+  state.time += dt;
+  const t = state.time;
+
+  if (state.auto && state.transT >= 1) {
+    state.holdLeft -= dt;
+    if (state.holdLeft <= 0) {
+      state.seqIndex = (state.seqIndex + 1) % HERO_SEQ.length;
+      const [name, dur, hold] = HERO_SEQ[state.seqIndex];
+      state.goTo(name, dur);
+      state.holdLeft = hold;
+    }
+  }
+
+  state.transT = Math.min(1, state.transT + dt / Math.max(state.transDur, 0.001));
+  const k = easeHero(state.transT);
+
+  state.currentPose.hipsY =
+    state.fromPose.hipsY + (state.targetPose.hipsY - state.fromPose.hipsY) * k;
+
+  for (const j of HERO_JOINTS) {
+    const a = state.fromPose[j] || [0, 0, 0];
+    const b = state.targetPose[j] || [0, 0, 0];
+    if (!state.currentPose[j]) state.currentPose[j] = [0, 0, 0];
+    for (let i = 0; i < 3; i++) {
+      state.currentPose[j][i] = a[i] + (b[i] - a[i]) * k;
+    }
+  }
+
+  const flying = state.targetName === "terbang" ? k : 0;
+  const breathe = Math.sin(t * 2.1);
+  const J = state.joints;
+
+  for (const j of HERO_JOINTS) {
+    if (J[j] && state.currentPose[j]) {
+      J[j].rotation.set(
+        state.currentPose[j][0],
+        state.currentPose[j][1],
+        state.currentPose[j][2]
+      );
+    }
+  }
+
+  if (J.hips) {
+    J.hips.position.y =
+      HERO_RIG.hips.pos[1] +
+      state.currentPose.hipsY +
+      breathe * 0.25 * (1 - flying) +
+      Math.sin(t * 1.6) * 1.2 * flying;
+  }
+
+  if (J.torso) {
+    J.torso.rotation.x += breathe * 0.02;
+    J.torso.scale.set(1 + breathe * 0.008, 1, 1 + breathe * 0.012);
+  }
+
+  if (J.sash) {
+    J.sash.rotation.z += Math.sin(t * 2.6) * 0.12 + Math.sin(t * 5.1) * 0.04;
+    J.sash.rotation.x += Math.sin(t * 2.1 + 1) * 0.1;
+  }
+
+  if (J.wingL) {
+    J.wingL.rotation.y += Math.sin(t * 4.2) * 0.14 * flying;
+  }
+  if (J.wingR) {
+    J.wingR.rotation.y -= Math.sin(t * 4.2) * 0.14 * flying;
+  }
+
+  if (state.cloudGroup) {
+    state.cloudGroup.position.y = Math.sin(t * 0.8) * 0.4;
+  }
+}
+

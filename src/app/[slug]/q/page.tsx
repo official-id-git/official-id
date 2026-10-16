@@ -62,9 +62,9 @@ export default async function PhysicalQRScanPage({ params }: Props) {
             justifyContent: "center",
           }}
         >
-          <h2 style={{ fontSize: "20px", marginBottom: "12px" }}>Membuka link tujuan...</h2>
+          <h2 style={{ fontSize: "20px", marginBottom: "12px" }}>Opening destination link...</h2>
           <p style={{ color: "#a8a29e", fontSize: "14px", marginBottom: "20px" }}>
-            Anda akan diarahkan dalam {redirectSeconds} detik.
+            You will be redirected in {redirectSeconds} seconds.
           </p>
           <a
             href={link.destination}
@@ -79,7 +79,7 @@ export default async function PhysicalQRScanPage({ params }: Props) {
               fontSize: "14px",
             }}
           >
-            Buka Sekarang
+            Open Now
           </a>
         </div>
       </noscript>
@@ -93,7 +93,7 @@ export default async function PhysicalQRScanPage({ params }: Props) {
           <div className="fixed inset-0 flex items-center justify-center bg-stone-950 text-stone-300 text-sm">
             <div className="flex flex-col items-center gap-3">
               <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-              <p className="text-xs font-medium tracking-wide">Menyiapkan AR…</p>
+              <p className="text-xs font-medium tracking-wide">Preparing AR…</p>
             </div>
           </div>
         }

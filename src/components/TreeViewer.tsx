@@ -17,6 +17,7 @@ import {
   generateVoxelTree,
   generateVoxelFlower,
   generateVoxelBuilding,
+  generateVoxelHero,
 } from "@/lib/voxel-tree-generator";
 import { buildTreeMesh, createWindUniforms, disposeTreeMesh } from "@/lib/voxel-three";
 import { track } from "@/lib/track";
@@ -187,6 +188,8 @@ export default function TreeViewer({
         ? generateVoxelFlower(matrix, size, season, { scanSafeTop: true })
         : season === "building"
         ? generateVoxelBuilding(matrix, size, season, { scanSafeTop: true })
+        : season === "hero"
+        ? generateVoxelHero(matrix, size, season, { scanSafeTop: true })
         : generateVoxelTree(matrix, size, season);
     const mesh = buildTreeMesh(voxels, wind, {
       shadows: renderer.shadowMap.enabled,
@@ -232,6 +235,8 @@ export default function TreeViewer({
           ? TOP_TARGET
           : season === "building"
           ? new THREE.Vector3(0, 4.2, 0)
+          : season === "hero"
+          ? new THREE.Vector3(0, 5.5, 0)
           : ISO_TARGET,
       };
       controls.enabled = false;
@@ -427,7 +432,7 @@ export default function TreeViewer({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      window.prompt("Salin link ini:", shareUrl);
+      window.prompt("Copy this link:", shareUrl);
     }
   };
 
@@ -493,7 +498,7 @@ export default function TreeViewer({
           </div>
         )}
 
-        {/* QR 2D Vector Overlay - Penuh, Rapi, Sempurna & Terpusat */}
+        {/* QR 2D Vector Overlay - Centered and Scannable */}
         <div
           onClick={toggleQr}
           className={`absolute inset-0 z-20 flex items-center justify-center p-6 sm:p-9 transition-all duration-300 cursor-pointer ${
@@ -502,7 +507,7 @@ export default function TreeViewer({
               : "opacity-0 scale-95 pointer-events-none"
           }`}
           style={{ backgroundColor: theme.paperColor }}
-          title="Klik untuk melihat animasi 3D"
+          title="Click to view 3D animation"
         >
           <div className="relative w-full h-full flex items-center justify-center">
             <QrSvg matrix={matrix} size={size} dark={theme.qrDark[0]} light={theme.paperColor} />
@@ -526,15 +531,15 @@ export default function TreeViewer({
             )}
           </div>
 
-          {/* Hint kembali ke 3D */}
+          {/* Hint to switch to 3D */}
           <div className="absolute bottom-3 right-3 pointer-events-none flex items-center gap-1.5 text-[10px] sm:text-xs font-mono text-stone-500 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full shadow-sm border border-stone-200">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Ketuk untuk melihat 3D
+            Tap to view 3D
           </div>
         </div>
       </div>
 
-      {/* Tombol Switch Mode: QR Code dan Animate Tree */}
+      {/* Mode Switch Buttons: QR Code and Animate Tree */}
       <div className="mt-3 flex flex-col items-center gap-2 z-20">
         <div className="inline-flex p-1 rounded-2xl bg-white/85 backdrop-blur-md border border-stone-200/90 shadow-sm">
           <button
@@ -545,7 +550,7 @@ export default function TreeViewer({
                 ? "bg-stone-900 text-white shadow-md scale-[1.02]"
                 : "text-stone-600 hover:text-stone-900 hover:bg-stone-100/60"
             }`}
-            title="Tampilkan Mode QR Code"
+            title="Show QR Code Mode"
           >
             <QrCode className="w-4 h-4" />
             <span>QR Code</span>
@@ -558,7 +563,7 @@ export default function TreeViewer({
                 ? "bg-stone-900 text-white shadow-md scale-[1.02]"
                 : "text-stone-600 hover:text-stone-900 hover:bg-stone-100/60"
             }`}
-            title="Lihat Mode Animasi 3D"
+            title="View 3D Animation Mode"
           >
             <Layers className="w-4 h-4" />
             <span>Animate 3D</span>
@@ -573,17 +578,17 @@ export default function TreeViewer({
           </span>
           <span>
             {showQr
-              ? `Mode QR • Animasi 3D dalam ${countdown}s`
-              : `Animasi 3D • Mode QR dalam ${countdown}s`}
+              ? `QR Code • 3D Animation in ${countdown}s`
+              : `3D Animation • QR Code in ${countdown}s`}
           </span>
         </div>
       </div>
 
-      {/* Tampilan URL Tujuan Eksplisit agar pengunjung/pemilik melihat target link sebenarnya */}
+      {/* Explicit Destination URL display */}
       {!isEmbed && destination && (
         <div className="mt-3 flex flex-col items-center gap-1 px-5 max-w-md w-full">
           <span className="text-[10px] uppercase font-bold tracking-wider text-stone-400">
-            Tautan Tujuan
+            Destination URL
           </span>
           <a
             href={destination}
@@ -591,7 +596,7 @@ export default function TreeViewer({
             rel="noopener noreferrer"
             onClick={() => track(slug, "visit_click", source)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/85 backdrop-blur-xs border border-stone-200/90 text-xs font-mono text-stone-800 hover:text-emerald-700 hover:border-emerald-300 transition shadow-2xs max-w-full group"
-            title={`Buka langsung: ${destination}`}
+            title={`Open directly: ${destination}`}
           >
             <Link className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
             <span className="truncate max-w-[280px] sm:max-w-[340px]">{destination}</span>
@@ -608,7 +613,7 @@ export default function TreeViewer({
           onClick={() => track(slug, "visit_click", source)}
           className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl border border-stone-200 bg-white py-3 text-sm font-semibold text-stone-800 shadow-sm transition hover:bg-stone-50 active:scale-[0.98]"
         >
-          <span>Kunjungi Link</span>
+          <span>Visit Link</span>
           <ArrowUpRightFromSquare className="w-3.5 h-3.5 text-stone-400" />
         </a>
         <a
@@ -619,7 +624,7 @@ export default function TreeViewer({
           className="flex flex-1 items-center justify-center rounded-2xl py-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 active:scale-[0.98]"
           style={{ background: accent }}
         >
-          Lihat AR
+          View in AR
         </a>
       </div>
 
@@ -631,10 +636,10 @@ export default function TreeViewer({
         {copied ? (
           <>
             <Check className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Link tersalin</span>
+            <span>Link copied</span>
           </>
         ) : (
-          "Bagikan"
+          "Share"
         )}
       </button>
 
@@ -645,7 +650,7 @@ export default function TreeViewer({
           rel="noopener"
           className="mt-4 text-[11px] text-stone-400 transition hover:text-stone-600"
         >
-          Dibuat dengan official.id
+          Created with official.id
         </a>
       )}
     </div>

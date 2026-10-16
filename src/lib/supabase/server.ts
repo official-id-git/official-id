@@ -39,7 +39,7 @@ export function createAdminClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !serviceKey) {
-    throw new Error("Kredensial Supabase Server tidak ditemukan.");
+    throw new Error("Supabase server credentials not found.");
   }
 
   return createSupabaseClient(url, serviceKey, {

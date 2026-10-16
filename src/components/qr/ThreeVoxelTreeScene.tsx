@@ -10,8 +10,14 @@ import {
   generateVoxelTree,
   generateVoxelFlower,
   generateVoxelBuilding,
+  generateVoxelHero,
   generateQrMatrix,
 } from "@/lib/voxel-tree-generator";
+import {
+  createHeroRig,
+  updateHeroRig,
+  type HeroRigState,
+} from "@/lib/voxel-three";
 
 interface ThreeVoxelTreeSceneProps {
   url: string;
@@ -32,6 +38,7 @@ interface ThreeVoxelTreeSceneProps {
 const POS_3D = new THREE.Vector3(50, 42, 50);
 const TARGET_3D = new THREE.Vector3(0, 8, 0);
 const TARGET_3D_BUILDING = new THREE.Vector3(0, 4.0, 0);
+const TARGET_3D_HERO = new THREE.Vector3(0, 5.5, 0);
 const UP_3D = new THREE.Vector3(0, 1, 0);
 
 // Top-Down QR Code Scan View: looking straight down at (0, 0, 0)
@@ -101,6 +108,8 @@ export default function ThreeVoxelTreeScene({
 
   // Sitting person model group ref (animates breathing and sinks in QR mode)
   const sittingPersonRef = useRef<THREE.Group | null>(null);
+  // Articulated Hero Rig ref (martial arts animation + wing flap + flight)
+  const heroRigRef = useRef<HeroRigState | null>(null);
   // Center logo model group ref (animates and floats at QR center)
   const centerLogoRef = useRef<THREE.Group | null>(null);
 
@@ -144,7 +153,12 @@ export default function ThreeVoxelTreeScene({
       500
     );
 
-    const target3D = season === "building" ? TARGET_3D_BUILDING : TARGET_3D;
+    const target3D =
+      season === "building"
+        ? TARGET_3D_BUILDING
+        : season === "hero"
+        ? TARGET_3D_HERO
+        : TARGET_3D;
 
     camera.position.copy(viewMode === "3d" ? POS_3D : POS_QR);
     camera.up.copy(viewMode === "3d" ? UP_3D : UP_QR);
@@ -289,10 +303,13 @@ export default function ThreeVoxelTreeScene({
 
     // Animation Loop
     const dummy = new THREE.Object3D();
+    let lastTime = performance.now();
 
     const animate = () => {
       animFrameRef.current = requestAnimationFrame(animate);
       const now = performance.now();
+      const dt = Math.min((now - lastTime) * 0.001, 0.05);
+      lastTime = now;
       const timeInSec = now * 0.001;
 
       const currentMode = viewModeRef.current;
@@ -379,6 +396,30 @@ export default function ThreeVoxelTreeScene({
         }
       }
 
+      // Animate Hero Rig (smooth martial arts sequence, wings, breathing, and sink in QR)
+      if (heroRigRef.current) {
+        const hero = heroRigRef.current;
+        updateHeroRig(hero, dt);
+
+        const targetY = currentMode === "3d" ? 0.0 : -30.0;
+        const targetScale = currentMode === "3d" ? 1.0 : 0.001;
+
+        hero.rootGroup.position.y = THREE.MathUtils.lerp(
+          hero.rootGroup.position.y,
+          targetY,
+          0.08
+        );
+        hero.rootGroup.scale.setScalar(
+          THREE.MathUtils.lerp(hero.rootGroup.scale.x, targetScale, 0.08)
+        );
+
+        if (currentMode === "qr" && hero.rootGroup.position.y < -15.0) {
+          hero.rootGroup.visible = false;
+        } else if (currentMode === "3d") {
+          hero.rootGroup.visible = true;
+        }
+      }
+
       // Animate Center Logo (Floats at QR center in top-down view, sinks in 3D mode)
       if (centerLogoRef.current) {
         const targetY = currentMode === "qr" ? 0.0 : -10.0;
@@ -445,6 +486,10 @@ export default function ThreeVoxelTreeScene({
         sittingPersonRef.current.clear();
         sittingPersonRef.current = null;
       }
+      if (heroRigRef.current) {
+        heroRigRef.current.dispose();
+        heroRigRef.current = null;
+      }
       if (centerLogoRef.current && sceneRef.current) {
         sceneRef.current.remove(centerLogoRef.current);
         centerLogoRef.current.clear();
@@ -499,16 +544,24 @@ export default function ThreeVoxelTreeScene({
       sittingPersonRef.current = null;
     }
 
+    // Remove old hero rig
+    if (heroRigRef.current) {
+      heroRigRef.current.dispose();
+      heroRigRef.current = null;
+    }
+
     // 1. Generate QR matrix (using qrText if provided so physical printed QR matches)
     const textToEncode = qrText || url;
     const { matrix, size } = generateQrMatrix(textToEncode);
 
-    // 2. Generate 3D Voxel Array – flower mode uses flower generator, building uses building generator, others use tree generator
+    // 2. Generate 3D Voxel Array – flower mode uses flower generator, building uses building generator, hero uses hero generator, others use tree generator
     const voxels: VoxelItem[] =
       season === "flower"
         ? generateVoxelFlower(matrix, size, season, { scanSafeTop: true })
         : season === "building"
         ? generateVoxelBuilding(matrix, size, season, { scanSafeTop: true })
+        : season === "hero"
+        ? generateVoxelHero(matrix, size, season, { scanSafeTop: true })
         : generateVoxelTree(matrix, size, season, { scanSafeTop: true });
     setVoxelCount(voxels.length);
 
@@ -744,8 +797,15 @@ export default function ThreeVoxelTreeScene({
     scene.add(instMesh);
     instancedMeshRef.current = instMesh;
 
-    // 4. Build Dramatic Sitting Person Group (leans against trunk)
-    if (personVoxels.length > 0) {
+    // 4. Build Articulated Hero Rig (for "hero" season)
+    if (season === "hero") {
+      const heroRig = createHeroRig({ scale: 0.24, yBase: 0.35, shadows: true });
+      scene.add(heroRig.rootGroup);
+      heroRigRef.current = heroRig;
+    }
+
+    // 5. Build Dramatic Sitting Person Group (leans against trunk, for standard trees)
+    if (personVoxels.length > 0 && season !== "hero") {
       const pGroup = new THREE.Group();
       const pGeo = new THREE.BoxGeometry(1.0, 1.0, 1.0);
       for (const p of personVoxels) {
@@ -850,7 +910,14 @@ export default function ThreeVoxelTreeScene({
       if (!cameraRef.current || !controlsRef.current) return;
 
       const targetPos = mode === "3d" ? POS_3D : POS_QR;
-      const targetLook = mode === "3d" ? (season === "building" ? TARGET_3D_BUILDING : TARGET_3D) : TARGET_QR;
+      const targetLook =
+        mode === "3d"
+          ? season === "building"
+            ? TARGET_3D_BUILDING
+            : season === "hero"
+            ? TARGET_3D_HERO
+            : TARGET_3D
+          : TARGET_QR;
       const targetUp = mode === "3d" ? UP_3D : UP_QR;
 
       startCamPosRef.current.copy(cameraRef.current.position);

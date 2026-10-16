@@ -1,9 +1,9 @@
 import TreeICQRStudio from "@/components/qr/TreeICQRStudio";
 
 export const metadata = {
-  title: "official.id — QR CODE ANIMATE, ANIMASI QR CODE, QR CODE GENERATOR INOVATIVE",
+  title: "official.id — Innovative 3D Animated QR Code Generator & WebAR Studio",
   description:
-    "Platform QR CODE GENERATOR INOVATIVE pertama: Buat QR CODE ANIMATE & ANIMASI QR CODE 3D Voxel interaktif yang memukau, siap cetak 100% scan kamera, dan WebAR real-time.",
+    "The world's leading innovative platform for 3D Voxel Animated QR Codes: Create interactive animated QR codes with 100% camera scannability, whitelabel shortlinks, and real-time WebAR experiences.",
 };
 
 export default function Home() {

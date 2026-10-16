@@ -90,37 +90,37 @@ export const normalizeSlug = (input: string) => input.trim().toLowerCase();
 export type Check<T> = { ok: true; value: T } | { ok: false; error: string };
 
 export function validateCustomSlug(input: unknown): Check<string> {
-  if (typeof input !== "string") return { ok: false, error: "Slug tidak valid." };
+  if (typeof input !== "string") return { ok: false, error: "Invalid slug." };
   const slug = normalizeSlug(input);
   if (slug.length < SLUG_MIN || slug.length > SLUG_MAX)
-    return { ok: false, error: `Slug harus ${SLUG_MIN}–${SLUG_MAX} karakter.` };
+    return { ok: false, error: `Slug must be ${SLUG_MIN}–${SLUG_MAX} characters.` };
   if (!/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(slug))
-    return { ok: false, error: "Hanya huruf kecil, angka, dan tanda hubung (tidak di awal/akhir)." };
-  if (slug.includes("--")) return { ok: false, error: "Tidak boleh ada tanda hubung ganda." };
-  if (RESERVED_SLUGS.has(slug)) return { ok: false, error: "Slug ini dicadangkan sistem." };
+    return { ok: false, error: "Only lowercase letters, numbers, and hyphens (not at start or end)." };
+  if (slug.includes("--")) return { ok: false, error: "Double hyphens are not allowed." };
+  if (RESERVED_SLUGS.has(slug)) return { ok: false, error: "This slug is reserved by the system." };
   return { ok: true, value: slug };
 }
 
 export function validateDestination(input: unknown): Check<string> {
-  if (typeof input !== "string" || !input.trim()) return { ok: false, error: "URL tujuan wajib diisi." };
+  if (typeof input !== "string" || !input.trim()) return { ok: false, error: "Destination URL is required." };
   let raw = input.trim();
-  if (raw.length > 2048) return { ok: false, error: "URL terlalu panjang." };
+  if (raw.length > 2048) return { ok: false, error: "URL is too long." };
   if (!/^[a-z][a-z0-9+.-]*:/i.test(raw)) raw = `https://${raw}`;
 
   let url: URL;
   try {
     url = new URL(raw);
   } catch {
-    return { ok: false, error: "Format URL tidak valid." };
+    return { ok: false, error: "Invalid URL format." };
   }
   if (url.protocol !== "https:" && url.protocol !== "http:")
-    return { ok: false, error: "Hanya URL http/https yang diizinkan." };
-  if (!url.hostname.includes(".")) return { ok: false, error: "Domain tidak valid." };
+    return { ok: false, error: "Only HTTP or HTTPS URLs are allowed." };
+  if (!url.hostname.includes(".")) return { ok: false, error: "Invalid domain." };
 
   try {
     const own = new URL(BASE_URL).hostname;
     if (url.hostname === own || url.hostname.endsWith(`.${own}`))
-      return { ok: false, error: "URL tujuan tidak boleh mengarah ke official.id (redirect berputar)." };
+      return { ok: false, error: "Destination URL cannot point to official.id (circular redirect)." };
   } catch {
     /* ignore hostname comparison on invalid base */
   }

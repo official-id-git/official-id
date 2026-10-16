@@ -17,27 +17,27 @@ import {
   verifyHumanSubmission,
 } from "@/lib/security";
 
-const SEASONS = new Set(["summer", "spring", "autumn", "flower", "building"]);
+const SEASONS = new Set(["summer", "spring", "autumn", "flower", "building", "hero"]);
 
 export async function POST(req: Request) {
   try {
     const clientIp = getClientIp(req);
     const userAgent = req.headers.get("user-agent");
 
-    // 1. Blokir Bot & Scraper Otomatis yang tidak wajar
+    // 1. Block Automated Bots & Scrapers
     if (isAutomatedScraper(userAgent)) {
       return NextResponse.json(
-        { error: "Akses ditolak. Permintaan otomatis tidak diizinkan." },
+        { error: "Access denied. Automated requests are not permitted." },
         { status: 403 }
       );
     }
 
-    // 2. Rate Limiting: Maksimal 6 pembuatan QR link per menit per IP
+    // 2. Rate Limiting: Max 6 QR link creations per minute per IP
     const rateCheck = checkRateLimit(`links_create_${clientIp}`, 6, 60_000);
     if (!rateCheck.allowed) {
       return NextResponse.json(
         {
-          error: `Terlalu banyak permintaan. Silakan tunggu ${rateCheck.retryAfterSec} detik sebelum membuat QR baru.`,
+          error: `Too many requests. Please wait ${rateCheck.retryAfterSec} seconds before creating a new QR code.`,
         },
         {
           status: 429,
@@ -46,26 +46,25 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Batasi Ukuran Payload (Max 256KB) untuk mencegah serangan memory exhaustion serta mendukung logo PNG
+    // 3. Limit Payload Size (Max 256KB) to prevent memory exhaustion and support PNG logos
     const contentLength = Number(req.headers.get("content-length") || 0);
     if (contentLength > 262_144) {
       return NextResponse.json(
-        { error: "Ukuran payload melebihi batas keamanan (Maksimal 256KB)." },
+        { error: "Payload size exceeds security limit (Maximum 256KB)." },
         { status: 413 }
       );
     }
 
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object") {
-      return NextResponse.json({ error: "Body tidak valid." }, { status: 400 });
+      return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
     }
 
-    // 4. Verifikasi Honeypot & Kecepatan Pengiriman (Human Timing Verification)
+    // 4. Honeypot & Human Timing Verification
     const humanCheck = verifyHumanSubmission(body as Record<string, unknown>);
     if (!humanCheck.ok) {
-      // Jika tertangkap jebakan honeypot, tolak tanpa memproses ke database
       return NextResponse.json(
-        { error: "Permintaan ditolak oleh sistem keamanan anti-bot." },
+        { error: "Request blocked by anti-bot security." },
         { status: 400 }
       );
     }
@@ -76,7 +75,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: dest.error }, { status: 400 });
     }
 
-    // 5. Proteksi SSRF: Pastikan bukan IP privat, localhost, atau link internal
+    // 5. SSRF Protection: Ensure not private IP, localhost, or circular link
     const ssrfCheck = isSafeDestinationUrl(dest.value);
     if (!ssrfCheck.ok) {
       return NextResponse.json({ error: ssrfCheck.error }, { status: 400 });
@@ -96,7 +95,7 @@ export async function POST(req: Request) {
       const existing = await getLinkBySlug(check.value);
       if (existing && !body.overwrite) {
         return NextResponse.json(
-          { error: "Slug sudah dipakai. Coba yang lain." },
+          { error: "Slug already taken. Please choose another." },
           { status: 409 }
         );
       }
@@ -111,7 +110,7 @@ export async function POST(req: Request) {
       }
       if (!slug) {
         return NextResponse.json(
-          { error: "Gagal membuat kode unik, coba lagi." },
+          { error: "Failed to generate a unique code. Please try again." },
           { status: 503 }
         );
       }
@@ -134,14 +133,14 @@ export async function POST(req: Request) {
         destination: saved.destination,
         season: saved.season,
         shareUrl: shareUrl(saved.slug),
-        qrUrl: qrUrl(saved.slug), // ← Ditanam di QR cetak (AR -> redirect)
+        qrUrl: qrUrl(saved.slug), // ← Embedded in print QR (AR -> redirect)
         embedUrl: embedUrl(saved.slug),
         embedSnippet: embedSnippet(saved.slug),
       },
       { status: 201 }
     );
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Gagal menyimpan link";
+    const message = err instanceof Error ? err.message : "Failed to save link";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -9,9 +9,15 @@ import {
   generateVoxelTree,
   generateVoxelFlower,
   generateVoxelBuilding,
+  generateVoxelHero,
   generateQrMatrix,
   generateParticles,
 } from "@/lib/voxel-tree-generator";
+import {
+  createHeroRig,
+  updateHeroRig,
+  type HeroRigState,
+} from "@/lib/voxel-three";
 import { ambientAudio } from "@/lib/ambient-audio";
 import {
   CameraPhoto,
@@ -124,6 +130,12 @@ const SEASON_VIEW_CONFIGS: Record<SeasonType, SeasonViewConfig> = {
     defaultScaleMobile: 0.42,
     defaultScaleDesktop: 0.48,
   },
+  hero: {
+    targetY: 3.5,
+    cameraPos: [0, 16.0, 30.0],
+    defaultScaleMobile: 0.38,
+    defaultScaleDesktop: 0.44,
+  },
 };
 
 export default function WebARModal({
@@ -142,6 +154,7 @@ export default function WebARModal({
   const isScan = mode === "scan";
 
   const [season, setSeason] = useState<SeasonType>(initialSeason);
+  const heroRigRef = useRef<HeroRigState | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraSettled, setCameraSettled] = useState(false); // izin dijawab / gagal / timeout
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -300,7 +313,7 @@ export default function WebARModal({
 
       if (!navigator.mediaDevices?.getUserMedia) {
         setCameraError(
-          "Browser ini tidak mengizinkan akses kamera. Coba buka di Chrome atau Safari. Menampilkan mode simulasi."
+          "Camera access is not supported on this browser. Try opening in Chrome or Safari. Showing simulated AR mode."
         );
         setCameraSettled(true);
         return;
@@ -329,7 +342,7 @@ export default function WebARModal({
             await video.play();
             logArAnalytics("camera_active");
           } catch {
-            /* autoplay muted biasanya tetap jalan; event "playing" di bawah yang menentukan */
+            /* autoplay muted usually works; "playing" event determines readiness */
           }
         }
       } catch (err: unknown) {
@@ -339,8 +352,8 @@ export default function WebARModal({
           logArAnalytics("camera_denied", { error: name });
           setCameraError(
             name === "NotAllowedError"
-              ? "Izin kamera ditolak. Menampilkan simulasi lingkungan AR."
-              : "Kamera tidak terdeteksi. Menampilkan simulasi ruangan AR."
+              ? "Camera permission denied. Showing simulated AR environment."
+              : "Camera not detected. Showing simulated AR environment."
           );
           setCameraActive(false);
         }
@@ -569,6 +582,10 @@ export default function WebARModal({
       }
       updateParticles(t, dt);
 
+      if (heroRigRef.current) {
+        updateHeroRig(heroRigRef.current, dt);
+      }
+
       // Lerp posisi pohon ke anchor QR fisik jika terdeteksi, atau kembali ke tengah
       if (treeGroupRef.current) {
         const tg = treeGroupRef.current;
@@ -614,6 +631,10 @@ export default function WebARModal({
       renderer.dispose();
       renderer.forceContextLoss(); // lepas WebGL context (batas context di mobile kecil)
       container.replaceChildren();
+      if (heroRigRef.current) {
+        heroRigRef.current.dispose();
+        heroRigRef.current = null;
+      }
       treeMeshRef.current?.customDepthMaterial?.dispose();
       treeGroupRef.current = null;
       treeMeshRef.current = null;
@@ -648,6 +669,10 @@ export default function WebARModal({
       (pm.material as THREE.Material).dispose();
       particlesRef.current = null;
     }
+    if (heroRigRef.current) {
+      heroRigRef.current.dispose();
+      heroRigRef.current = null;
+    }
 
     const { matrix, size } = generateQrMatrix(encodedText);
     const voxels =
@@ -655,18 +680,21 @@ export default function WebARModal({
         ? generateVoxelFlower(matrix, size, season, { scanSafeTop: true })
         : season === "building"
         ? generateVoxelBuilding(matrix, size, season, { scanSafeTop: true })
+        : season === "hero"
+        ? generateVoxelHero(matrix, size, season, { scanSafeTop: true })
         : generateVoxelTree(matrix, size, season, { scanSafeTop: true });
+    const baseVoxels = season === "hero" ? voxels.filter((v) => v.role !== "person") : voxels;
     const wind = windRef.current!;
 
     const geo = new THREE.BoxGeometry(1, 1, 1);
-    const { windData, flowerData } = buildWindAttributes(voxels);
+    const { windData, flowerData } = buildWindAttributes(baseVoxels);
     geo.setAttribute("aWindData", new THREE.InstancedBufferAttribute(windData, 4));
     geo.setAttribute("aFlowerData", new THREE.InstancedBufferAttribute(flowerData, 4));
 
     const mat = new THREE.MeshStandardMaterial({ roughness: 0.82, metalness: 0.05 });
     applyWind(mat, wind);
 
-    const mesh = new THREE.InstancedMesh(geo, mat, voxels.length);
+    const mesh = new THREE.InstancedMesh(geo, mat, baseVoxels.length);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.frustumCulled = false; // posisi bergeser di shader, bounding sphere CPU tidak tahu
@@ -690,8 +718,8 @@ export default function WebARModal({
 
     const dummy = new THREE.Object3D();
     const color = new THREE.Color();
-    for (let i = 0; i < voxels.length; i++) {
-      const v = voxels[i];
+    for (let i = 0; i < baseVoxels.length; i++) {
+      const v = baseVoxels[i];
       const s = v.size ?? 0.96;
       dummy.position.set(v.x, v.y + s / 2, v.z);
       dummy.scale.setScalar(s);
@@ -703,6 +731,13 @@ export default function WebARModal({
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
 
     group.add(mesh);
+
+    if (season === "hero") {
+      const heroRig = createHeroRig({ scale: 0.24, yBase: 0.35, shadows: true });
+      group.add(heroRig.rootGroup);
+      heroRigRef.current = heroRig;
+    }
+
     group.scale.setScalar(treeScale);
     treeMeshRef.current = mesh;
     setSceneReady(true);
@@ -834,7 +869,7 @@ export default function WebARModal({
         <div className="absolute inset-0 bg-gradient-to-b from-stone-900 via-stone-950 to-black flex items-center justify-center pointer-events-none">
           <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px] opacity-20" />
           <div className="absolute bottom-56 text-center px-4 max-w-sm">
-            <p className="text-xs text-stone-400">{cameraError || "Memuat kamera…"}</p>
+            <p className="text-xs text-stone-400">{cameraError || "Loading camera…"}</p>
           </div>
         </div>
       )}
@@ -853,22 +888,22 @@ export default function WebARModal({
             <h2 className="text-sm font-bold text-white tracking-wide flex items-center gap-1.5 flex-wrap">
               <span>WebAR Magic Tree</span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
-                {cameraActive ? "LIVE AR" : "SIMULASI"}
+                {cameraActive ? "LIVE AR" : "SIMULATION"}
               </span>
               {isQrLocked && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/30 text-sky-300 border border-sky-500/40 animate-pulse font-medium flex items-center gap-1">
-                  <span>🎯 QR Fisik Terkunci</span>
+                  <span>🎯 Physical QR Locked</span>
                 </span>
               )}
             </h2>
-            <p className="text-[11px] text-stone-300">Sentuh & putar untuk melihat pohon</p>
+            <p className="text-[11px] text-stone-300">Touch & drag to rotate 3D view</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={handleSoundToggle}
-            aria-label={isAudioPlaying ? "Matikan suara" : "Nyalakan suara alam"}
+            aria-label={isAudioPlaying ? "Mute audio" : "Play ambient sound"}
             className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 active:scale-95 text-white backdrop-blur-md border border-white/30 flex items-center justify-center transition shadow-md"
           >
             {isAudioPlaying ? (
@@ -880,7 +915,7 @@ export default function WebARModal({
 
           <button
             onClick={handleCaptureSnapshot}
-            aria-label="Ambil foto AR"
+            aria-label="Take AR photo"
             className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 active:scale-95 text-white backdrop-blur-md border border-white/30 flex items-center justify-center transition shadow-md"
           >
             <CameraPhoto className="w-4 h-4 text-white" />
@@ -888,7 +923,7 @@ export default function WebARModal({
 
           <button
             onClick={onClose}
-            aria-label="Keluar dari AR"
+            aria-label="Exit AR"
             className="w-9 h-9 rounded-full bg-stone-900/80 hover:bg-stone-800 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition shadow-md ml-1"
           >
             <Close className="w-5 h-5" />
@@ -899,7 +934,7 @@ export default function WebARModal({
       {capturedNotice && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-2xl bg-emerald-600/90 text-white text-xs font-semibold backdrop-blur-md shadow-xl border border-white/20 flex items-center gap-2">
           <Check className="w-4 h-4" />
-          Foto AR berhasil disimpan!
+          AR photo saved successfully!
         </div>
       )}
 
@@ -928,15 +963,15 @@ export default function WebARModal({
                 }}
                 className="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-white text-[11px] font-bold flex items-center gap-1 shadow-sm"
               >
-                <span>Buka</span>
+                <span>Open</span>
                 <ArrowUpRightFromSquare className="w-3 h-3" />
               </a>
               <button
                 type="button"
                 onClick={() => setIsCardCollapsed(false)}
                 className="p-1 rounded-lg text-stone-300 hover:text-white bg-white/10 active:scale-95 transition"
-                title="Buka panel lengkap"
-                aria-label="Buka panel"
+                title="Expand panel"
+                aria-label="Expand panel"
               >
                 <ChevronUp className="w-4 h-4" />
               </button>
@@ -949,12 +984,12 @@ export default function WebARModal({
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                 <span className="text-xs font-bold tracking-wide">
                   {!countingDown
-                    ? "Menyiapkan AR…"
+                    ? "Preparing AR…"
                     : isRedirected
                     ? isScan
-                      ? "Membuka link…"
-                      : "Selesai (mode pratinjau)"
-                    : "Magic Portal Terhubung"}
+                      ? "Redirecting…"
+                      : "Finished (preview mode)"
+                    : "Magic Portal Connected"}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-xs">
@@ -968,7 +1003,7 @@ export default function WebARModal({
                     ) : (
                       <Pause className="w-3 h-3 text-amber-300" />
                     )}
-                    {isPaused ? "Lanjutkan" : "Tahan"}
+                    {isPaused ? "Resume" : "Pause"}
                   </button>
                 )}
                 <span className="font-mono text-emerald-400 font-bold px-2 py-0.5 rounded-full bg-black/40" aria-live="polite">
@@ -978,8 +1013,8 @@ export default function WebARModal({
                   type="button"
                   onClick={() => setIsCardCollapsed(true)}
                   className="p-1 rounded-lg text-stone-300 hover:text-white bg-white/10 active:scale-95 transition ml-0.5"
-                  title="Kecilkan panel agar layar AR lega"
-                  aria-label="Kecilkan panel"
+                  title="Collapse panel"
+                  aria-label="Collapse panel"
                 >
                   <ChevronDown className="w-4 h-4" />
                 </button>
@@ -987,7 +1022,7 @@ export default function WebARModal({
             </div>
 
             <div className="text-[11px] text-stone-300 truncate">
-              Tujuan: <span className="text-white font-mono">{destinationHost}</span>
+              Destination: <span className="text-white font-mono">{destinationHost}</span>
             </div>
 
             <div className="w-full h-1.5 rounded-full bg-white/20 overflow-hidden">
@@ -1011,14 +1046,14 @@ export default function WebARModal({
               }}
               className="w-full py-2 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-95 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg transition"
             >
-              <span>Buka Link Sekarang</span>
+              <span>Open Link Now</span>
               <ArrowUpRightFromSquare className="w-3.5 h-3.5" />
             </a>
           </div>
         )}
 
         <div className="flex flex-wrap items-center justify-center gap-2">
-          {/* Pengunjung hasil scan melihat musim pilihan pemilik; ganti musim hanya di pratinjau */}
+          {/* Scan visitors view owner's chosen theme; switching themes is only in preview */}
           {!isScan && (
             <div className="flex items-center gap-1 bg-black/40 backdrop-blur-md p-1 rounded-2xl border border-white/20 shadow-md">
               {(
@@ -1027,7 +1062,8 @@ export default function WebARModal({
                   ["spring", "🌸 Sakura"],
                   ["autumn", "🍂 Autumn"],
                   ["flower", "🌺 Patrakomala"],
-                  ["building", "🏛️ Gedung Voxel"],
+                  ["building", "🏛️ Heritage"],
+                  ["hero", "🛡️ Hero"],
                 ] as [SeasonType, string][]
               ).map(([s, label]) => (
                 <button
@@ -1044,7 +1080,7 @@ export default function WebARModal({
           )}
 
           <label className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-white/20 text-white text-xs shadow-md">
-            <span className="text-[10px] text-stone-300 font-medium">Ukuran:</span>
+            <span className="text-[10px] text-stone-300 font-medium">Scale:</span>
             <input
               type="range"
               min="0.18"
