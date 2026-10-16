@@ -110,7 +110,6 @@ export default function TreeViewer({
   const showQrRef = useRef(true);
 
   const [showQr, setShowQr] = useState(true);
-  const [qrOverlay, setQrOverlay] = useState(true);
   const [ready, setReady] = useState(false);
   const [copied, setCopied] = useState(false);
   const [countdown, setCountdown] = useState(10);
@@ -231,7 +230,6 @@ export default function TreeViewer({
       controls.enabled = false;
       controls.autoRotate = false;
       windTarget = toQr ? 0 : windOn; // angin berhenti agar grid QR lurus
-      if (!toQr) setQrOverlay(false);
     };
 
     // Jangan render saat tidak terlihat (hemat baterai, penting untuk embed)
@@ -263,9 +261,7 @@ export default function TreeViewer({
         if (flight.t >= 1) {
           const toQr = flight.toQr;
           flight = null;
-          if (toQr) {
-            setQrOverlay(true);
-          } else {
+          if (!toQr) {
             controls.enabled = allowOrbit;
             controls.autoRotate = !reduceMotion;
           }
@@ -290,7 +286,6 @@ export default function TreeViewer({
       flyToRef.current = () => {};
       showQrRef.current = true;
       setShowQr(true);
-      setQrOverlay(true);
     };
   }, [matrix, size, season, isEmbed]);
 
@@ -455,9 +450,14 @@ export default function TreeViewer({
       )}
 
       <div
-        className={`relative aspect-square w-full ${
+        className={`relative aspect-square w-full rounded-3xl overflow-hidden border border-stone-200/80 shadow-2xl flex items-center justify-center select-none ${
           isEmbed ? "max-w-[480px]" : "max-w-[720px]"
         }`}
+        style={{
+          background: transparent
+            ? "transparent"
+            : `radial-gradient(circle at 50% 40%, ${theme.paperColor} 0%, ${theme.bgColor} 100%)`,
+        }}
       >
         <div
           ref={stageRef}
@@ -481,34 +481,50 @@ export default function TreeViewer({
         />
 
         {!ready && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="h-10 w-10 animate-spin rounded-full border-2 border-stone-300 border-t-transparent" />
           </div>
         )}
 
-        {/* QR 2D tajam — muncul setelah kamera tiba di posisi atas */}
-        <button
-          type="button"
+        {/* QR 2D Vector Overlay - Penuh, Rapi, Sempurna & Terpusat */}
+        <div
           onClick={toggleQr}
-          aria-label="Kembali ke tampilan pohon"
-          className={`absolute inset-[13%] rounded-2xl p-3 shadow-xl transition duration-500 relative flex items-center justify-center ${
-            qrOverlay ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0"
+          className={`absolute inset-0 z-20 flex items-center justify-center p-6 sm:p-9 transition-all duration-300 cursor-pointer ${
+            showQr
+              ? "opacity-100 scale-100 pointer-events-auto"
+              : "opacity-0 scale-95 pointer-events-none"
           }`}
-          style={{ background: theme.paperColor }}
+          style={{ backgroundColor: theme.paperColor }}
+          title="Klik untuk melihat animasi 3D"
         >
-          <QrSvg matrix={matrix} size={size} dark={theme.qrDark[0]} light={theme.paperColor} />
-          {brand?.logoUrl && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="p-1.5 sm:p-2 bg-white rounded-full shadow-md border border-stone-200/80 flex items-center justify-center w-[22%] h-[22%]">
-                <img
-                  src={brand.logoUrl}
-                  alt={brand.name || "Brand Logo"}
-                  className="w-full h-full object-contain pointer-events-none select-none rounded-full"
-                />
+          <div className="relative w-full h-full flex items-center justify-center">
+            <QrSvg matrix={matrix} size={size} dark={theme.qrDark[0]} light={theme.paperColor} />
+            {brand?.logoUrl && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div
+                  className="bg-white p-1.5 sm:p-2 shadow-xl border border-stone-200/90 flex items-center justify-center aspect-square shrink-0 rounded-full"
+                  style={{
+                    width: "20%",
+                    height: "20%",
+                    aspectRatio: "1 / 1",
+                  }}
+                >
+                  <img
+                    src={brand.logoUrl}
+                    alt={brand.name || "Brand Logo"}
+                    className="w-full h-full object-contain pointer-events-none select-none rounded-full"
+                  />
+                </div>
               </div>
-            </div>
-          )}
-        </button>
+            )}
+          </div>
+
+          {/* Hint kembali ke 3D */}
+          <div className="absolute bottom-3 right-3 pointer-events-none flex items-center gap-1.5 text-[10px] sm:text-xs font-mono text-stone-500 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full shadow-sm border border-stone-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Ketuk untuk melihat 3D
+          </div>
+        </div>
       </div>
 
       {/* Tombol Switch Mode: QR Code dan Animate Tree */}
