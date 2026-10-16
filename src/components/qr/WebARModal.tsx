@@ -22,7 +22,14 @@ import {
   Check,
   Pause,
   Play,
+  ChevronDown,
+  ChevronUp,
 } from "flowbite-react-icons/outline";
+import {
+  WindUniforms,
+  applyWind,
+  buildWindAttributes,
+} from "@/lib/voxel-three";
 
 type RedirectReason = "auto" | "click";
 
@@ -75,127 +82,8 @@ function drawVideoCover(ctx: CanvasRenderingContext2D, video: HTMLVideoElement, 
 }
 
 // -----------------------------------------------------------------------------
-// ANGIN: gerakan per-voxel di vertex shader (GPU), ringan untuk ribuan instance
+// Wind & living shader functions imported from @/lib/voxel-three
 // -----------------------------------------------------------------------------
-
-type WindUniforms = {
-  uTime: { value: number };
-  uWindDir: { value: THREE.Vector3 };
-  uStrength: { value: number };
-  uFlutter: { value: number };
-  uGrowth: { value: number };
-};
-
-const WIND_DECLARATIONS = /* glsl */ `
-attribute float aSway;      // 0 = diam (tanah, finder, orang), 1 = pucuk pohon
-attribute float aLeaf;      // intensitas getaran daun kecil
-attribute float aPhase;     // fase acak per voxel
-attribute float aGrowDelay; // 0.0 - 0.75: kapan voxel ini mulai tumbuh
-uniform float uTime;
-uniform vec3 uWindDir;
-uniform float uStrength;
-uniform float uFlutter;
-uniform float uGrowth;
-`;
-
-const WIND_PROJECT_VERTEX = /* glsl */ `
-// Animasi tumbuh per-voxel: lantai QR langsung terlihat, batang & daun bermekaran
-float g = (aGrowDelay <= 0.0) ? 1.0 : clamp((uGrowth - aGrowDelay) / 0.20, 0.0, 1.0);
-float popScale = sin(g * 1.5707963);
-transformed = position * popScale;
-
-vec4 mvPosition = vec4( transformed, 1.0 );
-#ifdef USE_BATCHING
-  mvPosition = batchingMatrix * mvPosition;
-#endif
-#ifdef USE_INSTANCING
-  mvPosition = instanceMatrix * mvPosition;
-#endif
-{
-  vec3 dir = normalize(uWindDir);
-  float bend = aSway * aSway; // makin tinggi makin melentur
-
-  // Hembusan: gabungan gelombang alami
-  float gust = 0.55 + 0.35 * sin(uTime * 0.8) + 0.2 * sin(uTime * 2.3 + 1.7);
-
-  // Gelombang merambat melintasi canopy searah angin
-  float wave = sin(uTime * 1.6 - dot(mvPosition.xz, dir.xz) * 0.35);
-
-  vec3 sway = dir * (gust + 0.35 * wave) * uStrength * bend;
-  sway.y -= length(sway.xz) * 0.25;
-
-  // Getaran daun individual
-  vec3 flutter = vec3(
-    sin(uTime * 6.3 + aPhase),
-    0.6 * sin(uTime * 7.7 + aPhase * 1.9),
-    cos(uTime * 5.9 + aPhase * 1.3)
-  ) * uFlutter * aLeaf * (0.4 + 0.6 * aSway);
-
-  mvPosition.xyz += (sway + flutter) * popScale;
-}
-mvPosition = modelViewMatrix * mvPosition;
-gl_Position = projectionMatrix * mvPosition;
-`;
-
-function applyWind(material: THREE.Material, uniforms: WindUniforms) {
-  material.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms); // referensi objek yang sama → update value langsung terbaca
-    shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", `#include <common>\n${WIND_DECLARATIONS}`)
-      .replace("#include <project_vertex>", WIND_PROJECT_VERTEX);
-  };
-  material.customProgramCacheKey = () => "voxel-wind-growth-v2";
-}
-
-function buildWindAttributes(voxels: VoxelItem[]) {
-  const n = voxels.length;
-  const sway = new Float32Array(n);
-  const leaf = new Float32Array(n);
-  const phase = new Float32Array(n);
-  const growDelay = new Float32Array(n);
-
-  let maxY = 3;
-  for (const v of voxels) if (v.role === "leaf" && v.y > maxY) maxY = v.y;
-  const rootY = 2; // akar & pangkal batang tetap diam
-
-  let maxDistXZ = 1;
-  for (const v of voxels) {
-    const d = Math.hypot(v.x, v.z);
-    if (d > maxDistXZ) maxDistXZ = d;
-  }
-
-  for (let i = 0; i < n; i++) {
-    const v = voxels[i];
-    const distXZ = Math.hypot(v.x, v.z) / maxDistXZ;
-
-    // Timeline tumbuh: Dasar/QR (segera aktif 0.0) -> Batang & Dahan -> Kanopi Daun -> Orang
-    if (v.role === "stone" || v.role === "border" || v.y < 1) {
-      growDelay[i] = 0.0;
-    } else if (v.role === "flower") {
-      growDelay[i] = 0.08;
-    } else if (v.role === "trunk" || v.role === "branch") {
-      const normY = Math.min(1, Math.max(0, (v.y - 1) / (maxY - 1)));
-      growDelay[i] = 0.05 + normY * 0.20;
-    } else if (v.role === "leaf" || v.role === "hedge") {
-      const normY = Math.min(1, Math.max(0, (v.y - rootY) / (maxY - rootY)));
-      growDelay[i] = 0.18 + normY * 0.22 + distXZ * 0.06;
-    } else if (v.role === "person") {
-      growDelay[i] = 0.40;
-    } else {
-      growDelay[i] = 0.10;
-    }
-
-    // Tile gelap di lantai juga ber-role "leaf" tapi y < 1 → harus diam
-    const movable = v.y >= 1 && (v.role === "leaf" || v.role === "trunk" || v.role === "branch");
-    if (!movable) continue;
-
-    sway[i] = Math.min(1, Math.max(0, (v.y - rootY) / (maxY - rootY)));
-    // Kotak kecil bergetar lebih banyak, kotak besar 2x2x2 lebih kalem
-    leaf[i] = v.role === "leaf" ? Math.min(1.6, 0.9 / (v.size ?? 0.96)) : 0;
-    phase[i] = (v.x * 12.9898 + v.y * 78.233 + v.z * 37.719) % (Math.PI * 2);
-  }
-  return { sway, leaf, phase, growDelay };
-}
 
 export default function WebARModal({
   url,
@@ -218,7 +106,8 @@ export default function WebARModal({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [sceneReady, setSceneReady] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const [treeScale, setTreeScale] = useState(0.38);
+  const [treeScale, setTreeScale] = useState(isMobileUA() ? 0.31 : 0.36);
+  const [isCardCollapsed, setIsCardCollapsed] = useState(false);
   const [isQrLocked, setIsQrLocked] = useState(false);
 
   const [remainingMs, setRemainingMs] = useState(REDIRECT_MS);
@@ -503,9 +392,18 @@ export default function WebARModal({
 
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.set(0, 16, 28);
-    camera.lookAt(0, 5, 0);
+    const aspect = width / height;
+
+    const camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+    if (aspect < 1) {
+      // Dynamic vertical FOV for portrait screens so the 3D model is never cropped horizontally
+      const vFovRad = 2 * Math.atan(Math.tan((44 * Math.PI) / 360) / aspect);
+      camera.fov = THREE.MathUtils.clamp((vFovRad * 180) / Math.PI, 45, 68);
+    } else {
+      camera.fov = 45;
+    }
+    camera.position.set(0, 18, 33);
+    camera.lookAt(0, 6.0, 0);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
@@ -527,9 +425,9 @@ export default function WebARModal({
     controls.maxPolarAngle = Math.PI / 2 + 0.05;
     controls.minDistance = 6;
     controls.maxDistance = 75;
-    controls.target.set(0, 4, 0);
+    controls.target.set(0, 6.0, 0);
     controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.6;
+    controls.autoRotateSpeed = 0.5;
     const stopAutoRotate = () => (controls.autoRotate = false);
     controls.addEventListener("start", stopAutoRotate);
 
@@ -645,7 +543,14 @@ export default function WebARModal({
     const ro = new ResizeObserver(() => {
       const w = container.clientWidth || window.innerWidth;
       const h = container.clientHeight || window.innerHeight;
-      camera.aspect = w / h;
+      const asp = w / h;
+      camera.aspect = asp;
+      if (asp < 1) {
+        const vFovRad = 2 * Math.atan(Math.tan((44 * Math.PI) / 360) / asp);
+        camera.fov = THREE.MathUtils.clamp((vFovRad * 180) / Math.PI, 45, 68);
+      } else {
+        camera.fov = 45;
+      }
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     });
@@ -703,11 +608,13 @@ export default function WebARModal({
     const wind = windRef.current!;
 
     const geo = new THREE.BoxGeometry(1, 1, 1);
-    const { sway, leaf, phase, growDelay } = buildWindAttributes(voxels);
+    const { sway, leaf, phase, growDelay, petal, stamen } = buildWindAttributes(voxels);
     geo.setAttribute("aSway", new THREE.InstancedBufferAttribute(sway, 1));
     geo.setAttribute("aLeaf", new THREE.InstancedBufferAttribute(leaf, 1));
     geo.setAttribute("aPhase", new THREE.InstancedBufferAttribute(phase, 1));
     geo.setAttribute("aGrowDelay", new THREE.InstancedBufferAttribute(growDelay, 1));
+    geo.setAttribute("aPetal", new THREE.InstancedBufferAttribute(petal, 1));
+    geo.setAttribute("aStamen", new THREE.InstancedBufferAttribute(stamen, 1));
 
     const mat = new THREE.MeshStandardMaterial({ roughness: 0.82, metalness: 0.05 });
     applyWind(mat, wind);
@@ -849,7 +756,7 @@ export default function WebARModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-stone-950 select-none overflow-hidden animate-in fade-in duration-300">
+    <div className="fixed inset-0 w-full w-screen h-full h-dvh min-h-dvh z-50 flex flex-col bg-stone-950 select-none overflow-hidden animate-in fade-in duration-300">
       <video
         ref={videoRef}
         autoPlay
@@ -934,70 +841,119 @@ export default function WebARModal({
         </div>
       )}
 
-      <footer className="relative mt-auto z-20 p-4 sm:p-6 flex flex-col items-center gap-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-        <div className="w-full max-w-md rounded-2xl bg-white/15 backdrop-blur-xl border border-white/25 p-3.5 text-white shadow-2xl space-y-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span className="text-xs font-bold tracking-wide">
-                {!countingDown
-                  ? "Menyiapkan AR…"
-                  : isRedirected
-                  ? isScan
-                    ? "Membuka link…"
-                    : "Selesai (mode pratinjau)"
-                  : "Magic Portal Terhubung"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              {countingDown && !isRedirected && (
-                <button
-                  onClick={() => setIsPaused((p) => !p)}
-                  className="flex items-center gap-1 text-[11px] text-stone-300 hover:text-white px-2 py-0.5 rounded-lg bg-white/10"
-                >
-                  {isPaused ? (
-                    <Play className="w-3 h-3 text-emerald-400" />
-                  ) : (
-                    <Pause className="w-3 h-3 text-amber-300" />
-                  )}
-                  {isPaused ? "Lanjutkan" : "Tahan"}
-                </button>
-              )}
-              <span className="font-mono text-emerald-400 font-bold px-2 py-0.5 rounded-full bg-black/40" aria-live="polite">
+      <footer className="relative mt-auto z-20 p-3 sm:p-5 flex flex-col items-center gap-2 bg-gradient-to-t from-black/85 via-black/40 to-transparent">
+        {isCardCollapsed ? (
+          <div className="w-full max-w-md rounded-2xl bg-black/70 backdrop-blur-xl border border-white/20 px-3.5 py-2 text-white shadow-2xl flex items-center justify-between gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
+              <span className="text-xs font-bold truncate">Magic Portal</span>
+              <span className="font-mono text-emerald-400 text-xs font-bold px-1.5 py-0.5 rounded bg-black/50">
                 {secondsLeft}s
               </span>
             </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <a
+                href={url}
+                target={isScan ? "_self" : "_blank"}
+                rel="noopener noreferrer"
+                onClick={(e) => {
+                  if (isScan) {
+                    e.preventDefault();
+                    doRedirect("click");
+                  } else {
+                    onRedirect?.("click");
+                  }
+                }}
+                className="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-white text-[11px] font-bold flex items-center gap-1 shadow-sm"
+              >
+                <span>Buka</span>
+                <ArrowUpRightFromSquare className="w-3 h-3" />
+              </a>
+              <button
+                type="button"
+                onClick={() => setIsCardCollapsed(false)}
+                className="p-1 rounded-lg text-stone-300 hover:text-white bg-white/10 active:scale-95 transition"
+                title="Buka panel lengkap"
+                aria-label="Buka panel"
+              >
+                <ChevronUp className="w-4 h-4" />
+              </button>
+            </div>
           </div>
+        ) : (
+          <div className="w-full max-w-md rounded-2xl bg-white/15 backdrop-blur-xl border border-white/25 p-3.5 text-white shadow-2xl space-y-2 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className="text-xs font-bold tracking-wide">
+                  {!countingDown
+                    ? "Menyiapkan AR…"
+                    : isRedirected
+                    ? isScan
+                      ? "Membuka link…"
+                      : "Selesai (mode pratinjau)"
+                    : "Magic Portal Terhubung"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                {countingDown && !isRedirected && (
+                  <button
+                    onClick={() => setIsPaused((p) => !p)}
+                    className="flex items-center gap-1 text-[11px] text-stone-300 hover:text-white px-2 py-0.5 rounded-lg bg-white/10"
+                  >
+                    {isPaused ? (
+                      <Play className="w-3 h-3 text-emerald-400" />
+                    ) : (
+                      <Pause className="w-3 h-3 text-amber-300" />
+                    )}
+                    {isPaused ? "Lanjutkan" : "Tahan"}
+                  </button>
+                )}
+                <span className="font-mono text-emerald-400 font-bold px-2 py-0.5 rounded-full bg-black/40" aria-live="polite">
+                  {secondsLeft}s
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsCardCollapsed(true)}
+                  className="p-1 rounded-lg text-stone-300 hover:text-white bg-white/10 active:scale-95 transition ml-0.5"
+                  title="Kecilkan panel agar layar AR lega"
+                  aria-label="Kecilkan panel"
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
 
-          <div className="text-[11px] text-stone-300 truncate">
-            Tujuan: <span className="text-white font-mono">{destinationHost}</span>
+            <div className="text-[11px] text-stone-300 truncate">
+              Tujuan: <span className="text-white font-mono">{destinationHost}</span>
+            </div>
+
+            <div className="w-full h-1.5 rounded-full bg-white/20 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-400 to-teal-300 rounded-full transition-[width] duration-200 ease-linear"
+                style={{ width: `${progress * 100}%` }}
+              />
+            </div>
+
+            <a
+              href={url}
+              target={isScan ? "_self" : "_blank"}
+              rel="noopener noreferrer"
+              onClick={(e) => {
+                if (isScan) {
+                  e.preventDefault();
+                  doRedirect("click");
+                } else {
+                  onRedirect?.("click");
+                }
+              }}
+              className="w-full py-2 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-95 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg transition"
+            >
+              <span>Buka Link Sekarang</span>
+              <ArrowUpRightFromSquare className="w-3.5 h-3.5" />
+            </a>
           </div>
-
-          <div className="w-full h-1.5 rounded-full bg-white/20 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-emerald-400 to-teal-300 rounded-full transition-[width] duration-200 ease-linear"
-              style={{ width: `${progress * 100}%` }}
-            />
-          </div>
-
-          <a
-            href={url}
-            target={isScan ? "_self" : "_blank"}
-            rel="noopener noreferrer"
-            onClick={(e) => {
-              if (isScan) {
-                e.preventDefault();
-                doRedirect("click");
-              } else {
-                onRedirect?.("click");
-              }
-            }}
-            className="w-full py-2 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-95 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg transition"
-          >
-            <span>Buka Link Sekarang</span>
-            <ArrowUpRightFromSquare className="w-3.5 h-3.5" />
-          </a>
-        </div>
+        )}
 
         <div className="flex flex-wrap items-center justify-center gap-2">
           {/* Pengunjung hasil scan melihat musim pilihan pemilik; ganti musim hanya di pratinjau */}
