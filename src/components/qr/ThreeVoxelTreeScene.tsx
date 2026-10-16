@@ -9,6 +9,7 @@ import {
   SEASONS,
   generateVoxelTree,
   generateVoxelFlower,
+  generateVoxelBuilding,
   generateQrMatrix,
 } from "@/lib/voxel-tree-generator";
 
@@ -499,10 +500,13 @@ export default function ThreeVoxelTreeScene({
     const textToEncode = qrText || url;
     const { matrix, size } = generateQrMatrix(textToEncode);
 
-    // 2. Generate 3D Voxel Array – flower mode uses flower generator, others use tree generator
-    const voxels: VoxelItem[] = season === "flower"
-      ? generateVoxelFlower(matrix, size, season, { scanSafeTop: true })
-      : generateVoxelTree(matrix, size, season, { scanSafeTop: true });
+    // 2. Generate 3D Voxel Array – flower mode uses flower generator, building uses building generator, others use tree generator
+    const voxels: VoxelItem[] =
+      season === "flower"
+        ? generateVoxelFlower(matrix, size, season, { scanSafeTop: true })
+        : season === "building"
+        ? generateVoxelBuilding(matrix, size, season, { scanSafeTop: true })
+        : generateVoxelTree(matrix, size, season, { scanSafeTop: true });
     setVoxelCount(voxels.length);
 
     // Separate tree/ground voxels and character voxels
@@ -512,52 +516,51 @@ export default function ThreeVoxelTreeScene({
     // 3. Create InstancedMesh with Wind Sway & QR Mode Flattening Shader
     const voxelGeo = new THREE.BoxGeometry(1.0, 1.0, 1.0);
 
-    // Pass per-instance wind weight attribute, isQrDark attribute, and isDecorative attribute
-    const windWeights = new Float32Array(treeVoxels.length);
-    const isQrDarks = new Float32Array(treeVoxels.length);
-    const isDecoratives = new Float32Array(treeVoxels.length);
-    const parts = new Float32Array(treeVoxels.length);
-    const uParams = new Float32Array(treeVoxels.length);
-    const angs = new Float32Array(treeVoxels.length);
-    const phases = new Float32Array(treeVoxels.length);
+    // Pack per-instance attributes into two vec4s to respect WebGL max attribute limits (<= 16)
+    const qrAnimData = new Float32Array(treeVoxels.length * 4); // x: windWeight, y: isQrDark, z: isDecorative, w: phase
+    const flowerData = new Float32Array(treeVoxels.length * 4); // x: part, y: u, z: ang, w: extra
 
     for (let i = 0; i < treeVoxels.length; i++) {
       const v = treeVoxels[i];
-      parts[i] = v.part !== undefined ? v.part : -99.0;
-      uParams[i] = v.u !== undefined ? v.u : 0.0;
-      angs[i] = v.ang !== undefined ? v.ang : 0.0;
-      phases[i] = v.phase !== undefined ? v.phase : ((v.x * 12.9898 + v.y * 78.233 + v.z * 37.719) % (Math.PI * 2));
+      const part = v.part !== undefined ? v.part : -99.0;
+      const uParam = v.u !== undefined ? v.u : 0.0;
+      const ang = v.ang !== undefined ? v.ang : 0.0;
+      const phase = v.phase !== undefined ? v.phase : ((v.x * 12.9898 + v.y * 78.233 + v.z * 37.719) % (Math.PI * 2));
 
       const r = v.role;
+      let windWeight = 0.0;
       if (r === "leaf") {
-        windWeights[i] = 1.0;
+        windWeight = 1.0;
       } else if (r === "petal") {
-        windWeights[i] = 1.35;
+        windWeight = 1.35;
       } else if (r === "stamen") {
-        windWeights[i] = 1.85;
+        windWeight = 1.85;
       } else if (r === "hedge") {
-        windWeights[i] = 0.20;
+        windWeight = 0.20;
       } else if (r === "branch") {
-        windWeights[i] = 0.35;
+        windWeight = 0.35;
       } else if (r === "trunk") {
-        windWeights[i] = 0.15;
+        windWeight = 0.15;
       } else {
-        windWeights[i] = 0.0;
+        windWeight = 0.0;
       }
-      isQrDarks[i] = v.isQrDark ? 1.0 : 0.0;
-      // Pure floor background (stone / border) is non-decorative.
-      // QR dark modules are non-decorative (they form the QR code).
-      // Any elevated decorative element (petals, stamens, leaves, trunk, branch) is decorative and MUST be removed in QR mode.
+      const isQrDark = v.isQrDark ? 1.0 : 0.0;
       const isFloor = r === "stone" || r === "border";
-      isDecoratives[i] = (!isFloor && !v.isQrDark) ? 1.0 : 0.0;
+      const isDecorative = (!isFloor && !v.isQrDark) ? 1.0 : 0.0;
+
+      const idx = i * 4;
+      qrAnimData[idx] = windWeight;
+      qrAnimData[idx + 1] = isQrDark;
+      qrAnimData[idx + 2] = isDecorative;
+      qrAnimData[idx + 3] = phase;
+
+      flowerData[idx] = part;
+      flowerData[idx + 1] = uParam;
+      flowerData[idx + 2] = ang;
+      flowerData[idx + 3] = 0.0;
     }
-    voxelGeo.setAttribute("aWindWeight", new THREE.InstancedBufferAttribute(windWeights, 1));
-    voxelGeo.setAttribute("aIsQrDark", new THREE.InstancedBufferAttribute(isQrDarks, 1));
-    voxelGeo.setAttribute("aIsDecorative", new THREE.InstancedBufferAttribute(isDecoratives, 1));
-    voxelGeo.setAttribute("aPart", new THREE.InstancedBufferAttribute(parts, 1));
-    voxelGeo.setAttribute("aU", new THREE.InstancedBufferAttribute(uParams, 1));
-    voxelGeo.setAttribute("aAng", new THREE.InstancedBufferAttribute(angs, 1));
-    voxelGeo.setAttribute("aPhase", new THREE.InstancedBufferAttribute(phases, 1));
+    voxelGeo.setAttribute("aQrAnimData", new THREE.InstancedBufferAttribute(qrAnimData, 4));
+    voxelGeo.setAttribute("aFlowerData", new THREE.InstancedBufferAttribute(flowerData, 4));
 
     const voxelMat = new THREE.MeshStandardMaterial({
       roughness: 0.82,
@@ -572,13 +575,8 @@ export default function ThreeVoxelTreeScene({
       shader.uniforms.uQrDarkColor = windUniformsRef.current.uQrDarkColor;
 
       shader.vertexShader = `
-        attribute float aWindWeight;
-        attribute float aIsQrDark;
-        attribute float aIsDecorative;
-        attribute float aPart;
-        attribute float aU;
-        attribute float aAng;
-        attribute float aPhase;
+        attribute vec4 aQrAnimData;
+        attribute vec4 aFlowerData;
         uniform float uTime;
         uniform float uWind;
         uniform float uQrMode;
@@ -593,6 +591,16 @@ export default function ThreeVoxelTreeScene({
       shader.vertexShader = shader.vertexShader.replace(
         "#include <project_vertex>",
         `
+        float aWindWeight = aQrAnimData.x;
+        float aIsQrDark = aQrAnimData.y;
+        float aIsDecorative = aQrAnimData.z;
+        float aPhase = aQrAnimData.w;
+
+        float aPart = aFlowerData.x;
+        float aU = aFlowerData.y;
+        float aAng = aFlowerData.z;
+        float aExtra = aFlowerData.w;
+
         vec4 mvPosition = vec4( transformed, 1.0 );
         #ifdef USE_BATCHING
           mvPosition = batchingMatrix * mvPosition;
@@ -600,11 +608,21 @@ export default function ThreeVoxelTreeScene({
         #ifdef USE_INSTANCING
           mvPosition = instanceMatrix * mvPosition;
 
-          // 1. In 3D: Natural wind sway & Patrakomala Organic Motion
+          // 1. In 3D: Natural wind sway & Patrakomala / Flag Organic Motion
           if (uWind > 0.001 && uQrMode < 0.15) {
             float effectiveWind = uWind * (1.0 - uQrMode);
 
-            if (aPart > -5.0) {
+            if (aPart > 19.5 && aPart < 20.5) {
+              // Bendera Gedung Voxel berkibar
+              float gust = 0.65 + 0.35 * sin(uTime * 0.7) * sin(uTime * 0.31 + 1.3) + 0.3 * max(0.0, sin(uTime * 0.45 - 0.6));
+              float W = effectiveWind * gust;
+              float u = aU;
+              float ph = uTime * (3.0 + 2.2 * W) - u * 7.0 + aPhase;
+              float amp = (0.20 + 0.50 * W) * u;
+              mvPosition.z += (sin(ph) + 0.35 * sin(ph * 2.3 + 1.0)) * amp;
+              mvPosition.y += -u * u * (0.5 - W * 0.25) + 0.10 * sin(ph * 1.4) * u;
+              mvPosition.x -= abs(sin(ph)) * 0.15 * u * W;
+            } else if (aPart > -5.0 && aPart < 15.0) {
               vec3 fU = vec3(0.7071068, 0.0, -0.7071068);
               vec3 fN = vec3(0.4472136, 0.7745967, 0.4472136);
               vec3 fV = vec3(-0.5477226, 0.6324555, -0.5477226);

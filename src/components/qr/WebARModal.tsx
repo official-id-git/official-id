@@ -8,6 +8,7 @@ import {
   VoxelItem,
   generateVoxelTree,
   generateVoxelFlower,
+  generateVoxelBuilding,
   generateQrMatrix,
   generateParticles,
 } from "@/lib/voxel-tree-generator";
@@ -604,20 +605,15 @@ export default function WebARModal({
     const voxels =
       season === "flower"
         ? generateVoxelFlower(matrix, size, season, { scanSafeTop: true })
+        : season === "building"
+        ? generateVoxelBuilding(matrix, size, season, { scanSafeTop: true })
         : generateVoxelTree(matrix, size, season, { scanSafeTop: true });
     const wind = windRef.current!;
 
     const geo = new THREE.BoxGeometry(1, 1, 1);
-    const { sway, leaf, phase, growDelay, petal, stamen, part, uParam, ang } = buildWindAttributes(voxels);
-    geo.setAttribute("aSway", new THREE.InstancedBufferAttribute(sway, 1));
-    geo.setAttribute("aLeaf", new THREE.InstancedBufferAttribute(leaf, 1));
-    geo.setAttribute("aPhase", new THREE.InstancedBufferAttribute(phase, 1));
-    geo.setAttribute("aGrowDelay", new THREE.InstancedBufferAttribute(growDelay, 1));
-    geo.setAttribute("aPetal", new THREE.InstancedBufferAttribute(petal, 1));
-    geo.setAttribute("aStamen", new THREE.InstancedBufferAttribute(stamen, 1));
-    geo.setAttribute("aPart", new THREE.InstancedBufferAttribute(part, 1));
-    geo.setAttribute("aU", new THREE.InstancedBufferAttribute(uParam, 1));
-    geo.setAttribute("aAng", new THREE.InstancedBufferAttribute(ang, 1));
+    const { windData, flowerData } = buildWindAttributes(voxels);
+    geo.setAttribute("aWindData", new THREE.InstancedBufferAttribute(windData, 4));
+    geo.setAttribute("aFlowerData", new THREE.InstancedBufferAttribute(flowerData, 4));
 
     const mat = new THREE.MeshStandardMaterial({ roughness: 0.82, metalness: 0.05 });
     applyWind(mat, wind);
@@ -649,9 +645,7 @@ export default function WebARModal({
     for (let i = 0; i < voxels.length; i++) {
       const v = voxels[i];
       const s = v.size ?? 0.96;
-      // y dari generator = titik tengah kotak. Offset konstan +0.5 hanya mengangkat
-      // seluruh diorama agar lantai berada di atas y=0 — sama untuk semua ukuran.
-      dummy.position.set(v.x, v.y + 0.5, v.z);
+      dummy.position.set(v.x, v.y + s / 2, v.z);
       dummy.scale.setScalar(s);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
@@ -967,7 +961,8 @@ export default function WebARModal({
                   ["summer", "🌳 Summer"],
                   ["spring", "🌸 Sakura"],
                   ["autumn", "🍂 Autumn"],
-                  ["flower", "🌺 Hibiscus Bloom"],
+                  ["flower", "🌺 Patrakomala"],
+                  ["building", "🏛️ Gedung Voxel"],
                 ] as [SeasonType, string][]
               ).map(([s, label]) => (
                 <button

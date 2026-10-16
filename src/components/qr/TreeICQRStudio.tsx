@@ -8,6 +8,7 @@ import {
   SEASONS,
   generateVoxelTree,
   generateVoxelFlower,
+  generateVoxelBuilding,
   generateQrMatrix,
   exportVoxelsToJson,
   exportVoxelsToCsv,
@@ -554,6 +555,8 @@ export default function TreeICQRStudio() {
     const { matrix, size } = generateQrMatrix(qrText);
     const voxels = season === "flower"
       ? generateVoxelFlower(matrix, size, season)
+      : season === "building"
+      ? generateVoxelBuilding(matrix, size, season)
       : generateVoxelTree(matrix, size, season);
 
     const json = exportVoxelsToJson(voxels, {
@@ -569,6 +572,8 @@ export default function TreeICQRStudio() {
     const { matrix, size } = generateQrMatrix(qrText);
     const voxels = season === "flower"
       ? generateVoxelFlower(matrix, size, season)
+      : season === "building"
+      ? generateVoxelBuilding(matrix, size, season)
       : generateVoxelTree(matrix, size, season);
 
     const csv = exportVoxelsToCsv(voxels);
@@ -768,8 +773,8 @@ export default function TreeICQRStudio() {
               )}
             </div>
 
-            {/* Grid 4 Tombol Pilihan Variasi Tema */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 w-full text-xs font-medium">
+            {/* Grid 5 Tombol Pilihan Variasi Tema */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 w-full text-xs font-medium">
               <button
                 type="button"
                 disabled={isSeasonLocked}
@@ -841,9 +846,28 @@ export default function TreeICQRStudio() {
                     ? "opacity-35 cursor-not-allowed bg-stone-50 text-stone-400 border-stone-200 pointer-events-none"
                     : "text-stone-600 hover:text-stone-900 hover:bg-stone-50 border-stone-200/80 active:scale-[0.98]"
                 }`}
-                title={isSeasonLocked ? "Tema terkunci untuk link yang telah tersimpan" : "Pilih tema Hibiscus Bloom"}
+                title={isSeasonLocked ? "Tema terkunci untuk link yang telah tersimpan" : "Pilih tema Bunga Patrakomala"}
               >
-                <span>🌺 Hibiscus Bloom</span>
+                <span>🌺 Patrakomala</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isSeasonLocked}
+                onClick={() => {
+                  if (isSeasonLocked) return;
+                  setSeason("building");
+                }}
+                className={`flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl transition border text-center ${
+                  season === "building"
+                    ? "bg-slate-100 text-slate-950 border-slate-400 font-bold shadow-sm ring-2 ring-red-500/40"
+                    : isSeasonLocked
+                    ? "opacity-35 cursor-not-allowed bg-stone-50 text-stone-400 border-stone-200 pointer-events-none"
+                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-50 border-stone-200/80 active:scale-[0.98]"
+                }`}
+                title={isSeasonLocked ? "Tema terkunci untuk link yang telah tersimpan" : "Pilih tema Gedung Voxel"}
+              >
+                <span>🏛️ Gedung Voxel</span>
               </button>
             </div>
             {isSeasonLocked && (

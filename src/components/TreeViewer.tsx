@@ -16,6 +16,7 @@ import {
   generateQrMatrix,
   generateVoxelTree,
   generateVoxelFlower,
+  generateVoxelBuilding,
 } from "@/lib/voxel-tree-generator";
 import { buildTreeMesh, createWindUniforms, disposeTreeMesh } from "@/lib/voxel-three";
 import { track } from "@/lib/track";
@@ -184,6 +185,8 @@ export default function TreeViewer({
     const voxels =
       season === "flower"
         ? generateVoxelFlower(matrix, size, season, { scanSafeTop: true })
+        : season === "building"
+        ? generateVoxelBuilding(matrix, size, season, { scanSafeTop: true })
         : generateVoxelTree(matrix, size, season);
     const mesh = buildTreeMesh(voxels, wind, {
       shadows: renderer.shadowMap.enabled,

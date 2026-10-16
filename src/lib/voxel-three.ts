@@ -20,15 +20,8 @@ export function createWindUniforms(initialStrength = 0.9): WindUniforms {
 }
 
 export const WIND_DECLARATIONS = /* glsl */ `
-attribute float aSway;      // 0 = diam (tanah, finder, orang), 1 = pucuk pohon
-attribute float aLeaf;      // intensitas getaran daun kecil / ujung sari
-attribute float aPhase;     // fase acak per voxel
-attribute float aGrowDelay; // 0.0 - 0.75: kapan voxel ini mulai tumbuh
-attribute float aPetal;     // 1.0 = kelopak bunga hidup
-attribute float aStamen;    // 1.0 = putik & benang sari
-attribute float aPart;      // Patrakomala: -1=core, 0..4=petals, 10..13=stamens, -99=tree/floor
-attribute float aU;         // parameter 0..1 sepanjang kelopak/benang sari
-attribute float aAng;       // sudut radial theta kelopak/benang sari
+attribute vec4 aWindData;   // x: aSway, y: aLeaf, z: aPhase, w: aGrowDelay
+attribute vec4 aFlowerData; // x: aPart, y: aU, z: aAng, w: aExtra
 uniform float uTime;
 uniform vec3 uWindDir;
 uniform float uStrength;
@@ -42,6 +35,15 @@ vec3 rotA(vec3 v, vec3 k, float a){
 `;
 
 export const WIND_PROJECT_VERTEX = /* glsl */ `
+float aSway = aWindData.x;
+float aLeaf = aWindData.y;
+float aPhase = aWindData.z;
+float aGrowDelay = aWindData.w;
+float aPart = aFlowerData.x;
+float aU = aFlowerData.y;
+float aAng = aFlowerData.z;
+float aExtra = aFlowerData.w;
+
 // Animasi tumbuh per-voxel: lantai QR langsung terlihat, batang & daun bermekaran
 float g = (aGrowDelay <= 0.0) ? 1.0 : clamp((uGrowth - aGrowDelay) / 0.20, 0.0, 1.0);
 float popScale = sin(g * 1.5707963);
@@ -61,7 +63,17 @@ vec4 mvPosition = vec4( transformed, 1.0 );
   vec3 fV = vec3(-0.5477226, 0.6324555, -0.5477226);
   vec3 fCenter = vec3(0.0, 11.5, 0.0);
 
-  if (aPart > -5.0) {
+  if (aPart > 19.5 && aPart < 20.5) {
+    // KIBARAN BENDERA GEDUNG VOXEL
+    float gust = 0.65 + 0.35 * sin(uTime * 0.7) * sin(uTime * 0.31 + 1.3) + 0.3 * max(0.0, sin(uTime * 0.45 - 0.6));
+    float W = uStrength * gust;
+    float u = aU;
+    float ph = uTime * (3.0 + 2.2 * W) - u * 7.0 + aPhase;
+    float amp = (0.20 + 0.50 * W) * u;
+    mvPosition.z += (sin(ph) + 0.35 * sin(ph * 2.3 + 1.0)) * amp;
+    mvPosition.y += -u * u * (0.5 - W * 0.25) + 0.10 * sin(ph * 1.4) * u;
+    mvPosition.x -= abs(sin(ph)) * 0.15 * u * W;
+  } else if (aPart > -5.0 && aPart < 15.0) {
     // 1. Koordinat lokal dalam ruang kelopak Patrakomala
     vec3 rel = mvPosition.xyz - fCenter;
     vec3 localP = vec3(dot(rel, fU), dot(rel, fN), dot(rel, fV));
@@ -133,20 +145,13 @@ export function applyWind(material: THREE.Material, uniforms: WindUniforms) {
       .replace("#include <common>", `#include <common>\n${WIND_DECLARATIONS}`)
       .replace("#include <project_vertex>", WIND_PROJECT_VERTEX);
   };
-  material.customProgramCacheKey = () => "voxel-wind-growth-patrakomala-v5";
+  material.customProgramCacheKey = () => "voxel-wind-growth-patrakomala-v6";
 }
 
 export function buildWindAttributes(voxels: VoxelItem[]) {
   const n = voxels.length;
-  const sway = new Float32Array(n);
-  const leaf = new Float32Array(n);
-  const phase = new Float32Array(n);
-  const growDelay = new Float32Array(n);
-  const petal = new Float32Array(n);
-  const stamen = new Float32Array(n);
-  const part = new Float32Array(n);
-  const uParam = new Float32Array(n);
-  const ang = new Float32Array(n);
+  const windData = new Float32Array(n * 4);   // x: sway, y: leaf, z: phase, w: growDelay
+  const flowerData = new Float32Array(n * 4); // x: part, y: u, z: ang, w: extra
 
   let maxY = 3;
   for (const v of voxels) {
@@ -166,26 +171,32 @@ export function buildWindAttributes(voxels: VoxelItem[]) {
     const v = voxels[i];
     const distXZ = Math.hypot(v.x, v.z) / maxDistXZ;
 
-    part[i] = v.part !== undefined ? v.part : -99.0;
-    uParam[i] = v.u !== undefined ? v.u : 0.0;
-    ang[i] = v.ang !== undefined ? v.ang : 0.0;
+    let sway = 0;
+    let leaf = 0;
+    const phase = v.phase !== undefined ? v.phase : ((v.x * 12.9898 + v.y * 78.233 + v.z * 37.719) % (Math.PI * 2));
+    let growDelay = 0;
+
+    const part = v.part !== undefined ? v.part : -99.0;
+    const uParam = v.u !== undefined ? v.u : 0.0;
+    const ang = v.ang !== undefined ? v.ang : 0.0;
+    const extra = 0.0;
 
     if (v.role === "stone" || v.role === "border" || v.y < 1) {
-      growDelay[i] = 0.0;
+      growDelay = 0.0;
     } else if (v.role === "trunk" || v.role === "branch") {
       const normY = Math.min(1, Math.max(0, (v.y - 1) / (maxY - 1)));
-      growDelay[i] = 0.05 + normY * 0.20;
+      growDelay = 0.05 + normY * 0.20;
     } else if (v.role === "leaf" || v.role === "hedge") {
       const normY = Math.min(1, Math.max(0, (v.y - rootY) / (maxY - rootY)));
-      growDelay[i] = 0.15 + normY * 0.20 + distXZ * 0.06;
+      growDelay = 0.15 + normY * 0.20 + distXZ * 0.06;
     } else if (v.role === "petal" || v.role === "flower") {
-      growDelay[i] = 0.18 + distXZ * 0.16;
+      growDelay = 0.18 + distXZ * 0.16;
     } else if (v.role === "stamen") {
-      growDelay[i] = 0.30 + distXZ * 0.10;
+      growDelay = 0.30 + distXZ * 0.10;
     } else if (v.role === "person") {
-      growDelay[i] = 0.40;
+      growDelay = 0.40;
     } else {
-      growDelay[i] = 0.10;
+      growDelay = 0.10;
     }
 
     const movable =
@@ -196,24 +207,33 @@ export function buildWindAttributes(voxels: VoxelItem[]) {
         v.role === "petal" ||
         v.role === "flower" ||
         v.role === "stamen");
-    if (!movable) continue;
 
-    const normY = Math.min(1, Math.max(0, (v.y - rootY) / (maxY - rootY)));
-    sway[i] = Math.pow(normY, 1.2);
-    phase[i] = v.phase !== undefined ? v.phase : ((v.x * 12.9898 + v.y * 78.233 + v.z * 37.719) % (Math.PI * 2));
+    if (movable) {
+      const normY = Math.min(1, Math.max(0, (v.y - rootY) / (maxY - rootY)));
+      sway = Math.pow(normY, 1.2);
 
-    if (v.role === "petal" || v.role === "flower") {
-      petal[i] = 1.0;
-      leaf[i] = 0.8;
-    } else if (v.role === "stamen") {
-      stamen[i] = 1.0;
-      leaf[i] = 1.5;
-    } else if (v.role === "leaf") {
-      leaf[i] = Math.min(1.6, 0.9 / (v.size ?? 0.96));
+      if (v.role === "petal" || v.role === "flower") {
+        leaf = 0.8;
+      } else if (v.role === "stamen") {
+        leaf = 1.5;
+      } else if (v.role === "leaf") {
+        leaf = Math.min(1.6, 0.9 / (v.size ?? 0.96));
+      }
     }
+
+    const idx = i * 4;
+    windData[idx] = sway;
+    windData[idx + 1] = leaf;
+    windData[idx + 2] = phase;
+    windData[idx + 3] = growDelay;
+
+    flowerData[idx] = part;
+    flowerData[idx + 1] = uParam;
+    flowerData[idx + 2] = ang;
+    flowerData[idx + 3] = extra;
   }
 
-  return { sway, leaf, phase, growDelay, petal, stamen, part, uParam, ang };
+  return { windData, flowerData };
 }
 
 export function buildTreeMesh(
@@ -222,16 +242,9 @@ export function buildTreeMesh(
   options?: { shadows?: boolean }
 ): THREE.InstancedMesh {
   const geo = new THREE.BoxGeometry(1, 1, 1);
-  const { sway, leaf, phase, growDelay, petal, stamen, part, uParam, ang } = buildWindAttributes(voxels);
-  geo.setAttribute("aSway", new THREE.InstancedBufferAttribute(sway, 1));
-  geo.setAttribute("aLeaf", new THREE.InstancedBufferAttribute(leaf, 1));
-  geo.setAttribute("aPhase", new THREE.InstancedBufferAttribute(phase, 1));
-  geo.setAttribute("aGrowDelay", new THREE.InstancedBufferAttribute(growDelay, 1));
-  geo.setAttribute("aPetal", new THREE.InstancedBufferAttribute(petal, 1));
-  geo.setAttribute("aStamen", new THREE.InstancedBufferAttribute(stamen, 1));
-  geo.setAttribute("aPart", new THREE.InstancedBufferAttribute(part, 1));
-  geo.setAttribute("aU", new THREE.InstancedBufferAttribute(uParam, 1));
-  geo.setAttribute("aAng", new THREE.InstancedBufferAttribute(ang, 1));
+  const { windData, flowerData } = buildWindAttributes(voxels);
+  geo.setAttribute("aWindData", new THREE.InstancedBufferAttribute(windData, 4));
+  geo.setAttribute("aFlowerData", new THREE.InstancedBufferAttribute(flowerData, 4));
 
   const mat = new THREE.MeshStandardMaterial({ roughness: 0.82, metalness: 0.05 });
   applyWind(mat, wind);
@@ -252,7 +265,7 @@ export function buildTreeMesh(
   for (let i = 0; i < voxels.length; i++) {
     const v = voxels[i];
     const s = v.size ?? 0.96;
-    dummy.position.set(v.x, v.y + 0.5, v.z);
+    dummy.position.set(v.x, v.y + s / 2, v.z);
     dummy.scale.setScalar(s);
     dummy.updateMatrix();
     mesh.setMatrixAt(i, dummy.matrix);

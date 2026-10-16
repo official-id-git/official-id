@@ -17,7 +17,7 @@ import {
   verifyHumanSubmission,
 } from "@/lib/security";
 
-const SEASONS = new Set(["summer", "spring", "autumn", "flower"]);
+const SEASONS = new Set(["summer", "spring", "autumn", "flower", "building"]);
 
 export async function POST(req: Request) {
   try {

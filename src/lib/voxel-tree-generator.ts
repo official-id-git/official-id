@@ -1,6 +1,6 @@
 import QRCode from "qrcode";
 
-export type SeasonType = "summer" | "spring" | "autumn" | "flower";
+export type SeasonType = "summer" | "spring" | "autumn" | "flower" | "building";
 
 export interface VoxelItem {
   x: number;
@@ -122,6 +122,25 @@ export const SEASONS: Record<SeasonType, SeasonTheme> = {
     petalFloor: ["#F8D31F", "#FBE04A", "#D8261D", "#E02F21"],
     particleColors: ["#F8D31F", "#FBE04A", "#D8261D", "#E02F21", "#FDA4AF"],
     accentColor: "#D8261D",
+  },
+  building: {
+    name: "Gedung Voxel",
+    badge: "🏛️ Gedung Voxel",
+    bgColor: "#EEF0F2",
+    paperColor: "#E2E5E8",
+    leafPrimary: ["#EFEFEC", "#E2E3E0", "#D5D7D4", "#C6C8C6"],
+    leafHighlight: ["#F7F7F5", "#F6F6F4", "#FFFFFF", "#F2C418"],
+    leafShadow: ["#8E9193", "#9FA2A5", "#7B4B2A", "#6B3E22"],
+    trunkPrimary: ["#C6C8C6", "#B9BBB9", "#D5D7D4", "#8E9193"],
+    hedgeColor: ["#CE1126", "#B51913", "#23262B"],
+    stonePaver: ["#FFFFFF", "#F6F7F9", "#EDF0F3", "#E2E5E8"],
+    stoneBorder: "#CFD3D8",
+    qrDark: ["#23262B", "#1C1E23", "#2B2F36", "#15181C"],
+    finderOuter: ["#CE1126", "#B51913", "#23262B"],
+    finderInner: ["#CE1126", "#23262B", "#B51913"],
+    petalFloor: ["#CE1126", "#F6F6F4", "#F2C418"],
+    particleColors: ["#CE1126", "#F6F6F4", "#F2C418", "#EFEFEC"],
+    accentColor: "#CE1126",
   },
 };
 
@@ -1016,6 +1035,398 @@ export function generateVoxelFlower(
           ang: 0,
           phase: 0,
         });
+      }
+    }
+  }
+
+  return voxels;
+}
+
+interface RawBuildingVoxel {
+  x: number;
+  y: number;
+  z: number;
+  color: string;
+  part: number; // 0 = static, 1 = flag
+  u: number;
+  ph: number;
+}
+
+let cachedGedungVoxels: RawBuildingVoxel[] | null = null;
+
+function buildGedungVoxelsRaw(): RawBuildingVoxel[] {
+  if (cachedGedungVoxels) return cachedGedungVoxels;
+
+  const C = {
+    wall: "#EFEFEC", wallSh: "#E2E3E0", roof: "#F7F7F5", plinth: "#C6C8C6", step: "#B9BBB9",
+    trim: "#D5D7D4", dentil: "#8E9193", frame: "#7B4B2A", glass: "#3B2A1F", door: "#6B3E22", doorLine: "#4A2914",
+    rosette: "#9FA2A5", pole: "#E9EAEA", knob: "#D9B23A",
+    red: "#CE1126", white: "#F6F6F4",
+    crestY: "#F2C418", crestB: "#1F5FA8", crestW: "#F3F3F3", crestG: "#2F8A3C",
+  };
+
+  const cells = new Map<string, RawBuildingVoxel>();
+  const K = (x: number, y: number, z: number) => `${x},${y},${z}`;
+  const set = (x: number, y: number, z: number, color: string, part = 0, u = 0, ph = 0) => {
+    cells.set(K(x, y, z), { x, y, z, color, part, u, ph });
+  };
+  const box = (x0: number, x1: number, y0: number, y1: number, z0: number, z1: number, color: string) => {
+    for (let x = x0; x <= x1; x++) {
+      for (let y = y0; y <= y1; y++) {
+        for (let z = z0; z <= z1; z++) {
+          set(x, y, z, color);
+        }
+      }
+    }
+  };
+  const cyl = (cx: number, cz: number, r: number, y0: number, y1: number, color: string) => {
+    for (let x = Math.floor(cx - r); x <= Math.ceil(cx + r); x++) {
+      for (let z = Math.floor(cz - r); z <= Math.ceil(cz + r); z++) {
+        if (Math.hypot(x - cx, z - cz) <= r) {
+          for (let y = y0; y <= y1; y++) set(x, y, z, color);
+        }
+      }
+    }
+  };
+  const paint = (x: number, y: number, z: number, color: string) => {
+    const v = cells.get(K(x, y, z));
+    if (v) v.color = color;
+  };
+  const del = (x: number, y: number, z: number) => cells.delete(K(x, y, z));
+  const both = (fn: (s: number) => void) => { fn(1); fn(-1); };
+
+  function opening(face: string, plane: number, a0: number, a1: number, y0: number, y1: number, kind = "win") {
+    const ax = face[0], sg = face[1] === "+" ? 1 : -1;
+    for (let a = a0; a <= a1; a++) {
+      for (let y = y0; y <= y1; y++) {
+        const at = (d: number): [number, number, number] =>
+          ax === "z" ? [a, y, plane - d * sg] : [plane - d * sg, y, a];
+        del(...at(0));
+        const border = a === a0 || a === a1 || y === y0 || y === y1;
+        let c: string;
+        if (kind === "win") {
+          const mull = (a - a0) % 3 === 0 || y === Math.round((y0 + y1) / 2);
+          c = border || mull ? C.frame : C.glass;
+        } else {
+          c = border ? C.doorLine : ((a - a0) % 2 === 0 ? C.doorLine : C.door);
+        }
+        paint(...at(1), c);
+      }
+    }
+  }
+
+  // 1. Sayap luar (kiri & kanan)
+  both((s) => {
+    const xa = s > 0 ? 41 : -57, xb = s > 0 ? 57 : -41;
+    box(xa - 1, xb + 1, 0, 1, -23, 15, C.plinth);
+    box(xa, xb, 2, 9, -22, 14, C.wall);
+    box(xa - 1, xb + 1, 10, 10, -23, 15, C.roof);
+    box(xa, xb, 11, 11, -22, 14, C.trim);
+    const xo = s > 0 ? xb + 1 : xa - 1;
+    box(xo, xo, 8, 8, -21, 13, C.roof);
+  });
+
+  // 2. Blok penghubung + selasar beratap
+  both((s) => {
+    const xa = s > 0 ? 25 : -40, xb = s > 0 ? 40 : -25;
+    box(xa, xb, 0, 1, -18, 11, C.plinth);
+    box(xa, xb, 2, 8, -18, 10, C.wall);
+    box(xa - 1, xb + 1, 9, 9, -19, 19, C.roof);
+    box(xa, xb, 7, 8, 18, 19, C.wall);
+    for (let x = xa; x <= xb; x++) if (x % 2 === 0) paint(x, 7, 19, C.dentil);
+    box(xa, xb, 0, 0, 11, 19, C.plinth);
+    const cols = s > 0 ? [26, 31, 36, 39] : [-27, -32, -37, -40];
+    cols.forEach((cx) => box(cx, cx + 1, 1, 6, 17, 18, C.wall));
+    const ox = s > 0 ? 26 : -29;
+    box(ox, ox + 3, 10, 10, 15, 18, C.wall);
+    box(ox + 1, ox + 2, 11, 12, 16, 18, C.wall);
+  });
+
+  // 3. Blok utama (2 lantai) dengan tembok bergerigi
+  box(-25, 25, 0, 1, -27, 11, C.plinth);
+  box(-24, 24, 2, 14, -26, 10, C.wall);
+  for (let x = -24; x <= 24; x++) {
+    for (let z = -26; z <= 10; z++) {
+      const edge = x === -24 || x === 24 || z === -26 || z === 10;
+      if (edge) {
+        set(x, 15, z, C.wall);
+        if ((x + z) % 2 === 0) set(x, 16, z, C.wall);
+      }
+    }
+  }
+
+  // 4. Blok puncak (lantai 3)
+  box(-11, 11, 15, 21, -16, 2, C.wall);
+  box(-13, 13, 22, 22, -18, 4, C.roof);
+  box(-12, 12, 23, 23, -17, 3, C.trim);
+
+  // 5. Portiko pintu masuk
+  box(-12, 12, 0, 2, 11, 19, C.plinth);
+  box(-9, 9, 0, 1, 20, 21, C.step);
+  box(-10, 10, 0, 0, 22, 23, C.step);
+  box(-9, 9, 3, 11, 11, 12, C.wall);
+  box(-4, -3, 3, 11, 13, 13, C.wallSh);
+  box(3, 4, 3, 11, 13, 13, C.wallSh);
+  cyl(-10.5, 17, 2.3, 3, 11, C.wall);
+  cyl(10.5, 17, 2.3, 3, 11, C.wall);
+  box(-13, 13, 12, 12, 11, 20, C.roof);
+  box(-12, 12, 13, 13, 11, 19, C.trim);
+  box(-9, 9, 14, 17, 11, 13, C.wall);
+  box(-4, -3, 14, 17, 14, 14, C.wallSh);
+  box(3, 4, 14, 17, 14, 14, C.wallSh);
+  box(-11, 11, 18, 18, 11, 15, C.roof);
+
+  // 6. Dua menara + tiang bendera
+  const towers: { px: number; pz: number }[] = [];
+  both((s) => {
+    const xa = s > 0 ? 17 : -24, xb = s > 0 ? 24 : -17;
+    box(xa - 1, xb + 1, 0, 1, 3, 13, C.plinth);
+    box(xa, xb, 2, 20, 4, 12, C.wall);
+    box(xa - 1, xb + 1, 21, 21, 3, 13, C.roof);
+    for (let x = xa - 1; x <= xb + 1; x++) {
+      for (let z = 3; z <= 13; z++) {
+        const edge = x === xa - 1 || x === xb + 1 || z === 3 || z === 13;
+        if (edge && (x + z) % 2 === 0) {
+          set(x, 22, z, C.wall);
+          set(x, 23, z, C.wall);
+        }
+      }
+    }
+    box(xa - 2, xb + 2, 24, 24, 2, 14, C.roof);
+    box(xa + 2, xb - 2, 25, 25, 6, 10, C.trim);
+    const rx = (xa + xb) / 2, ry = 16;
+    for (let x = xa; x <= xb; x++) {
+      for (let y = ry - 3; y <= ry + 3; y++) {
+        const d = Math.hypot(x - rx, y - ry);
+        if (d <= 3.1) paint(x, y, 12, d > 2.3 ? C.rosette : ((x + y) % 2 === 0 ? C.rosette : C.wall));
+      }
+    }
+    const px = s > 0 ? 20 : -21, pz = 8;
+    towers.push({ px, pz });
+  });
+
+  // 7. Lambang perisai di parapet
+  const crest: [number, number, number, string][] = [
+    [6, 11, 21, C.crestY], [6, 11, 20, C.crestY],
+    [6, 11, 19, "wave1"], [6, 11, 18, "wave2"], [6, 11, 17, "wave1"],
+    [6, 11, 16, C.crestG], [7, 10, 15, C.crestG], [8, 9, 14, C.crestG],
+  ];
+  crest.forEach(([a, b, y, c]) => {
+    for (let x = a; x <= b; x++) {
+      const col = c === "wave1" ? (x % 2 ? C.crestB : C.crestW) : c === "wave2" ? (x % 2 ? C.crestW : C.crestB) : c;
+      set(x, y + 5, 15, col);
+    }
+  });
+
+  // 8. Jendela & pintu
+  both((s) => {
+    const xa = s > 0 ? 41 : -57, xb = s > 0 ? 57 : -41;
+    opening("z+", 14, xa + 3, xb - 3, 3, 7);
+    opening("z-", -22, xa + 3, xb - 3, 3, 7);
+    const xo = s > 0 ? xb : xa;
+    for (let z = -19; z <= 9; z += 7) opening(s > 0 ? "x+" : "x-", xo, z, z + 3, 3, 6);
+    const ca = s > 0 ? 25 : -40;
+    opening("z+", 10, ca + 2, ca + 5, 3, 6);
+    opening("z+", 10, ca + 8, ca + 9, 2, 6, "door");
+    opening("z+", 10, ca + 12, ca + 14, 3, 6);
+    const ma = s > 0 ? 12 : -16;
+    opening("z+", 10, ma, ma + 4, 3, 7);
+    opening("z+", 10, ma, ma + 4, 9, 12);
+    const ta = s > 0 ? 19 : -22;
+    opening("z+", 12, ta, ta + 3, 4, 7);
+    for (let z = -22; z <= 4; z += 6) opening(s > 0 ? "x+" : "x-", s > 0 ? 24 : -24, z, z + 3, 11, 13);
+    opening("z+", 2, s > 0 ? 4 : -7, s > 0 ? 7 : -4, 16, 19);
+    for (let z = -13; z <= -1; z += 6) opening(s > 0 ? "x+" : "x-", s > 0 ? 11 : -11, z, z + 2, 17, 19);
+  });
+  for (let x = -24; x <= 20; x += 8) { opening("z-", -26, x, x + 3, 3, 7); opening("z-", -26, x, x + 3, 9, 12); }
+  [[-7, -5], [-1, 1], [5, 7]].forEach(([a, b]) => {
+    opening("z+", 12, a, b, 3, 10, "door");
+    opening("z+", 13, a, b, 14, 16);
+  });
+  for (let x = -9; x <= 9; x += 3) paint(x, 20, 2, C.dentil);
+
+  // 9. Tiang & bendera
+  const FLAG_L = 13, FLAG_H = 8, POLE_TOP = 54;
+  towers.forEach(({ px, pz }, i) => {
+    for (let y = 25; y <= POLE_TOP; y++) set(px, y, pz, C.pole);
+    set(px, POLE_TOP + 1, pz, C.knob);
+    const ph = i * 1.9;
+    for (let a = 1; a <= FLAG_L; a++) {
+      for (let h = 0; h < FLAG_H; h++) {
+        const y = POLE_TOP - h;
+        set(px + a, y, pz, h < FLAG_H / 2 ? C.red : C.white, 1, a / FLAG_L, ph);
+      }
+    }
+  });
+
+  // 10. Buang voxel dalam yang tak terlihat (culling)
+  const out: RawBuildingVoxel[] = [];
+  const nb = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+  for (const v of cells.values()) {
+    if (v.part === 1 || nb.some(([dx, dy, dz]) => !cells.has(K(v.x + dx, v.y + dy, v.z + dz)))) {
+      out.push(v);
+    }
+  }
+
+  cachedGedungVoxels = out;
+  return out;
+}
+
+export function generateVoxelBuilding(
+  matrix: number[][],
+  size: number,
+  season: SeasonType = "building",
+  options?: TreeOptions
+): VoxelItem[] {
+  const theme = SEASONS[season] ?? SEASONS.building;
+  const voxels: VoxelItem[] = [];
+  const center = (size - 1) / 2;
+
+  // 1. LANTAI COURTYARD & MODUL QR
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      const x = c - center;
+      const z = r - center;
+      const h = coordHash(x, z, 101);
+
+      if (matrix[r][c] === 0) {
+        const isBorder = r === 0 || r === size - 1 || c === 0 || c === size - 1;
+        voxels.push({
+          x,
+          y: isBorder ? 0.02 : 0.04,
+          z,
+          size: 1.0,
+          color: isBorder ? theme.stoneBorder : pickRandom(theme.stonePaver, h),
+          role: isBorder ? "border" : "stone",
+          isQrDark: false,
+          part: -99,
+          u: 0,
+          ang: 0,
+          phase: 0,
+        });
+      } else if (!isFinderPattern(r, c, size)) {
+        voxels.push({
+          x,
+          y: 0.45,
+          z,
+          size: 1.0,
+          color: pickRandom(theme.qrDark, h),
+          role: "stone",
+          isQrDark: true,
+          part: -99,
+          u: 0,
+          ang: 0,
+          phase: 0,
+        });
+      }
+    }
+  }
+
+  // 2. MONUMEN FINDER PATTERN
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (matrix[r][c] === 1 && isFinderPattern(r, c, size)) {
+        const x = c - center;
+        const z = r - center;
+        const finderRole = getFinderRole(r, c, size);
+        const h = coordHash(x, z, 55);
+
+        if (finderRole === "hedge") {
+          voxels.push({
+            x,
+            y: 0.45,
+            z,
+            size: 1.0,
+            color: pickRandom(theme.finderOuter, h),
+            role: "hedge",
+            isQrDark: true,
+            part: -99,
+            u: 0,
+            ang: 0,
+            phase: 0,
+          });
+        } else if (finderRole === "flower") {
+          voxels.push({
+            x,
+            y: 0.45,
+            z,
+            size: 1.0,
+            color: theme.finderOuter[0],
+            role: "flower",
+            isQrDark: true,
+            part: -99,
+            u: 0,
+            ang: 0,
+            phase: 0,
+          });
+          voxels.push({
+            x,
+            y: 0.85,
+            z,
+            size: 1.0,
+            color: pickRandom(theme.finderInner, h),
+            role: "flower",
+            isQrDark: true,
+            part: -99,
+            u: 0,
+            ang: 0,
+            phase: 0,
+          });
+        }
+      }
+    }
+  }
+
+  // 3. MODEL GEDUNG VOXEL 3D DENGAN BENDERA BERKIBAR
+  const rawList = buildGedungVoxelsRaw();
+  const scale = 0.24;
+  const vSize = 0.25;
+
+  for (let i = 0; i < rawList.length; i++) {
+    const rv = rawList[i];
+    const wx = +(rv.x * scale).toFixed(3);
+    const wy = +(1.0 + rv.y * scale).toFixed(3);
+    const wz = +(rv.z * scale).toFixed(3);
+
+    const isFlag = rv.part === 1;
+    voxels.push({
+      x: wx,
+      y: wy,
+      z: wz,
+      size: vSize,
+      color: rv.color,
+      role: isFlag ? "leaf" : "branch",
+      isQrDark: false,
+      part: isFlag ? 20 : 21,
+      u: rv.u,
+      ang: 0,
+      phase: rv.ph,
+    });
+  }
+
+  // 4. KELOPAK/KONFETI MERAH-PUTIH BERJATUHAN DI PLAZA
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (matrix[r][c] !== 1 || isFinderPattern(r, c, size)) continue;
+      const x = c - center;
+      const z = r - center;
+      if (Math.abs(x) > 13.5 || Math.abs(z) > 6.5) {
+        const h = coordHash(x, z, 777);
+        if (h > 0.68) {
+          voxels.push({
+            x: x + (coordHash(x, z, 81) - 0.5) * 0.45,
+            y: 0.95,
+            z: z + (coordHash(x, z, 92) - 0.5) * 0.45,
+            size: 0.35 + h * 0.15,
+            color: pickRandom(theme.petalFloor, h),
+            role: "petal",
+            isQrDark: false,
+            part: -99,
+            u: 0,
+            ang: 0,
+            phase: 0,
+          });
+        }
       }
     }
   }
