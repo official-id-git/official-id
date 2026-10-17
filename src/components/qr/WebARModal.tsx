@@ -51,7 +51,7 @@ interface WebARModalProps {
   onSeasonChange?: (s: SeasonType) => void;
   /**
    * "scan"    → halaman publik hasil scan: redirect otomatis di tab yang sama.
-   * "preview" → pratinjau di dashboard: tidak pernah redirect otomatis.
+   * "preview" → pratinjau di dashboard: otomatis membuka tautan tujuan saat countdown selesai.
    */
   mode?: "scan" | "preview";
   redirectSeconds?: number;
@@ -269,10 +269,28 @@ export default function WebARModal({
       setIsRedirected(true);
       logArAnalytics(reason === "auto" ? "auto_redirect" : "bubble_click", { reason });
       onRedirect?.(reason);
-      // replace(): tidak diblokir seperti popup & tombol Back tidak kembali ke AR
-      if (isScan && url) window.location.replace(url);
+
+      const rawTarget = url || qrText || "https://official.id";
+      const targetUrl = /^https?:\/\//i.test(rawTarget.trim())
+        ? rawTarget.trim()
+        : `https://${rawTarget.trim()}`;
+
+      if (isScan) {
+        // replace(): tidak diblokir seperti popup & tombol Back tidak kembali ke AR
+        window.location.replace(targetUrl);
+      } else {
+        // Mode preview / dashboard: otomatis buka tautan tujuan (tab baru atau fallback)
+        try {
+          const win = window.open(targetUrl, "_blank", "noopener,noreferrer");
+          if (!win || win.closed || typeof win.closed === "undefined") {
+            window.location.href = targetUrl;
+          }
+        } catch {
+          window.location.href = targetUrl;
+        }
+      }
     },
-    [isScan, url, onRedirect, logArAnalytics]
+    [isScan, url, qrText, onRedirect, logArAnalytics]
   );
 
   // Countdown berbasis waktu nyata, mulai saat scene siap & kamera sudah terjawab
@@ -845,9 +863,14 @@ export default function WebARModal({
   const secondsLeft = Math.ceil(remainingMs / 1000);
   const progress = remainingMs / REDIRECT_MS;
 
-  let destinationHost = url;
+  const rawTarget = url || qrText || "https://official.id";
+  const targetUrl = /^https?:\/\//i.test(rawTarget.trim())
+    ? rawTarget.trim()
+    : `https://${rawTarget.trim()}`;
+
+  let destinationHost = targetUrl;
   try {
-    destinationHost = new URL(url).host;
+    destinationHost = new URL(targetUrl).host;
   } catch {
     /* biarkan apa adanya */
   }
@@ -950,16 +973,12 @@ export default function WebARModal({
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <a
-                href={url}
+                href={targetUrl}
                 target={isScan ? "_self" : "_blank"}
                 rel="noopener noreferrer"
                 onClick={(e) => {
-                  if (isScan) {
-                    e.preventDefault();
-                    doRedirect("click");
-                  } else {
-                    onRedirect?.("click");
-                  }
+                  e.preventDefault();
+                  doRedirect("click");
                 }}
                 className="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-white text-[11px] font-bold flex items-center gap-1 shadow-sm"
               >
@@ -988,7 +1007,7 @@ export default function WebARModal({
                     : isRedirected
                     ? isScan
                       ? "Redirecting…"
-                      : "Finished (preview mode)"
+                      : "Opening link…"
                     : "Magic Portal Connected"}
                 </span>
               </div>
@@ -1033,16 +1052,12 @@ export default function WebARModal({
             </div>
 
             <a
-              href={url}
+              href={targetUrl}
               target={isScan ? "_self" : "_blank"}
               rel="noopener noreferrer"
               onClick={(e) => {
-                if (isScan) {
-                  e.preventDefault();
-                  doRedirect("click");
-                } else {
-                  onRedirect?.("click");
-                }
+                e.preventDefault();
+                doRedirect("click");
               }}
               className="w-full py-2 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-95 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg transition"
             >
