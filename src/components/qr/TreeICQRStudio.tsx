@@ -784,7 +784,7 @@ export default function TreeICQRStudio() {
             </div>
 
             {/* Grid of 6 Theme Variant Buttons */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 w-full text-xs font-medium">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 w-full font-medium">
               <button
                 type="button"
                 disabled={isSeasonLocked}
@@ -792,17 +792,17 @@ export default function TreeICQRStudio() {
                   if (isSeasonLocked) return;
                   setSeason("summer");
                 }}
-                className={`flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl transition border text-center ${
+                className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl transition border text-center h-10 min-h-[40px] whitespace-nowrap text-[11px] sm:text-xs font-semibold ${
                   season === "summer"
-                    ? "bg-[#EFE8DA] text-stone-900 border-stone-400 font-bold shadow-sm ring-2 ring-stone-400/40"
+                    ? "bg-[#EFE8DA] text-stone-900 border-stone-400 shadow-sm ring-2 ring-stone-400/40"
                     : isSeasonLocked
                     ? "opacity-35 cursor-not-allowed bg-stone-50 text-stone-400 border-stone-200 pointer-events-none"
                     : "text-stone-600 hover:text-stone-900 hover:bg-stone-50 border-stone-200/80 active:scale-[0.98]"
                 }`}
-                title={isSeasonLocked ? "Theme is locked for saved link" : "Select Summer Green theme"}
+                title={isSeasonLocked ? "Theme is locked for saved link" : "Select Summer theme"}
               >
                 <Seedling className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Summer Green</span>
+                <span>Summer</span>
               </button>
 
               <button
@@ -812,17 +812,17 @@ export default function TreeICQRStudio() {
                   if (isSeasonLocked) return;
                   setSeason("spring");
                 }}
-                className={`flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl transition border text-center ${
+                className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl transition border text-center h-10 min-h-[40px] whitespace-nowrap text-[11px] sm:text-xs font-semibold ${
                   season === "spring"
-                    ? "bg-pink-50 text-pink-950 border-pink-300 font-bold shadow-sm ring-2 ring-pink-400/40"
+                    ? "bg-pink-50 text-pink-950 border-pink-300 shadow-sm ring-2 ring-pink-400/40"
                     : isSeasonLocked
                     ? "opacity-35 cursor-not-allowed bg-stone-50 text-stone-400 border-stone-200 pointer-events-none"
                     : "text-stone-600 hover:text-stone-900 hover:bg-stone-50 border-stone-200/80 active:scale-[0.98]"
                 }`}
-                title={isSeasonLocked ? "Theme is locked for saved link" : "Select Sakura Spring theme"}
+                title={isSeasonLocked ? "Theme is locked for saved link" : "Select Sakura theme"}
               >
                 <Sun className="w-3.5 h-3.5 text-pink-500 shrink-0" />
-                <span>Sakura Spring</span>
+                <span>Sakura</span>
               </button>
 
               <button
@@ -832,17 +832,17 @@ export default function TreeICQRStudio() {
                   if (isSeasonLocked) return;
                   setSeason("autumn");
                 }}
-                className={`flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl transition border text-center ${
+                className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl transition border text-center h-10 min-h-[40px] whitespace-nowrap text-[11px] sm:text-xs font-semibold ${
                   season === "autumn"
-                    ? "bg-amber-50 text-amber-950 border-amber-300 font-bold shadow-sm ring-2 ring-amber-400/40"
+                    ? "bg-amber-50 text-amber-950 border-amber-300 shadow-sm ring-2 ring-amber-400/40"
                     : isSeasonLocked
                     ? "opacity-35 cursor-not-allowed bg-stone-50 text-stone-400 border-stone-200 pointer-events-none"
                     : "text-stone-600 hover:text-stone-900 hover:bg-stone-50 border-stone-200/80 active:scale-[0.98]"
                 }`}
-                title={isSeasonLocked ? "Theme is locked for saved link" : "Select Golden Autumn theme"}
+                title={isSeasonLocked ? "Theme is locked for saved link" : "Select Autumn theme"}
               >
                 <Wheat className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span>Golden Autumn</span>
+                <span>Autumn</span>
               </button>
 
               <button
@@ -852,14 +852,14 @@ export default function TreeICQRStudio() {
                   if (isSeasonLocked) return;
                   setSeason("flower");
                 }}
-                className={`flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl transition border text-center ${
+                className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl transition border text-center h-10 min-h-[40px] whitespace-nowrap text-[11px] sm:text-xs font-semibold ${
                   season === "flower"
-                    ? "bg-rose-50 text-rose-950 border-rose-300 font-bold shadow-sm ring-2 ring-rose-400/40"
+                    ? "bg-rose-50 text-rose-950 border-rose-300 shadow-sm ring-2 ring-rose-400/40"
                     : isSeasonLocked
                     ? "opacity-35 cursor-not-allowed bg-stone-50 text-stone-400 border-stone-200 pointer-events-none"
                     : "text-stone-600 hover:text-stone-900 hover:bg-stone-50 border-stone-200/80 active:scale-[0.98]"
                 }`}
-                title={isSeasonLocked ? "Theme is locked for saved link" : "Select Patrakomala Bloom theme"}
+                title={isSeasonLocked ? "Theme is locked for saved link" : "Select Patrakomala theme"}
               >
                 <Heart className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                 <span>Patrakomala</span>
@@ -872,17 +872,17 @@ export default function TreeICQRStudio() {
                   if (isSeasonLocked) return;
                   setSeason("building");
                 }}
-                className={`flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl transition border text-center ${
+                className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl transition border text-center h-10 min-h-[40px] whitespace-nowrap text-[11px] sm:text-xs font-semibold ${
                   season === "building"
-                    ? "bg-slate-100 text-slate-950 border-slate-400 font-bold shadow-sm ring-2 ring-red-500/40"
+                    ? "bg-slate-100 text-slate-950 border-slate-400 shadow-sm ring-2 ring-red-500/40"
                     : isSeasonLocked
                     ? "opacity-35 cursor-not-allowed bg-stone-50 text-stone-400 border-stone-200 pointer-events-none"
                     : "text-stone-600 hover:text-stone-900 hover:bg-stone-50 border-stone-200/80 active:scale-[0.98]"
                 }`}
-                title={isSeasonLocked ? "Theme is locked for saved link" : "Select Heritage Landmark theme"}
+                title={isSeasonLocked ? "Theme is locked for saved link" : "Select Heritage theme"}
               >
                 <Landmark className="w-3.5 h-3.5 text-slate-700 shrink-0" />
-                <span>Heritage Landmark</span>
+                <span>Heritage</span>
               </button>
 
               <button
@@ -892,17 +892,17 @@ export default function TreeICQRStudio() {
                   if (isSeasonLocked) return;
                   setSeason("hero");
                 }}
-                className={`flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl transition border text-center ${
+                className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl transition border text-center h-10 min-h-[40px] whitespace-nowrap text-[11px] sm:text-xs font-semibold ${
                   season === "hero"
-                    ? "bg-amber-100/80 text-amber-950 border-amber-400 font-bold shadow-sm ring-2 ring-amber-400/50"
+                    ? "bg-amber-100/80 text-amber-950 border-amber-400 shadow-sm ring-2 ring-amber-400/50"
                     : isSeasonLocked
                     ? "opacity-35 cursor-not-allowed bg-stone-50 text-stone-400 border-stone-200 pointer-events-none"
                     : "text-stone-600 hover:text-stone-900 hover:bg-stone-50 border-stone-200/80 active:scale-[0.98]"
                 }`}
-                title={isSeasonLocked ? "Theme is locked for saved link" : "Select Mythic Hero theme"}
+                title={isSeasonLocked ? "Theme is locked for saved link" : "Select Hero theme"}
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span>Mythic Hero</span>
+                <span>Hero</span>
               </button>
             </div>
             {isSeasonLocked && (
