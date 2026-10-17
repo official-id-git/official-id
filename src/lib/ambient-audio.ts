@@ -1,17 +1,60 @@
-// Gentle ambient audio synthesizer using Web Audio API (no external asset needed)
+// Gentle waiting & ambient audio player for official.id
+// Uses /song/The_Green_Light.mp3 with autoplay permission handling
 
 class AmbientAudioEngine {
-  private ctx: AudioContext | null = null;
+  private audio: HTMLAudioElement | null = null;
   private isPlaying = false;
-  private timer: number | null = null;
 
   private init() {
-    if (!this.ctx && typeof window !== "undefined") {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (AudioCtx) {
-        this.ctx = new AudioCtx();
+    if (!this.audio && typeof window !== "undefined") {
+      this.audio = new Audio("/song/The_Green_Light.mp3");
+      this.audio.preload = "auto";
+      this.audio.loop = true;
+      this.audio.volume = 0.55;
+    }
+  }
+
+  public async start(): Promise<boolean> {
+    if (typeof window === "undefined") return false;
+    this.init();
+    if (!this.audio) return false;
+
+    try {
+      await this.audio.play();
+      this.isPlaying = true;
+      return true;
+    } catch (err) {
+      console.warn("Autoplay audio blocked or pending user gesture:", err);
+      this.isPlaying = false;
+      return false;
+    }
+  }
+
+  public stop() {
+    this.isPlaying = false;
+    if (this.audio) {
+      try {
+        this.audio.pause();
+        this.audio.currentTime = 0;
+      } catch {
+        /* ignore */
       }
     }
+  }
+
+  public pause() {
+    this.isPlaying = false;
+    if (this.audio) {
+      try {
+        this.audio.pause();
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  public async resume(): Promise<boolean> {
+    return this.start();
   }
 
   public toggle(): boolean {
@@ -19,64 +62,16 @@ class AmbientAudioEngine {
       this.stop();
       return false;
     } else {
-      this.start();
+      this.start().then((ok) => {
+        this.isPlaying = ok;
+      });
+      this.isPlaying = true;
       return true;
-    }
-  }
-
-  public start() {
-    this.init();
-    if (!this.ctx) return;
-    if (this.ctx.state === "suspended") {
-      this.ctx.resume();
-    }
-    this.isPlaying = true;
-    this.scheduleChimes();
-  }
-
-  public stop() {
-    this.isPlaying = false;
-    if (this.timer) {
-      window.clearTimeout(this.timer);
-      this.timer = null;
     }
   }
 
   public getStatus(): boolean {
     return this.isPlaying;
-  }
-
-  private scheduleChimes() {
-    if (!this.isPlaying || !this.ctx) return;
-
-    // Pentatonic scale frequencies for a peaceful zen garden chime
-    const notes = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5];
-    const freq = notes[Math.floor(Math.random() * notes.length)];
-    this.playChime(freq);
-
-    const nextDelay = 2200 + Math.random() * 3500;
-    this.timer = window.setTimeout(() => this.scheduleChimes(), nextDelay);
-  }
-
-  private playChime(freq: number) {
-    if (!this.ctx || this.ctx.state !== "running") return;
-
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-
-    // Natural bell/chime envelope
-    gain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.045, this.ctx.currentTime + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 2.4);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-
-    osc.start(this.ctx.currentTime);
-    osc.stop(this.ctx.currentTime + 2.5);
   }
 }
 

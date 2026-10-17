@@ -31,6 +31,12 @@ import {
   Play,
   ChevronDown,
   ChevronUp,
+  Seedling,
+  Sun,
+  Wheat,
+  Heart,
+  Landmark,
+  ShieldCheck,
 } from "flowbite-react-icons/outline";
 import {
   WindUniforms,
@@ -159,13 +165,13 @@ export default function WebARModal({
   const [cameraSettled, setCameraSettled] = useState(false); // izin dijawab / gagal / timeout
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [sceneReady, setSceneReady] = useState(false);
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(true);
   const [treeScale, setTreeScale] = useState(() => {
     const isMobile = isMobileUA();
     const config = SEASON_VIEW_CONFIGS[initialSeason] ?? SEASON_VIEW_CONFIGS.summer;
     return isMobile ? config.defaultScaleMobile : config.defaultScaleDesktop;
   });
-  const [isCardCollapsed, setIsCardCollapsed] = useState(false);
+  const [isCardCollapsed, setIsCardCollapsed] = useState(true);
   const [isQrLocked, setIsQrLocked] = useState(false);
 
   const [remainingMs, setRemainingMs] = useState(REDIRECT_MS);
@@ -250,6 +256,7 @@ export default function WebARModal({
     setRemainingMs(REDIRECT_MS);
     setIsRedirected(false);
     setIsPaused(false);
+    setIsCardCollapsed(true);
     setSceneReady(false);
     setCameraSettled(false);
     setIsQrLocked(false);
@@ -259,6 +266,42 @@ export default function WebARModal({
     logArAnalytics("modal_opened");
   }, [isOpen, REDIRECT_MS, logArAnalytics]);
 
+  // Lagu menunggu default aktif (/song/The_Green_Light.mp3), otomatis terpotong saat durasi tunggu habis / redirect
+  useEffect(() => {
+    if (!isOpen) {
+      ambientAudio.stop();
+      setIsAudioPlaying(false);
+      return;
+    }
+
+    let isSubscribed = true;
+    setIsAudioPlaying(true);
+
+    const tryStartAudio = async () => {
+      const ok = await ambientAudio.start();
+      if (isSubscribed) {
+        setIsAudioPlaying(ok);
+      }
+    };
+    tryStartAudio();
+
+    // Fallback bila browser memblokir autoplay sebelum sentuhan pertama
+    const onTouch = () => {
+      if (isSubscribed && !ambientAudio.getStatus()) {
+        tryStartAudio();
+      }
+      window.removeEventListener("pointerdown", onTouch);
+    };
+    window.addEventListener("pointerdown", onTouch, { once: true });
+
+    return () => {
+      isSubscribed = false;
+      window.removeEventListener("pointerdown", onTouch);
+      ambientAudio.stop();
+      setIsAudioPlaying(false);
+    };
+  }, [isOpen]);
+
   // ---------------------------------------------------------------------------
   // Redirect
   // ---------------------------------------------------------------------------
@@ -267,6 +310,8 @@ export default function WebARModal({
       if (redirectedRef.current) return;
       redirectedRef.current = true;
       setIsRedirected(true);
+      ambientAudio.stop(); // Lagu menunggu langsung berhenti saat durasi habis atau diarahkan
+      setIsAudioPlaying(false);
       logArAnalytics(reason === "auto" ? "auto_redirect" : "bubble_click", { reason });
       onRedirect?.(reason);
 
@@ -789,7 +834,15 @@ export default function WebARModal({
   // ---------------------------------------------------------------------------
   // Aksi
   // ---------------------------------------------------------------------------
-  const handleSoundToggle = () => setIsAudioPlaying(ambientAudio.toggle());
+  const handleSoundToggle = async () => {
+    if (isAudioPlaying) {
+      ambientAudio.stop();
+      setIsAudioPlaying(false);
+    } else {
+      const ok = await ambientAudio.start();
+      setIsAudioPlaying(ok);
+    }
+  };
 
   const changeSeason = (s: SeasonType) => {
     setSeason(s);
@@ -966,8 +1019,16 @@ export default function WebARModal({
           <div className="w-full max-w-md rounded-2xl bg-black/70 backdrop-blur-xl border border-white/20 px-3.5 py-2 text-white shadow-2xl flex items-center justify-between gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
             <div className="flex items-center gap-2 min-w-0">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
-              <span className="text-xs font-bold truncate">Magic Portal</span>
-              <span className="font-mono text-emerald-400 text-xs font-bold px-1.5 py-0.5 rounded bg-black/50">
+              <span className="text-xs font-bold truncate">
+                {!countingDown
+                  ? "Preparing AR…"
+                  : isRedirected
+                  ? isScan
+                    ? "Redirecting…"
+                    : "Opening link…"
+                  : "Magic Portal"}
+              </span>
+              <span className="font-mono text-emerald-400 text-xs font-bold px-1.5 py-0.5 rounded bg-black/50 shrink-0">
                 {secondsLeft}s
               </span>
             </div>
@@ -1014,7 +1075,18 @@ export default function WebARModal({
               <div className="flex items-center gap-2 text-xs">
                 {countingDown && !isRedirected && (
                   <button
-                    onClick={() => setIsPaused((p) => !p)}
+                    onClick={() => {
+                      setIsPaused((p) => {
+                        const next = !p;
+                        if (next) {
+                          ambientAudio.pause();
+                          setIsAudioPlaying(false);
+                        } else {
+                          ambientAudio.start().then((ok) => setIsAudioPlaying(ok));
+                        }
+                        return next;
+                      });
+                    }}
                     className="flex items-center gap-1 text-[11px] text-stone-300 hover:text-white px-2 py-0.5 rounded-lg bg-white/10"
                   >
                     {isPaused ? (
@@ -1073,22 +1145,23 @@ export default function WebARModal({
             <div className="flex items-center gap-1 bg-black/40 backdrop-blur-md p-1 rounded-2xl border border-white/20 shadow-md">
               {(
                 [
-                  ["summer", "🌳 Summer"],
-                  ["spring", "🌸 Sakura"],
-                  ["autumn", "🍂 Autumn"],
-                  ["flower", "🌺 Patrakomala"],
-                  ["building", "🏛️ Heritage"],
-                  ["hero", "🛡️ Hero"],
-                ] as [SeasonType, string][]
-              ).map(([s, label]) => (
+                  ["summer", "Summer", Seedling],
+                  ["spring", "Sakura", Sun],
+                  ["autumn", "Autumn", Wheat],
+                  ["flower", "Patrakomala", Heart],
+                  ["building", "Heritage", Landmark],
+                  ["hero", "Hero", ShieldCheck],
+                ] as const
+              ).map(([s, label, IconComponent]) => (
                 <button
                   key={s}
                   onClick={() => changeSeason(s)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-medium transition ${
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium transition ${
                     season === s ? "bg-white text-stone-900 font-bold shadow-sm" : "text-white/80 hover:text-white"
                   }`}
                 >
-                  {label}
+                  <IconComponent className="w-3.5 h-3.5 shrink-0" />
+                  <span>{label}</span>
                 </button>
               ))}
             </div>

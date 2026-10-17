@@ -47,7 +47,7 @@ export interface TreeOptions {
 export const SEASONS: Record<SeasonType, SeasonTheme> = {
   summer: {
     name: "Summer Green",
-    badge: "🌳 Summer Green",
+    badge: "Summer Green",
     bgColor: "#F6F1E7",
     paperColor: "#EFE8DA",
     leafPrimary: ["#1E7E34", "#28A745", "#218838", "#19692C"],
@@ -66,7 +66,7 @@ export const SEASONS: Record<SeasonType, SeasonTheme> = {
   },
   spring: {
     name: "Sakura Spring",
-    badge: "🌸 Sakura Blossom",
+    badge: "Sakura Blossom",
     bgColor: "#FAF3F3",
     paperColor: "#F5ECEC",
     leafPrimary: ["#F472B6", "#EC4899", "#F43F5E", "#FB7185"],
@@ -86,7 +86,7 @@ export const SEASONS: Record<SeasonType, SeasonTheme> = {
   },
   autumn: {
     name: "Golden Autumn",
-    badge: "🍂 Golden Autumn",
+    badge: "Golden Autumn",
     bgColor: "#F7F3EA",
     paperColor: "#EFE6D6",
     leafPrimary: ["#F59E0B", "#D97706", "#EA580C", "#D97706"],
@@ -106,7 +106,7 @@ export const SEASONS: Record<SeasonType, SeasonTheme> = {
   },
   flower: {
     name: "Patrakomala Bloom",
-    badge: "🌺 Patrakomala Bloom",
+    badge: "Patrakomala Bloom",
     bgColor: "#FFF8F8",
     paperColor: "#FDF2F4",
     leafPrimary: ["#D8261D", "#B51913", "#E02F21", "#991B1B"],
@@ -125,7 +125,7 @@ export const SEASONS: Record<SeasonType, SeasonTheme> = {
   },
   building: {
     name: "Heritage Landmark",
-    badge: "🏛️ Heritage Landmark",
+    badge: "Heritage Landmark",
     bgColor: "#EEF0F2",
     paperColor: "#E2E5E8",
     leafPrimary: ["#EFEFEC", "#E2E3E0", "#D5D7D4", "#C6C8C6"],
@@ -144,7 +144,7 @@ export const SEASONS: Record<SeasonType, SeasonTheme> = {
   },
   hero: {
     name: "Mythic Hero",
-    badge: "🛡️ Mythic Hero",
+    badge: "Mythic Hero",
     bgColor: "#F8F6F0",
     paperColor: "#EFEBE1",
     leafPrimary: ["#1D1D22", "#D9A63A", "#B3192A", "#F0C75A"],
