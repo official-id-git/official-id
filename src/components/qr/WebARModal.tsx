@@ -1148,7 +1148,7 @@ export default function WebARModal({
                   ["summer", "Summer", Seedling],
                   ["spring", "Sakura", Sun],
                   ["autumn", "Autumn", Wheat],
-                  ["flower", "Patrakomala", Heart],
+                  ["flower", "Flower", Heart],
                   ["building", "Heritage", Landmark],
                   ["hero", "Hero", ShieldCheck],
                 ] as const

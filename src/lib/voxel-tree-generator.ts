@@ -105,8 +105,8 @@ export const SEASONS: Record<SeasonType, SeasonTheme> = {
     accentColor: "#D97706",
   },
   flower: {
-    name: "Patrakomala Bloom",
-    badge: "Patrakomala Bloom",
+    name: "Flower Bloom",
+    badge: "Flower Bloom",
     bgColor: "#FFF8F8",
     paperColor: "#FDF2F4",
     leafPrimary: ["#D8261D", "#B51913", "#E02F21", "#991B1B"],

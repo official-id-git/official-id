@@ -859,10 +859,10 @@ export default function TreeICQRStudio() {
                     ? "opacity-35 cursor-not-allowed bg-stone-50 text-stone-400 border-stone-200 pointer-events-none"
                     : "text-stone-600 hover:text-stone-900 hover:bg-stone-50 border-stone-200/80 active:scale-[0.98]"
                 }`}
-                title={isSeasonLocked ? "Theme is locked for saved link" : "Select Patrakomala theme"}
+                title={isSeasonLocked ? "Theme is locked for saved link" : "Select Flower theme"}
               >
                 <Heart className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                <span>Patrakomala</span>
+                <span>Flower</span>
               </button>
 
               <button
